@@ -1,41 +1,49 @@
 # Pendents de gesTIC
 
 Registre del que va sortint i **no** es resol sobre la marxa. Quan una cosa es
-tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-10**
-(cada punt obert verificat contra el codi aquell dia).
+tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-11**
+(estat de cada variable verificat contra el `.env` aquell dia).
 
 ---
 
 ## 🚀 Llista de desplegament
 
-El codi ja no bloqueja res: el que queda és configuració. Per ordre:
+El codi ja no bloqueja res: el que queda és configuració.
 
-| | Què | On |
-|---|---|---|
-| ☐ | Login de Google operatiu | Google Cloud Console + `AUTH_GOOGLE_*` |
-| ☐ | `ADMIN_EMAILS` amb els correus dels administradors | `.env` **i** Vercel |
-| ☐ | `BLOB_READ_WRITE_TOKEN` real | `.env` **i** Vercel |
-| ☐ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Vercel (en local ja hi són) |
-| ☐ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | Vercel |
-| ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — |
-| ☐ | Que el build executi `npm run db:deploy` (migracions) | Vercel |
-| ☐ | `APP_URL` amb el domini definitiu (abans d'imprimir QR!) | `.env` **i** Vercel |
-| ☐ | `CRON_SECRET` per als recordatoris automàtics | Vercel |
+| | Què | Local | Vercel |
+|---|---|---|---|
+| ☐ | Login de Google operatiu (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | ❌ buides | ❌ |
+| ☐ | `APP_URL` amb el domini definitiu (abans d'imprimir QR!) | ❌ absent | ❌ |
+| ☐ | `CRON_SECRET` | ✅ | ❌ **cal copiar-hi el mateix valor** |
+| ☐ | `BLOB_READ_WRITE_TOKEN` | ✅ | ⚠️ sense verificar |
+| ☐ | `ADMIN_EMAILS` | ✅ | ⚠️ sense verificar |
+| ☐ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ⚠️ sense verificar |
+| ☐ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ⚠️ sense verificar |
+| ☐ | Que el build executi `npm run db:deploy` (migracions) | — | ❌ |
+| ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
 
-Comprovat el 2026-09-10: el build de producció arrenca i respon sense errors.
+Les marcades ⚠️ funcionen en local i el desplegament de producció respon, però
+no s'ha entrat a *Settings → Environment Variables* a comprovar-les una per una.
+
+Comprovat el 2026-09-11: el build de producció arrenca i respon sense errors.
 
 ---
 
 ## 🔴 Bloquejadors per a producció
 
 ### 1. Falten variables d'entorn
-- **`ADMIN_EMAILS`** (verificat: absent del `.env`). És la llista
-  d'**administradors**; sense ella ningú no pot repartir permisos i el gestor
-  d'usuaris queda inaccessible per a tothom.
-- **`BLOB_READ_WRITE_TOKEN`** (verificat: encara és un placeholder). Bloqueja
-  pujar fotos d'inventari i de carros, i els adjunts d'incidències.
-- **SMTP a Vercel**: en local ja funciona i s'ha comprovat que el correu surt;
-  falta portar-ho a les variables de Vercel.
+- **`AUTH_GOOGLE_ID` i `AUTH_GOOGLE_SECRET`** (verificat 2026-09-11: buides al
+  `.env`). Sense elles ningú del centre no pot entrar: en local només funciona
+  pel dev login, que a producció està tancat a propòsit. És **el bloquejador
+  que queda de debò**.
+- **`APP_URL`** (verificat 2026-09-11: ni tan sols hi és). Mentre no hi sigui,
+  els QR i els enllaços dels correus surten amb el domini des d'on es generin.
+- **`CRON_SECRET` a Vercel**: generat i posat en local, però fins que no hi
+  sigui a Vercel les dues rutes de cron responen 503 i no fan res — ni els
+  recordatoris de préstec ni el ping que evita que Supabase es pausi.
+
+`ADMIN_EMAILS`, `BLOB_READ_WRITE_TOKEN` i l'SMTP ja hi són en local i s'han
+comprovat funcionant; només queda confirmar que hi són també a Vercel.
 
 ### 2. Les etiquetes QR fixen el domini des d'on s'imprimeixen
 `src/lib/url.ts` construeix la URL amb la capçalera `host` del moment. Si
@@ -69,6 +77,21 @@ mal posada trenca els estils inline de Base UI. La resta de capçaleres
 
 ## 🟡 Funcionalitat i UX
 
+### 7. Els noms dels rols no diuen el que són
+`SUPER_ADMIN` es mostra com a "Administrador/a" i `ADMIN` com a "Coordinador/a
+TIC", però qui coordina de debò és el super admin: llegint la pantalla de login
+no s'entén qui mana. Els tres rols ja encaixen amb la realitat del centre
+(coordinació · comissió TIC · professorat); és només qüestió de reanomenar les
+etiquetes de `roleLabels` a `src/lib/labels.ts`, sense tocar cap permís.
+
+### 8. Les fotos són públiques per a qui tingui l'enllaç
+El blob store és **Public** perquè el codi puja amb `access: "public"` i les
+URL desades es mostren directament amb `<Image>` i `<a href>` a inventari,
+Chromebooks, formació i incidències. Les adreces són llargues i aleatòries i no
+s'indexen, però qui rebi l'enllaç l'obre sense passar per gesTIC. Assumit el
+2026-09-11 per a fotos de material espatllat. **A revisar el dia que s'hi
+pugin captures de Classroom amb noms d'alumnes**: llavors tocaria passar a
+blobs privats i firmar les URL a cada pàgina, que no és un canvi petit.
 
 ---
 
@@ -83,9 +106,41 @@ com a botó. Afecta tots els filtres de l'aplicació.
 Els marcats com a retornats abans d'afegir `returnedAt` surten amb "—" a la
 fitxa de l'equip. Només afecta dades anteriors al canvi.
 
+### 19. Avís de `onUploadCompleted` a cada pujada
+`handleUpload` a `/api/blob/upload` declara un `onUploadCompleted` buit, i en
+local Vercel no pot determinar-ne la `callbackUrl`: cada pujada deixa un avís
+al log. No trenca res —el fitxer puja igual— però embruta la sortida.
+
 ---
 
 ## ✅ Fet
+
+### 2026-09-11
+
+- **Incidències de l'entorn Google**: tercera via a "Nova incidència", per a
+  Classroom, correu, Drive, Meet, YouTube, contrasenyes… No demana ni aula ni
+  equip, perquè no n'hi ha. El servei afectat es desa en un enum propi
+  (`GoogleService`) i no dins `IncidentCategory`, que descriu avaries de
+  maquinari i s'ofereix al formulari ràpid del QR dels Chromebooks. El servei
+  surt també al correu que rep la coordinació i a l'exportació CSV.
+- **Captures en comptes de fotos**: `IncidentPhotosField` té un mode
+  "screenshot" que no força la càmera del mòbil. Per a un problema de Classroom
+  la imatge útil és una captura que ja tens desada, no una foto nova.
+- **Error fals en crear incidències i consultes**: les accions que acaben en
+  `redirect()` ho fan llançant una excepció interna de Next, i el `try/catch`
+  de `useServerAction` se la menjava i mostrava "No s'ha pogut completar
+  l'acció" **mentre et portava, correctament, a la pàgina nova**. Resolt amb
+  `unstable_rethrow`. Afectava les tres modalitats d'incidència i les consultes.
+- **Vercel Blob operatiu**: store `gestic-fitxers-public` (regió CDG1) creat amb
+  accés **Public** i `BLOB_READ_WRITE_TOKEN` real al `.env`. Un primer store
+  creat com a Private es va haver de descartar: el codi puja amb
+  `access: "public"` i Vercel el rebutja. L'accés d'un store no es pot canviar
+  després de crear-lo. Verificat pujant, llegint per URL i esborrant.
+- **Supabase no es pausarà l'estiu**: ruta `/api/cron/keep-alive` protegida amb
+  `CRON_SECRET` i programada cada dia a `vercel.json`. El pla Free atura la
+  base de dades als 7 dies sense activitat, i un institut passa el juliol i
+  l'agost sencers sense que ningú reporti res. El cron de préstecs ja hi
+  arribava, però setmanal contra una pausa de 7 dies era massa just.
 
 ### 2026-09-10
 
