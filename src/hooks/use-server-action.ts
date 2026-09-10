@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -22,6 +23,11 @@ export function useServerAction<TInput>(
           toast.error(result.error);
         }
       } catch (error) {
+        // Les accions que acaben en redirect() (crear incidència, crear
+        // consulta...) ho fan llançant una excepció interna de Next. Sense
+        // aquesta línia el catch se la menjava i sortia un error fals encara
+        // que tot hagués anat bé.
+        unstable_rethrow(error);
         // Sense aquest catch, una caiguda de xarxa o una excepció del servidor
         // deixarien la promesa rebutjada: el botó es quedaria deshabilitat per
         // sempre i l'usuari no sabria si l'acció s'ha desat o no.
