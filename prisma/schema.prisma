@@ -1,0 +1,473 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Auth.js / NextAuth v5 — Prisma adapter tables)
+// ---------------------------------------------------------------------------
+
+// SUPER_ADMIN: designat per ADMIN_EMAILS al servidor; és l'únic que pot donar i
+// treure permisos des del gestor d'usuaris.
+// ADMIN: coordinació TIC del dia a dia (incidències, inventari, carros...).
+// PROFESSOR: usuari del centre.
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PROFESSOR
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(PROFESSOR)
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+
+  accounts Account[]
+  sessions Session[]
+
+  reportedIncidents  Incident[]        @relation("IncidentReporter")
+  assignedIncidents  Incident[]        @relation("IncidentAssignee")
+  incidentComments   IncidentComment[]
+  reservations       Reservation[]
+  trainingEnrollments TrainingEnrollment[]
+  chromebookNotes    ChromebookNote[]
+  queries            Query[]
+  queryComments      QueryComment[]
+  loanRequests         LoanRequest[] @relation("LoanRequester")
+  respondedLoanRequests LoanRequest[] @relation("LoanResponder")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Ubicacions físiques (reutilitzades per inventari i incidències)
+// ---------------------------------------------------------------------------
+
+model Space {
+  id       String  @id @default(cuid())
+  name     String
+  building String?
+  floor    String?
+
+  inventoryItems InventoryItem[]
+  carts          Cart[]
+  chromebooks    Chromebook[]
+  trainingSessions TrainingSession[]
+  incidents      Incident[]
+
+  @@unique([name])
+}
+
+// ---------------------------------------------------------------------------
+// Inventari TIC de centre
+// ---------------------------------------------------------------------------
+
+enum InventoryItemStatus {
+  ACTIU
+  EN_REPARACIO
+  BAIXA
+}
+
+// Categories de material d'inventari, gestionades pel coordinador/a TIC
+// (a "Inventari TIC" mateix) — permet afegir tipus nous (iPad, rotlladors...)
+// sense necessitat de canviar el codi ni desplegar de nou.
+model InventoryCategory {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  items InventoryItem[]
+}
+
+model InventoryItem {
+  id             String              @id @default(cuid())
+  categoryId     String
+  brand          String
+  model          String
+  serialNumber   String?             @unique
+  spaceId        String?
+  status         InventoryItemStatus @default(ACTIU)
+  imageUrl       String?
+  // Si es pot deixar en préstec al professorat (ex: portàtils, iPads) o si és
+  // material fix de l'aula que no es presta (ex: un projector muntat al sostre).
+  isLoanable     Boolean             @default(false)
+  purchaseDate   DateTime?
+  warrantyUntil  DateTime?
+  notes          String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  category     InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  space        Space?            @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  incidents    Incident[]
+  loanRequests LoanRequest[]
+
+  @@index([spaceId])
+  @@index([categoryId])
+  @@index([isLoanable])
+}
+
+// ---------------------------------------------------------------------------
+// Préstecs de material prestable de l'inventari al professorat
+// ---------------------------------------------------------------------------
+
+enum LoanRequestStatus {
+  PENDENT
+  APROVADA
+  REBUTJADA
+  RETORNADA
+  CANCELLADA
+}
+
+model LoanRequest {
+  id            String            @id @default(cuid())
+  itemId        String
+  requesterId   String
+  startDate     DateTime
+  endDate       DateTime
+  purpose       String?
+  status        LoanRequestStatus @default(PENDENT)
+  responseNote  String?           @db.Text
+  respondedById String?
+  respondedAt   DateTime?
+  // Data real de retorn: `endDate` només és la data prevista, i cal poder veure
+  // a la fitxa de l'equip si un préstec es va tornar tard.
+  returnedAt    DateTime?
+  createdAt     DateTime          @default(now())
+
+  item        InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  requester   User          @relation("LoanRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  respondedBy User?         @relation("LoanResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+
+  @@index([itemId, startDate, endDate])
+  @@index([requesterId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Carros de Chromebooks
+// ---------------------------------------------------------------------------
+
+enum ChromebookStatus {
+  DISPONIBLE
+  RESERVAT
+  EN_INCIDENCIA
+  BAIXA
+}
+
+model Cart {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  serialNumber String? @unique
+  spaceId      String?
+  imageUrl     String?
+
+  space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  chromebooks  Chromebook[]
+  reservations Reservation[]
+  incidents    Incident[]
+
+  @@index([spaceId])
+}
+
+model Chromebook {
+  id           String           @id @default(cuid())
+  // cartId és opcional per poder representar un Chromebook temporalment fora
+  // d'un carro (taller, magatzem...) — la ubicació exacta per a aquest cas
+  // (Espai) encara està per definir; de moment els Chromebooks es creen i
+  // gestionen sempre dins del context d'un carro concret.
+  cartId       String?
+  spaceId      String?
+  assetTag     String           @unique
+  serialNumber String?          @unique
+  brand        String?
+  model        String?
+  status       ChromebookStatus @default(DISPONIBLE)
+
+  cart      Cart?            @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  space     Space?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  incidents Incident[]
+  notes     ChromebookNote[]
+
+  @@index([cartId])
+  @@index([spaceId])
+}
+
+// Historial de notes datades d'un Chromebook (avaries, reparacions, seguiment...).
+model ChromebookNote {
+  id           String   @id @default(cuid())
+  chromebookId String
+  authorId     String
+  body         String   @db.Text
+  createdAt    DateTime @default(now())
+
+  chromebook Chromebook @relation(fields: [chromebookId], references: [id], onDelete: Cascade)
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([chromebookId])
+}
+
+enum ReservationStatus {
+  CONFIRMADA
+  CANCELLADA
+  COMPLETADA
+}
+
+model Reservation {
+  id        String            @id @default(cuid())
+  cartId    String
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  purpose   String?
+  status    ReservationStatus @default(CONFIRMADA)
+  createdAt DateTime          @default(now())
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([cartId, startDate, endDate])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Incidències TIC
+// ---------------------------------------------------------------------------
+
+enum IncidentTargetType {
+  INVENTORY_ITEM
+  CHROMEBOOK
+  CART
+  GENERAL
+}
+
+enum IncidentPriority {
+  BAIXA
+  MITJANA
+  ALTA
+}
+
+enum IncidentCategory {
+  PANTALLA
+  TECLAT
+  TOUCHPAD
+  WIFI_INTERNET
+  NO_S_ENCEN
+  ALTRE
+}
+
+enum IncidentStatus {
+  OBERTA
+  EN_CURS
+  RESOLTA
+  TANCADA
+}
+
+model Incident {
+  id          String             @id @default(cuid())
+  reporterId  String
+  targetType  IncidentTargetType
+  spaceId     String?
+  inventoryItemId String?
+  chromebookId    String?
+  cartId          String?
+  title       String
+  description String             @db.Text
+  category    IncidentCategory?
+  priority    IncidentPriority   @default(MITJANA)
+  status      IncidentStatus     @default(OBERTA)
+  assignedToId String?
+  createdAt   DateTime           @default(now())
+  resolvedAt  DateTime?
+
+  reporter      User            @relation("IncidentReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  assignedTo    User?           @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  space         Space?          @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem?  @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  chromebook    Chromebook?     @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
+  cart          Cart?           @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  comments      IncidentComment[]
+  attachments   IncidentAttachment[]
+
+  @@index([status, priority])
+  @@index([reporterId])
+}
+
+model IncidentComment {
+  id         String   @id @default(cuid())
+  incidentId String
+  authorId   String
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model IncidentAttachment {
+  id         String   @id @default(cuid())
+  incidentId String
+  url        String
+  filename   String
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+// ---------------------------------------------------------------------------
+// Formació del professorat
+// ---------------------------------------------------------------------------
+
+model TrainingSession {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  date        DateTime
+  spaceId     String?
+  capacity    Int?
+  materialsUrl String[] @default([])
+  createdAt   DateTime @default(now())
+
+  space       Space?               @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  enrollments TrainingEnrollment[]
+
+  @@index([date])
+}
+
+model TrainingEnrollment {
+  id         String   @id @default(cuid())
+  sessionId  String
+  userId     String
+  enrolledAt DateTime @default(now())
+
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Dubtes del professorat (FAQ)
+// ---------------------------------------------------------------------------
+
+model FaqEntry {
+  id       String @id @default(cuid())
+  question String
+  answer   String @db.Text
+  category String
+  order    Int    @default(0)
+
+  @@index([category])
+}
+
+// ---------------------------------------------------------------------------
+// Consultes del professorat (dubtes personals, no preguntes freqüents)
+// ---------------------------------------------------------------------------
+
+enum QueryStatus {
+  OBERTA
+  EN_CURS
+  RESOLTA
+  TANCADA
+}
+
+model Query {
+  id          String      @id @default(cuid())
+  authorId    String
+  title       String
+  description String      @db.Text
+  status      QueryStatus @default(OBERTA)
+  createdAt   DateTime    @default(now())
+  resolvedAt  DateTime?
+
+  author   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments QueryComment[]
+
+  @@index([status])
+  @@index([authorId])
+}
+
+model QueryComment {
+  id        String   @id @default(cuid())
+  queryId   String
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  query  Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([queryId])
+}
+
+// ---------------------------------------------------------------------------
+// Instruccions i tutorials
+// ---------------------------------------------------------------------------
+
+model TutorialCategory {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  articles TutorialArticle[]
+}
+
+model TutorialArticle {
+  id             String   @id @default(cuid())
+  categoryId     String
+  title          String
+  slug           String   @unique
+  contentMarkdown String  @db.Text
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  category TutorialCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
