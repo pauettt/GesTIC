@@ -24,7 +24,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // El negative lookahead exclou també qualsevol fitxer amb extensió
+  // (.*\..*): sense això, el Proxy intercepta els assets estàtics de
+  // `public/` (google.svg, favicons, etc.) i els redirigeix a /login quan
+  // no hi ha sessió, deixant-los "trencats" a la pantalla de login mateixa.
   matcher: [
-    "/((?!api|login|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|login|_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };
