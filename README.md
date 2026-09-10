@@ -1,4 +1,4 @@
-# CoordTIC
+# gesTIC
 
 Plataforma de coordinació TIC del centre: incidències, inventari TIC, carros de Chromebooks, formació del professorat, dubtes freqüents i tutorials.
 

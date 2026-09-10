@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-lg font-semibold">
             TIC
           </div>
-          <CardTitle className="text-xl">CoordTIC</CardTitle>
+          <CardTitle className="text-xl">gesTIC</CardTitle>
           <CardDescription>
             Coordinació TIC del centre: incidències, inventari, Chromebooks,
             formació i tutorials.

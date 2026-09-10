@@ -23,7 +23,7 @@ export function MobileNav({ role }: { role: Role }) {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
         <div className="flex h-14 items-center border-b px-6 font-semibold">
-          CoordTIC
+          gesTIC
         </div>
         <nav className="space-y-1 p-3">
           {items.map((item) => {

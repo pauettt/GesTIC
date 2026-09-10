@@ -15,7 +15,7 @@ export function AppSidebar({ role }: { role: Role }) {
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-background md:flex print:hidden">
       <div className="flex h-14 items-center border-b px-6">
         <Link href="/" className="text-lg font-semibold">
-          CoordTIC
+          gesTIC
         </Link>
       </div>
       <nav className="flex-1 space-y-1 p-3">

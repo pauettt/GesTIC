@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6 print:hidden">
           <MobileNav role={user.role} />
-          <span className="font-semibold md:hidden">CoordTIC</span>
+          <span className="font-semibold md:hidden">gesTIC</span>
           <div className="ml-auto">
             <UserMenu user={user} />
           </div>

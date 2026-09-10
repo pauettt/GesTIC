@@ -29,7 +29,7 @@ export default async function UsuarisPage() {
       <div>
         <h1 className="text-2xl font-semibold">Usuaris i permisos</h1>
         <p className="text-muted-foreground">
-          Tothom qui ha entrat alguna vegada a CoordTIC. Dona permisos de coordinació TIC a qui
+          Tothom qui ha entrat alguna vegada a gesTIC. Dona permisos de coordinació TIC a qui
           hagi de gestionar incidències, inventari i carros.
         </p>
       </div>

@@ -1,4 +1,4 @@
-# Pendents de CoordTIC
+# Pendents de gesTIC
 
 Registre del que va sortint i **no** es resol sobre la marxa. Quan una cosa es
 tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-10**

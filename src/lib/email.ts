@@ -7,7 +7,7 @@ const host = process.env.SMTP_HOST ?? "smtp.gmail.com";
 const port = Number(process.env.SMTP_PORT ?? 465);
 const user = process.env.SMTP_USER;
 const password = process.env.SMTP_PASSWORD;
-const from = process.env.SMTP_FROM ?? (user ? `CoordTIC <${user}>` : undefined);
+const from = process.env.SMTP_FROM ?? (user ? `gesTIC <${user}>` : undefined);
 
 export function isEmailConfigured() {
   return Boolean(user && password);
@@ -91,7 +91,7 @@ function layout({ intro, rows, quote, cta, footer }: EmailBody) {
     (quote ? `\n\n${quote.label}:\n${quote.body}` : "") +
     `\n\n${cta.label}:\n${cta.url}\n` +
     (footer ? `\n${footer}\n` : "") +
-    `\n— CoordTIC, coordinació TIC del centre`;
+    `\n— gesTIC, coordinació TIC del centre`;
 
   const html = `
     <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;color:#111;line-height:1.5">
@@ -120,7 +120,7 @@ function layout({ intro, rows, quote, cta, footer }: EmailBody) {
         </a>
       </p>
       ${footer ? `<p style="color:#666;font-size:13px">${escapeHtml(footer)}</p>` : ""}
-      <p style="color:#666;font-size:13px">— CoordTIC, coordinació TIC del centre</p>
+      <p style="color:#666;font-size:13px">— gesTIC, coordinació TIC del centre</p>
     </div>
   `;
 
@@ -152,7 +152,7 @@ export function buildIncidentResolvedEmail({
       ],
       quote: note ? { label: "Comentari de la coordinació TIC", body: note } : null,
       cta: { label: "Veure la incidència", url: incidentUrl },
-      footer: "Si el problema continua, respon a la incidència des de CoordTIC i la tornarem a obrir.",
+      footer: "Si el problema continua, respon a la incidència des de gesTIC i la tornarem a obrir.",
     }),
   };
 }
@@ -305,7 +305,7 @@ export function buildQueryAnsweredEmail({
       rows: [["Consulta", title]],
       quote: { label: "Resposta", body },
       cta: { label: "Veure la conversa", url },
-      footer: "Pots continuar la conversa responent des de CoordTIC.",
+      footer: "Pots continuar la conversa responent des de gesTIC.",
     }),
   };
 }
