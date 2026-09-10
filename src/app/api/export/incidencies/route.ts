@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import {
+  googleServiceLabels,
   incidentCategoryLabels,
   incidentPriorityLabels,
   incidentStatusLabels,
@@ -33,7 +34,9 @@ export async function GET() {
           ? `Chromebook ${incident.chromebook.assetTag}`
           : incident.cart
             ? `Carro ${incident.cart.name}`
-            : (incident.space?.name ?? ""),
+            : incident.googleService
+              ? googleServiceLabels[incident.googleService]
+              : (incident.space?.name ?? ""),
       incident.category ? incidentCategoryLabels[incident.category] : "",
       incidentPriorityLabels[incident.priority],
       incidentStatusLabels[incident.status],

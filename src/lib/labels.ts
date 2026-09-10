@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type {
   ChromebookStatus,
+  GoogleService,
   IncidentCategory,
   IncidentPriority,
   IncidentStatus,
@@ -43,7 +44,22 @@ export const incidentTargetTypeLabels: Record<IncidentTargetType, string> = {
   INVENTORY_ITEM: "Equip d'inventari",
   CHROMEBOOK: "Chromebook",
   CART: "Carro de Chromebooks",
+  GOOGLE_WORKSPACE: "Entorn Google",
   GENERAL: "Altre / espai general",
+};
+
+// L'ordre d'aquest mapa és el que veu el professorat al desplegable: davant, el
+// que es reporta més sovint; "Un altre servei" sempre al final.
+export const googleServiceLabels: Record<GoogleService, string> = {
+  CLASSROOM: "Classroom",
+  COMPTE: "Compte i accés (contrasenya, no puc entrar)",
+  GMAIL: "Correu (Gmail)",
+  DRIVE: "Drive i documents",
+  MEET: "Meet",
+  CALENDAR: "Calendar",
+  YOUTUBE: "YouTube",
+  CHROME: "Chrome i navegador",
+  ALTRE: "Un altre servei de Google",
 };
 
 export const incidentPriorityLabels: Record<IncidentPriority, string> = {

@@ -280,6 +280,7 @@ enum IncidentTargetType {
   INVENTORY_ITEM
   CHROMEBOOK
   CART
+  GOOGLE_WORKSPACE
   GENERAL
 }
 
@@ -298,6 +299,21 @@ enum IncidentCategory {
   ALTRE
 }
 
+// Servei de l'entorn Google afectat. Va en un enum a part de IncidentCategory
+// perquè aquella descriu avaries de maquinari (pantalla, teclat...) i s'ofereix
+// al formulari ràpid del QR dels Chromebooks.
+enum GoogleService {
+  CLASSROOM
+  COMPTE
+  GMAIL
+  DRIVE
+  MEET
+  CALENDAR
+  YOUTUBE
+  CHROME
+  ALTRE
+}
+
 enum IncidentStatus {
   OBERTA
   EN_CURS
@@ -313,6 +329,7 @@ model Incident {
   inventoryItemId String?
   chromebookId    String?
   cartId          String?
+  googleService   GoogleService?
   title       String
   description String             @db.Text
   category    IncidentCategory?

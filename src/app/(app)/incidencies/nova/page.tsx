@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/permissions";
 import { CartIncidentForm } from "@/components/incidents/cart-incident-form";
+import { GoogleIncidentForm } from "@/components/incidents/google-incident-form";
 import { RoomIncidentForm } from "@/components/incidents/room-incident-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -48,6 +49,21 @@ export default async function NovaIncidenciaPage() {
         </CardHeader>
         <CardContent>
           <CartIncidentForm carts={carts} />
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Incidència de l&apos;entorn Google</CardTitle>
+          <CardDescription>
+            Per a Classroom, correu, Drive, Meet, YouTube, contrasenyes… No cal indicar cap aula ni
+            cap equip.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GoogleIncidentForm />
         </CardContent>
       </Card>
     </div>

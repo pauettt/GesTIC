@@ -12,7 +12,7 @@ import {
   sendEmail,
 } from "@/lib/email";
 import { daysOverdue } from "@/lib/loans";
-import { incidentPriorityLabels } from "@/lib/labels";
+import { googleServiceLabels, incidentPriorityLabels } from "@/lib/labels";
 import { COORDINATOR_ROLES } from "@/lib/roles";
 import { getBaseUrl } from "@/lib/url";
 
@@ -60,7 +60,11 @@ export async function notifyIncidentReported(incidentId: string) {
       ...buildIncidentReportedEmail({
         incidentTitle: incident.title,
         reporterName: incident.reporter.name ?? incident.reporter.email,
-        location: incident.space?.name ?? "Sense ubicació indicada",
+        location:
+          incident.space?.name ??
+          (incident.googleService
+            ? `Entorn Google · ${googleServiceLabels[incident.googleService]}`
+            : "Sense ubicació indicada"),
         priority: incidentPriorityLabels[incident.priority],
         description: incident.description,
         incidentUrl: `${baseUrl}/incidencies/${incident.id}`,

@@ -9,7 +9,11 @@ import { notifyIncidentReported } from "@/lib/notifications";
 import { getBaseUrl } from "@/lib/url";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
-import { incidentCategoryDefaultPriority, incidentCategoryLabels } from "@/lib/labels";
+import {
+  googleServiceLabels,
+  incidentCategoryDefaultPriority,
+  incidentCategoryLabels,
+} from "@/lib/labels";
 import {
   addCommentSchema,
   assignIncidentSchema,
@@ -46,6 +50,8 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
   } else if (data.targetType === "CHROMEBOOK" && data.chromebookId) {
     const chromebook = await db.chromebook.findUnique({ where: { id: data.chromebookId } });
     if (chromebook) title = `Chromebook ${chromebook.assetTag}${spaceSuffix}`;
+  } else if (data.targetType === "GOOGLE_WORKSPACE" && data.googleService) {
+    title = `Entorn Google — ${googleServiceLabels[data.googleService]}`;
   }
 
   const incident = await db.incident.create({
@@ -59,6 +65,7 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
       inventoryItemId: data.targetType === "INVENTORY_ITEM" ? data.inventoryItemId : null,
       chromebookId: data.targetType === "CHROMEBOOK" ? data.chromebookId : null,
       cartId: data.targetType === "CART" ? data.cartId : null,
+      googleService: data.targetType === "GOOGLE_WORKSPACE" ? data.googleService : null,
       spaceId: data.spaceId || null,
     },
   });

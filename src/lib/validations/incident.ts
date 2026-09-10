@@ -9,11 +9,14 @@ export const createIncidentSchema = z
     spaceId: z.string().optional(),
     description: z.string().trim().min(10, "Descriu la incidència amb una mica més de detall").max(4000),
     priority: z.enum(["BAIXA", "MITJANA", "ALTA"]),
-    targetType: z.enum(["INVENTORY_ITEM", "CHROMEBOOK", "CART", "GENERAL"]),
+    targetType: z.enum(["INVENTORY_ITEM", "CHROMEBOOK", "CART", "GOOGLE_WORKSPACE", "GENERAL"]),
     category: z.enum(["PANTALLA", "TECLAT", "TOUCHPAD", "WIFI_INTERNET", "NO_S_ENCEN", "ALTRE"]).optional(),
     inventoryItemId: z.string().optional(),
     chromebookId: z.string().optional(),
     cartId: z.string().optional(),
+    googleService: z
+      .enum(["CLASSROOM", "COMPTE", "GMAIL", "DRIVE", "MEET", "CALENDAR", "YOUTUBE", "CHROME", "ALTRE"])
+      .optional(),
     // Fotos fetes en el moment de reportar. Mateixa restricció que els adjunts:
     // només fitxers del nostre blob store.
     photoUrls: z.array(z.string().refine(isBlobUrl, "La imatge no és vàlida")).max(2).optional(),
@@ -27,6 +30,10 @@ export const createIncidentSchema = z
     },
     { message: "Selecciona l'objecte afectat", path: ["inventoryItemId"] },
   )
+  .refine((data) => data.targetType !== "GOOGLE_WORKSPACE" || Boolean(data.googleService), {
+    message: "Selecciona el servei de Google afectat",
+    path: ["googleService"],
+  })
   .refine(
     (data) => {
       if (data.targetType === "INVENTORY_ITEM" || data.targetType === "GENERAL") {
