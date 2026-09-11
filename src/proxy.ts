@@ -20,12 +20,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // El layout necessita saber a quina ruta s'està per poder tancar consergeria
-  // dins de la seva secció. Aquí no es pot decidir: el rol viu a la base de
-  // dades i Proxy corre a l'edge, sense accés a Prisma.
-  const headers = new Headers(request.headers);
-  headers.set("x-pathname", request.nextUrl.pathname);
-  return NextResponse.next({ request: { headers } });
+  return NextResponse.next();
 }
 
 export const config = {

@@ -1,22 +1,13 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-
-import { isConcierge, requireUser } from "@/lib/permissions";
+import { requireSession } from "@/lib/permissions";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const user = await requireUser();
-
-  // Consergeria només té una feina a l'aplicació. Amagar-li els enllaços del
-  // menú no n'hi ha prou: sense això, escrivint la URL entraria igualment.
-  // La condició sobre `pathname` evita un bucle de redireccions si mai faltés
-  // la capçalera; les pàgines sensibles ja tenen el seu propi requireAdmin.
-  const pathname = (await headers()).get("x-pathname") ?? "";
-  if (isConcierge(user.role) && pathname && !pathname.startsWith("/consergeria")) {
-    redirect("/consergeria");
-  }
+  // El layout embolcalla també la secció de consergeria, així que aquí no es
+  // pot filtrar per rol: qui la tanca dins la seva secció és `requireUser`, per
+  // on passen totes les pàgines i accions de la resta de l'aplicació.
+  const user = await requireSession();
 
   return (
     <div className="flex min-h-screen w-full">
