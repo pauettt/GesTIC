@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { KeyRoundIcon, SettingsIcon } from "lucide-react";
+import { HistoryIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { addDays, formatDateTime, formatTime, madridDateKey } from "@/lib/date";
@@ -103,6 +103,14 @@ export default async function ConsergeriaPage() {
               </Button>
             }
           />
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link href="/consergeria/historial" />}
+          >
+            <HistoryIcon className="size-4" />
+            Historial
+          </Button>
           <Button nativeButton={false} render={<Link href="/consergeria/claus" />}>
             <SettingsIcon className="size-4" />
             Gestiona les claus

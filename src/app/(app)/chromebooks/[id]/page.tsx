@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { LaptopIcon, QrCodeIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { isAdmin, requireUser } from "@/lib/permissions";
+import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
@@ -66,12 +66,22 @@ export default async function CartDetailPage({
                 {cart.space?.name ?? "Sense ubicació fixa"}
                 {cart.serialNumber ? ` · Núm. sèrie: ${cart.serialNumber}` : ""}
               </p>
-              <Link
-                href={`/incidencies?cartId=${cart.id}`}
-                className="text-sm text-muted-foreground hover:underline"
-              >
-                Veure historial d&apos;incidències del carro
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/incidencies?cartId=${cart.id}`}
+                  className="text-sm text-muted-foreground hover:underline"
+                >
+                  Historial d&apos;incidències
+                </Link>
+                {canAccessKeys(user.role) && (
+                  <Link
+                    href={`/consergeria/historial?carro=${cart.id}`}
+                    className="text-sm text-muted-foreground hover:underline"
+                  >
+                    Qui s&apos;ha endut aquest carro
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
           {isAdmin(user.role) && (
