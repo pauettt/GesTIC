@@ -13,10 +13,14 @@ datasource db {
 // SUPER_ADMIN: designat per ADMIN_EMAILS al servidor; és l'únic que pot donar i
 // treure permisos des del gestor d'usuaris.
 // ADMIN: coordinació TIC del dia a dia (incidències, inventari, carros...).
+// CONSERGERIA: compte únic compartit pels conserges. NOMÉS veu el control de
+//   claus; qui entrega cada clau es registra a part (model Concierge), perquè
+//   poden ser-hi tots tres alhora amb la mateixa sessió oberta.
 // PROFESSOR: usuari del centre.
 enum Role {
   SUPER_ADMIN
   ADMIN
+  CONSERGERIA
   PROFESSOR
 }
 
@@ -33,16 +37,17 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  reportedIncidents  Incident[]        @relation("IncidentReporter")
-  assignedIncidents  Incident[]        @relation("IncidentAssignee")
-  incidentComments   IncidentComment[]
-  reservations       Reservation[]
-  trainingEnrollments TrainingEnrollment[]
-  chromebookNotes    ChromebookNote[]
-  queries            Query[]
-  queryComments      QueryComment[]
-  loanRequests         LoanRequest[] @relation("LoanRequester")
-  respondedLoanRequests LoanRequest[] @relation("LoanResponder")
+  reportedIncidents     Incident[]           @relation("IncidentReporter")
+  assignedIncidents     Incident[]           @relation("IncidentAssignee")
+  incidentComments      IncidentComment[]
+  reservations          Reservation[]
+  trainingEnrollments   TrainingEnrollment[]
+  chromebookNotes       ChromebookNote[]
+  queries               Query[]
+  queryComments         QueryComment[]
+  loanRequests          LoanRequest[]        @relation("LoanRequester")
+  respondedLoanRequests LoanRequest[]        @relation("LoanResponder")
+  keyLoans              KeyLoan[]            @relation("KeyBorrower")
 }
 
 model Account {
@@ -91,11 +96,11 @@ model Space {
   building String?
   floor    String?
 
-  inventoryItems InventoryItem[]
-  carts          Cart[]
-  chromebooks    Chromebook[]
+  inventoryItems   InventoryItem[]
+  carts            Cart[]
+  chromebooks      Chromebook[]
   trainingSessions TrainingSession[]
-  incidents      Incident[]
+  incidents        Incident[]
 
   @@unique([name])
 }
@@ -122,22 +127,22 @@ model InventoryCategory {
 }
 
 model InventoryItem {
-  id             String              @id @default(cuid())
-  categoryId     String
-  brand          String
-  model          String
-  serialNumber   String?             @unique
-  spaceId        String?
-  status         InventoryItemStatus @default(ACTIU)
-  imageUrl       String?
+  id            String              @id @default(cuid())
+  categoryId    String
+  brand         String
+  model         String
+  serialNumber  String?             @unique
+  spaceId       String?
+  status        InventoryItemStatus @default(ACTIU)
+  imageUrl      String?
   // Si es pot deixar en préstec al professorat (ex: portàtils, iPads) o si és
   // material fix de l'aula que no es presta (ex: un projector muntat al sostre).
-  isLoanable     Boolean             @default(false)
-  purchaseDate   DateTime?
-  warrantyUntil  DateTime?
-  notes          String?             @db.Text
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  isLoanable    Boolean             @default(false)
+  purchaseDate  DateTime?
+  warrantyUntil DateTime?
+  notes         String?             @db.Text
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   category     InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   space        Space?            @relation(fields: [spaceId], references: [id], onDelete: SetNull)
@@ -208,6 +213,7 @@ model Cart {
   chromebooks  Chromebook[]
   reservations Reservation[]
   incidents    Incident[]
+  keys         Key[]
 
   @@index([spaceId])
 }
@@ -265,8 +271,9 @@ model Reservation {
   status    ReservationStatus @default(CONFIRMADA)
   createdAt DateTime          @default(now())
 
-  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cart     Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyLoans KeyLoan[]
 
   @@index([cartId, startDate, endDate])
   @@index([userId])
@@ -322,29 +329,29 @@ enum IncidentStatus {
 }
 
 model Incident {
-  id          String             @id @default(cuid())
-  reporterId  String
-  targetType  IncidentTargetType
-  spaceId     String?
+  id              String             @id @default(cuid())
+  reporterId      String
+  targetType      IncidentTargetType
+  spaceId         String?
   inventoryItemId String?
   chromebookId    String?
   cartId          String?
   googleService   GoogleService?
-  title       String
-  description String             @db.Text
-  category    IncidentCategory?
-  priority    IncidentPriority   @default(MITJANA)
-  status      IncidentStatus     @default(OBERTA)
-  assignedToId String?
-  createdAt   DateTime           @default(now())
-  resolvedAt  DateTime?
+  title           String
+  description     String             @db.Text
+  category        IncidentCategory?
+  priority        IncidentPriority   @default(MITJANA)
+  status          IncidentStatus     @default(OBERTA)
+  assignedToId    String?
+  createdAt       DateTime           @default(now())
+  resolvedAt      DateTime?
 
-  reporter      User            @relation("IncidentReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  assignedTo    User?           @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  space         Space?          @relation(fields: [spaceId], references: [id], onDelete: SetNull)
-  inventoryItem InventoryItem?  @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
-  chromebook    Chromebook?     @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
-  cart          Cart?           @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  reporter      User                 @relation("IncidentReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  assignedTo    User?                @relation("IncidentAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  space         Space?               @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem?       @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  chromebook    Chromebook?          @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
+  cart          Cart?                @relation(fields: [cartId], references: [id], onDelete: SetNull)
   comments      IncidentComment[]
   attachments   IncidentAttachment[]
 
@@ -382,14 +389,14 @@ model IncidentAttachment {
 // ---------------------------------------------------------------------------
 
 model TrainingSession {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  date        DateTime
-  spaceId     String?
-  capacity    Int?
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @db.Text
+  date         DateTime
+  spaceId      String?
+  capacity     Int?
   materialsUrl String[] @default([])
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   space       Space?               @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   enrollments TrainingEnrollment[]
@@ -476,15 +483,81 @@ model TutorialCategory {
 }
 
 model TutorialArticle {
-  id             String   @id @default(cuid())
-  categoryId     String
-  title          String
-  slug           String   @unique
-  contentMarkdown String  @db.Text
-  updatedAt      DateTime @updatedAt
-  createdAt      DateTime @default(now())
+  id              String   @id @default(cuid())
+  categoryId      String
+  title           String
+  slug            String   @unique
+  contentMarkdown String   @db.Text
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
 
   category TutorialCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// Consergeria: claus del centre
+// ---------------------------------------------------------------------------
+
+/**
+ * Nom d'un conserge. NO és un usuari amb contrasenya: consergeria comparteix un
+ * únic compte de domini i poden ser-hi tots tres alhora, així que qui entrega
+ * una clau es tria amb un clic en el moment de fer-ho. Els manté el super admin.
+ */
+model Concierge {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveredLoans KeyLoan[] @relation("KeyDeliveredBy")
+  sentReminders  KeyLoan[] @relation("KeyReminderBy")
+}
+
+/**
+ * Clau física del centre. `cartId` només el tenen les dels carros de
+ * Chromebooks: aquelles hereten les reserves, i per això se'n pot saber a quina
+ * hora havien de tornar. Les d'aula o magatzem no en tenen cap.
+ */
+model Key {
+  id        String   @id @default(cuid())
+  number    String   @unique
+  name      String
+  cartId    String?
+  copies    Int      @default(1)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  cart  Cart?     @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  loans KeyLoan[]
+
+  @@index([cartId])
+}
+
+model KeyLoan {
+  id            String    @id @default(cuid())
+  keyId         String
+  borrowerId    String
+  deliveredById String
+  deliveredAt   DateTime  @default(now())
+  returnedAt    DateTime?
+  // Reserva que justifica el préstec. Absent quan es dona la clau sense
+  // reserva: una urgència, un substitut... Es registra igualment, perquè si el
+  // sistema no ho permetés el conserge donaria la clau i no ho apuntaria.
+  reservationId String?
+  reason        String?
+  // Avís manual a qui no ha tornat la clau. Es desa qui l'ha enviat i quan
+  // perquè els tres conserges no bombardegin el mateix professor.
+  remindedAt    DateTime?
+  remindedById  String?
+
+  key         Key          @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  borrower    User         @relation("KeyBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
+  deliveredBy Concierge    @relation("KeyDeliveredBy", fields: [deliveredById], references: [id])
+  remindedBy  Concierge?   @relation("KeyReminderBy", fields: [remindedById], references: [id], onDelete: SetNull)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([keyId, returnedAt])
+  @@index([borrowerId])
 }

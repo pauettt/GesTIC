@@ -8,12 +8,12 @@ import { requireSuperAdmin } from "@/lib/permissions";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
-// Només es pot moure gent entre coordinació i professorat. SUPER_ADMIN no hi és
-// a propòsit: es designa amb ADMIN_EMAILS al servidor i no es pot atorgar des
-// de la interfície.
+// Només es pot moure gent entre coordinació, consergeria i professorat.
+// SUPER_ADMIN no hi és a propòsit: es designa amb ADMIN_EMAILS al servidor i no
+// es pot atorgar des de la interfície.
 const setUserRoleSchema = z.object({
   userId: z.string().min(1),
-  role: z.enum(["ADMIN", "PROFESSOR"]),
+  role: z.enum(["ADMIN", "CONSERGERIA", "PROFESSOR"]),
 });
 
 export async function setUserRole(input: unknown): Promise<ActionResult> {

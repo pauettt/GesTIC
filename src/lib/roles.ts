@@ -20,3 +20,17 @@ export function isAdmin(role: Role) {
 export function isSuperAdmin(role: Role) {
   return role === "SUPER_ADMIN";
 }
+
+/**
+ * Consergeria. Compte únic compartit pels conserges del taulell: NO és
+ * coordinació (`isAdmin` no hi ha de ser cert mai) i només veu el control de
+ * claus. Qui entrega cada clau es registra a part, amb el model Concierge.
+ */
+export function isConcierge(role: Role) {
+  return role === "CONSERGERIA";
+}
+
+/** Qui pot entrar al control de claus: consergeria i la coordinació TIC. */
+export function canAccessKeys(role: Role) {
+  return isConcierge(role) || isAdmin(role);
+}

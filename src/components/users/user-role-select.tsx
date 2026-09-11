@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const ASSIGNABLE: Record<string, string> = {
   ADMIN: roleLabels.ADMIN,
+  CONSERGERIA: roleLabels.CONSERGERIA,
   PROFESSOR: roleLabels.PROFESSOR,
 };
 

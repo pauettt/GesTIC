@@ -106,6 +106,7 @@ export const incidentStatusLabels: Record<IncidentStatus, string> = {
 export const roleLabels: Record<Role, string> = {
   SUPER_ADMIN: "Administrador/a",
   ADMIN: "Coordinador/a TIC",
+  CONSERGERIA: "Consergeria",
   PROFESSOR: "Professorat",
 };
 

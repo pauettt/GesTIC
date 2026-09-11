@@ -79,7 +79,8 @@ type EmailBody = {
   rows: [string, string][];
   /** Text destacat en un requadre (comentaris, descripcions...). */
   quote?: { label: string; body: string } | null;
-  cta: { label: string; url: string };
+  /** Opcional: hi ha avisos que no porten enlloc, com el de tornar una clau. */
+  cta?: { label: string; url: string };
   footer?: string;
 };
 
@@ -89,7 +90,7 @@ function layout({ intro, rows, quote, cta, footer }: EmailBody) {
     `${intro}\n\n` +
     rows.map(([label, value]) => `${label}: ${value}`).join("\n") +
     (quote ? `\n\n${quote.label}:\n${quote.body}` : "") +
-    `\n\n${cta.label}:\n${cta.url}\n` +
+    (cta ? `\n\n${cta.label}:\n${cta.url}\n` : "\n") +
     (footer ? `\n${footer}\n` : "") +
     `\n— gesTIC, coordinació TIC del centre`;
 
@@ -114,11 +115,15 @@ function layout({ intro, rows, quote, cta, footer }: EmailBody) {
              </div>`
           : ""
       }
-      <p style="margin:20px 0">
-        <a href="${encodeURI(cta.url)}" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">
-          ${escapeHtml(cta.label)}
-        </a>
-      </p>
+      ${
+        cta
+          ? `<p style="margin:20px 0">
+               <a href="${encodeURI(cta.url)}" style="background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">
+                 ${escapeHtml(cta.label)}
+               </a>
+             </p>`
+          : ""
+      }
       ${footer ? `<p style="color:#666;font-size:13px">${escapeHtml(footer)}</p>` : ""}
       <p style="color:#666;font-size:13px">— gesTIC, coordinació TIC del centre</p>
     </div>
@@ -331,6 +336,31 @@ export function buildQueryCreatedEmail({
       ],
       quote: { label: "Descripció", body: description },
       cta: { label: "Respondre la consulta", url },
+    }),
+  };
+}
+
+export function buildKeyNotReturnedEmail({
+  keyLabel,
+  deliveredAt,
+  conciergeName,
+}: {
+  keyLabel: string;
+  deliveredAt: string;
+  conciergeName: string;
+}) {
+  return {
+    subject: `Recorda tornar la clau: ${keyLabel}`,
+    ...layout({
+      intro:
+        "Segons el registre de consergeria encara tens una clau del centre sense tornar. " +
+        "Si ja l'has deixat al taulell, no cal que facis res: avisa'ns i ho corregim.",
+      rows: [
+        ["Clau", keyLabel],
+        ["Entregada", deliveredAt],
+        ["Avís enviat per", conciergeName],
+      ],
+      footer: "Torna-la al taulell de consergeria quan puguis; hi pot haver algú esperant-la.",
     }),
   };
 }

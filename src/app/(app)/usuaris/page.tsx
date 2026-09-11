@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/date";
 import { roleLabels } from "@/lib/labels";
 import { requireSuperAdmin } from "@/lib/permissions";
 import { UserRoleSelect } from "@/components/users/user-role-select";
+import { ConciergeManager } from "@/components/keys/concierge-manager";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -20,9 +21,10 @@ export const metadata = { title: "Usuaris i permisos" };
 export default async function UsuarisPage() {
   const superAdmin = await requireSuperAdmin();
 
-  const users = await db.user.findMany({
-    orderBy: [{ role: "asc" }, { name: "asc" }],
-  });
+  const [users, concierges] = await Promise.all([
+    db.user.findMany({ orderBy: [{ role: "asc" }, { name: "asc" }] }),
+    db.concierge.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,6 +83,8 @@ export default async function UsuarisPage() {
           </TableBody>
         </Table>
       </div>
+
+      <ConciergeManager concierges={concierges} />
 
       <p className="text-sm text-muted-foreground">
         Els administradors es defineixen a la variable <code>ADMIN_EMAILS</code> del servidor i no
