@@ -75,6 +75,10 @@ export const quickChromebookIncidentSchema = z.object({
 });
 export type QuickChromebookIncidentInput = z.infer<typeof quickChromebookIncidentSchema>;
 
+export const deleteIncidentSchema = z.object({
+  incidentId: z.string().min(1),
+});
+
 export const attachIncidentFileSchema = z.object({
   incidentId: z.string().min(1),
   url: z.string().refine(isBlobUrl, "L'enllaç del fitxer no és vàlid"),

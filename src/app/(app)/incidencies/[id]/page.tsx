@@ -4,7 +4,8 @@ import { FileIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/date";
-import { COORDINATOR_ROLES, isAdmin, requireUser } from "@/lib/permissions";
+import { COORDINATOR_ROLES, isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
+import { deleteIncident } from "@/actions/incidents";
 import {
   incidentCategoryLabels,
   incidentPriorityLabels,
@@ -16,6 +17,7 @@ import {
 import { AttachmentUploader } from "@/components/incidents/attachment-uploader";
 import { CommentForm } from "@/components/incidents/comment-form";
 import { StatusControls } from "@/components/incidents/status-controls";
+import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -124,6 +126,25 @@ export default async function IncidentDetailPage({ params }: PageProps<"/inciden
               reporterName={incident.reporter.name ?? incident.reporter.email}
               notifies={incident.reporterId !== user.id}
             />
+
+            {isSuperAdmin(user.role) && (
+              <>
+                <Separator className="my-4" />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Per al dia a dia, tanca la incidència: l&apos;historial de l&apos;equip és el que
+                    justifica substituir-lo. Esborra-la només si és un duplicat, una prova o conté
+                    dades que no hi haurien de ser.
+                  </p>
+                  <ConfirmDeleteButton
+                    action={deleteIncident}
+                    input={{ incidentId: incident.id }}
+                    title="Esborrar la incidència definitivament?"
+                    description={`Es perden també els ${incident.comments.length} comentaris de seguiment i els ${incident.attachments.length} fitxers adjunts, que s'esborraran del magatzem. No es pot desfer.`}
+                  />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PlusIcon, UserIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/date";
+import { formatDate, schoolYearOf, schoolYearRange, schoolYearsBetween } from "@/lib/date";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import {
   incidentCategoryLabels,
@@ -43,7 +43,7 @@ export default async function IncidenciesPage({
   searchParams,
 }: PageProps<"/incidencies">) {
   const user = await requireUser();
-  const { status, inventoryItemId, chromebookId, cartId, assignada } = await searchParams;
+  const { status, inventoryItemId, chromebookId, cartId, assignada, curs } = await searchParams;
   const statusFilter = typeof status === "string" ? status : "TOTES";
   // Amb tres coordinadors, "les meves" és la vista de treball habitual.
   const onlyMine = assignada === "jo" && isAdmin(user.role);
@@ -56,33 +56,77 @@ export default async function IncidenciesPage({
           ? { cartId }
           : null;
 
-  const incidents = await db.incident.findMany({
-    where: {
-      ...(objectFilter ?? {}),
-      // El professorat només veu les seves incidències, hi hagi filtre d'objecte
-      // o no: si això depengués del filtre, n'hi hauria prou amb un ?cartId=…
-      // a la URL per llegir les incidències de la resta de companys.
-      ...(isAdmin(user.role) ? {} : { reporterId: user.id }),
-      ...(onlyMine ? { assignedToId: user.id } : {}),
-      ...(statusFilter !== "TOTES" ? { status: statusFilter as IncidentStatus } : {}),
-    },
-    include: {
-      reporter: true,
-      assignedTo: true,
-      inventoryItem: true,
-      chromebook: { include: { cart: true } },
-      cart: true,
-      space: true,
-    },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-  });
+  // El professorat només veu les seves incidències, hi hagi filtre d'objecte o
+  // no: si això depengués del filtre, n'hi hauria prou amb un ?cartId=… a la URL
+  // per llegir les incidències de la resta de companys.
+  const visibleToUser = isAdmin(user.role) ? {} : { reporterId: user.id };
 
-  function filterHref(next: { status?: string; mine?: boolean }): Route {
+  const currentSchoolYear = schoolYearOf(new Date());
+  // L'historial d'un objecte ha de mostrar-ho tot: acotar-lo a un curs buidaria
+  // justament allò que el fa útil (veure que un equip falla any rere any).
+  const schoolYear = objectFilter
+    ? "TOTS"
+    : typeof curs === "string"
+      ? curs
+      : currentSchoolYear;
+  const schoolYearWhere =
+    schoolYear === "TOTS"
+      ? {}
+      : {
+          createdAt: {
+            gte: schoolYearRange(schoolYear).start,
+            lt: schoolYearRange(schoolYear).end,
+          },
+        };
+
+  const [incidents, oldest, openBefore] = await Promise.all([
+    db.incident.findMany({
+      where: {
+        ...(objectFilter ?? {}),
+        ...visibleToUser,
+        ...schoolYearWhere,
+        ...(onlyMine ? { assignedToId: user.id } : {}),
+        ...(statusFilter !== "TOTES" ? { status: statusFilter as IncidentStatus } : {}),
+      },
+      include: {
+        reporter: true,
+        assignedTo: true,
+        inventoryItem: true,
+        chromebook: { include: { cart: true } },
+        cart: true,
+        space: true,
+      },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    }),
+    db.incident.findFirst({
+      where: visibleToUser,
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    }),
+    // Una avaria de juny segueix avariada al setembre. Si el filtre per curs
+    // se les empassés en silenci, el canvi de curs faria desaparèixer feina
+    // pendent de la vista sense que ningú se n'adonés.
+    schoolYear === "TOTS"
+      ? Promise.resolve(0)
+      : db.incident.count({
+          where: {
+            ...visibleToUser,
+            status: { in: ["OBERTA", "EN_CURS"] },
+            createdAt: { lt: schoolYearRange(schoolYear).start },
+          },
+        }),
+  ]);
+
+  const schoolYears = oldest ? schoolYearsBetween(oldest.createdAt) : [currentSchoolYear];
+
+  function filterHref(next: { status?: string; mine?: boolean; curs?: string }): Route {
     const params = new URLSearchParams();
     const nextStatus = next.status !== undefined ? next.status : statusFilter;
     const nextMine = next.mine !== undefined ? next.mine : onlyMine;
+    const nextCurs = next.curs !== undefined ? next.curs : schoolYear;
     if (nextStatus && nextStatus !== "TOTES") params.set("status", nextStatus);
     if (nextMine) params.set("assignada", "jo");
+    if (nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
     const query = params.toString();
     return (query ? `/incidencies?${query}` : "/incidencies") as Route;
   }
@@ -170,7 +214,42 @@ export default async function IncidenciesPage({
             </Button>
           </>
         )}
+
+        {!objectFilter && (schoolYears.length > 1 || schoolYear !== currentSchoolYear) && (
+          <>
+            <span className="mx-1 h-5 w-px bg-border" />
+            {schoolYears.map((year) => (
+              <Button
+                key={year}
+                size="sm"
+                variant={schoolYear === year ? "default" : "outline"}
+                nativeButton={false}
+                render={<Link href={filterHref({ curs: year })} />}
+              >
+                {year === currentSchoolYear ? `Curs ${year}` : year}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              variant={schoolYear === "TOTS" ? "default" : "outline"}
+              nativeButton={false}
+              render={<Link href={filterHref({ curs: "TOTS" })} />}
+            >
+              Tots els cursos
+            </Button>
+          </>
+        )}
       </div>
+
+      {openBefore > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Hi ha {openBefore} {openBefore === 1 ? "incidència oberta" : "incidències obertes"} de
+          cursos anteriors que aquest filtre no mostra.{" "}
+          <Link href={filterHref({ curs: "TOTS", status: "TOTES" })} className="underline">
+            Veure-les
+          </Link>
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-lg border bg-background">
         <Table>

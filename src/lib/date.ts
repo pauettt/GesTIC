@@ -112,6 +112,34 @@ export function toDateTimeLocalValue(date: Date): string {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
+/**
+ * Curs escolar d'una data, en format "2026-2027". Es dona per començat l'1 de
+ * setembre: tot el que passa del setembre a l'agost següent és el mateix curs.
+ */
+export function schoolYearOf(date: Date): string {
+  const [year, month] = madridDateKey(date).split("-").map(Number);
+  const startYear = month >= 9 ? year : year - 1;
+  return `${startYear}-${startYear + 1}`;
+}
+
+/** Interval [inici, fi) d'un curs escolar, en instants UTC. */
+export function schoolYearRange(schoolYear: string): { start: Date; end: Date } {
+  const startYear = Number(schoolYear.slice(0, 4));
+  return {
+    start: zonedDateTime(`${startYear}-09-01`, "00:00"),
+    end: zonedDateTime(`${startYear + 1}-09-01`, "00:00"),
+  };
+}
+
+/** Cursos escolars des del de `oldest` fins al d'`until`, del més recent al més antic. */
+export function schoolYearsBetween(oldest: Date, until: Date = new Date()): string[] {
+  const first = Number(schoolYearOf(oldest).slice(0, 4));
+  const last = Number(schoolYearOf(until).slice(0, 4));
+  const years: string[] = [];
+  for (let y = last; y >= first; y--) years.push(`${y}-${y + 1}`);
+  return years;
+}
+
 export function formatDateTimeFull(date: Date): string {
   return date.toLocaleString("ca-ES", {
     dateStyle: "full",

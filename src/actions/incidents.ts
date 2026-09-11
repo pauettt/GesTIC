@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { del } from "@vercel/blob";
 
 import { db } from "@/lib/db";
 import { sendIncidentResolvedEmail } from "@/lib/email";
 import { notifyIncidentReported } from "@/lib/notifications";
 import { getBaseUrl } from "@/lib/url";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
+import { isAdmin, requireAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
 import {
   googleServiceLabels,
   incidentCategoryDefaultPriority,
@@ -19,6 +20,7 @@ import {
   assignIncidentSchema,
   attachIncidentFileSchema,
   createIncidentSchema,
+  deleteIncidentSchema,
   quickChromebookIncidentSchema,
   updateIncidentPrioritySchema,
   updateIncidentStatusSchema,
@@ -246,6 +248,50 @@ export async function assignIncident(input: unknown): Promise<ActionResult> {
 
   revalidatePath(`/incidencies/${parsed.data.incidentId}`);
   return { success: true };
+}
+
+/**
+ * Esborrat definitiu d'una incidència. Reservat al super admin i pensat per als
+ * pocs casos on tancar-la no n'hi ha prou: duplicats, proves i —sobretot— haver
+ * de suprimir dades personals que no haurien d'estar-hi.
+ *
+ * Per al dia a dia, l'estat TANCADA: l'historial per objecte és el que permet
+ * justificar que un equip s'ha de substituir, i esborrar el buida en silenci.
+ *
+ * Els comentaris i els adjunts marxen sols de la base de dades (ON DELETE
+ * CASCADE), però els fitxers del blob store no: si no s'esborren aquí, la foto
+ * segueix sent descarregable per qui en tingui l'URL i el cas de protecció de
+ * dades es queda a mitges.
+ */
+export async function deleteIncident(input: unknown): Promise<ActionResult> {
+  await requireSuperAdmin();
+  const parsed = deleteIncidentSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+
+  const incident = await db.incident.findUnique({
+    where: { id: parsed.data.incidentId },
+    include: { attachments: true },
+  });
+  if (!incident) return { success: false, error: "La incidència no existeix" };
+
+  if (incident.attachments.length > 0) {
+    try {
+      await del(incident.attachments.map((attachment) => attachment.url));
+    } catch (error) {
+      // Si el blob store falla, val més no esborrar la incidència: així es pot
+      // tornar a provar. A l'inrevés quedarien fitxers orfes i sense cap
+      // referència des de l'aplicació per arribar-hi.
+      console.error("[incidències] no s'han pogut esborrar els adjunts:", error);
+      return { success: false, error: "No s'han pogut esborrar els fitxers adjunts" };
+    }
+  }
+
+  await db.incident.delete({ where: { id: incident.id } });
+
+  revalidatePath("/incidencies");
+  redirect("/incidencies");
 }
 
 export async function attachIncidentFile(input: unknown): Promise<ActionResult> {
