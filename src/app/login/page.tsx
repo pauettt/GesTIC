@@ -59,15 +59,20 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                     Super admin
                   </Button>
                 </form>
+                <form action={devLogin.bind(null, "ADMIN")}>
+                  <Button type="submit" variant="outline" className="w-full">
+                    Coordinador/a TIC
+                  </Button>
+                </form>
                 <div className="flex gap-2">
-                  <form action={devLogin.bind(null, "ADMIN")} className="flex-1">
-                    <Button type="submit" variant="outline" className="w-full">
-                      Coordinador/a TIC
-                    </Button>
-                  </form>
                   <form action={devLogin.bind(null, "PROFESSOR")} className="flex-1">
                     <Button type="submit" variant="outline" className="w-full">
-                      Professorat
+                      Professorat 1
+                    </Button>
+                  </form>
+                  <form action={devLogin.bind(null, "PROFESSOR_2")} className="flex-1">
+                    <Button type="submit" variant="outline" className="w-full">
+                      Professorat 2
                     </Button>
                   </form>
                 </div>

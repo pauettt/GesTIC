@@ -8,11 +8,26 @@ import type { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { isDevLoginEnabled } from "@/lib/dev-login-enabled";
 
-const DEV_USERS: Record<Role, { email: string; name: string }> = {
-  SUPER_ADMIN: { email: "superadmin.prova@local.test", name: "Super admin de prova" },
-  ADMIN: { email: "admin.prova@local.test", name: "Coordinador/a de prova" },
-  PROFESSOR: { email: "professor.prova@local.test", name: "Professor/a de prova" },
-};
+// Hi ha dos professors a propòsit: és l'única manera de comprovar que el
+// professorat no es veu ni es toca la feina entre si (incidències, préstecs,
+// consultes). Amb un de sol, entrant-hi sempre com el mateix, l'aïllament
+// sembla que funciona encara que estigui trencat.
+const DEV_USERS = {
+  SUPER_ADMIN: {
+    role: "SUPER_ADMIN",
+    email: "superadmin.prova@local.test",
+    name: "Super admin de prova",
+  },
+  ADMIN: { role: "ADMIN", email: "admin.prova@local.test", name: "Coordinador/a de prova" },
+  PROFESSOR: { role: "PROFESSOR", email: "professor.prova@local.test", name: "Professor/a de prova" },
+  PROFESSOR_2: {
+    role: "PROFESSOR",
+    email: "professor2.prova@local.test",
+    name: "Professor/a de prova 2",
+  },
+} satisfies Record<string, { role: Role; email: string; name: string }>;
+
+export type DevUserKey = keyof typeof DEV_USERS;
 
 const SESSION_COOKIE_NAME = "authjs.session-token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24; // 1 dia
@@ -20,12 +35,12 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24; // 1 dia
 // Només disponible en desenvolupament local: permet provar l'aplicació sense
 // haver configurat encara les credencials OAuth de Google. Aquest fitxer no
 // té cap efecte en producció (NODE_ENV sempre és "production" als desplegaments).
-export async function devLogin(role: Role) {
+export async function devLogin(key: DevUserKey) {
   if (!isDevLoginEnabled()) {
     throw new Error("El dev login no està disponible.");
   }
 
-  const { email, name } = DEV_USERS[role];
+  const { role, email, name } = DEV_USERS[key];
   const user = await db.user.upsert({
     where: { email },
     update: { role },
