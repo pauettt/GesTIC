@@ -19,6 +19,11 @@ const DEV_USERS = {
     name: "Super admin de prova",
   },
   ADMIN: { role: "ADMIN", email: "admin.prova@local.test", name: "Coordinador/a de prova" },
+  CONSERGERIA: {
+    role: "CONSERGERIA",
+    email: "consergeria.prova@local.test",
+    name: "Consergeria de prova",
+  },
   PROFESSOR: { role: "PROFESSOR", email: "professor.prova@local.test", name: "Professor/a de prova" },
   PROFESSOR_2: {
     role: "PROFESSOR",
