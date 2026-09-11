@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { formatDateTime, madridDateKey } from "@/lib/date";
+import { formatDateTime } from "@/lib/date";
 import { buildKeyNotReturnedEmail, sendEmail } from "@/lib/email";
 import { requireKeyAccess, requireSuperAdmin } from "@/lib/permissions";
 import {
@@ -220,14 +220,4 @@ export async function remindKeyReturn(input: unknown): Promise<ActionResult> {
 
   revalidatePath("/consergeria");
   return { success: true };
-}
-
-/** Reserves del dia d'avui, per encadenar les hores seguides d'un mateix bloc. */
-export async function todayReservations(cartId: string, userId: string) {
-  const today = madridDateKey(new Date());
-  const all = await db.reservation.findMany({
-    where: { cartId, userId, status: "CONFIRMADA" },
-    select: { startDate: true, endDate: true },
-  });
-  return all.filter((slot) => madridDateKey(slot.startDate) === today);
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { KeyRoundIcon, SettingsIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDateTime, formatTime, madridDateKey } from "@/lib/date";
+import { addDays, formatDateTime, formatTime, madridDateKey } from "@/lib/date";
 import { dueAt, KEY_GRACE_MINUTES } from "@/lib/keys";
 import { requireKeyAccess } from "@/lib/permissions";
 import { DeliverKeyDialog } from "@/components/keys/deliver-key-dialog";
@@ -21,8 +21,12 @@ export default async function ConsergeriaPage() {
   const today = madridDateKey(now);
 
   const [reservations, openLoans, keys, concierges, teachers] = await Promise.all([
+    // Acotat a la setmana: fa falta avui per a la taula, i els dies anteriors
+    // només per calcular el venciment d'alguna clau que porti dies fora. Sense
+    // el límit, al maig s'estaria carregant el curs sencer per ensenyar sis
+    // files.
     db.reservation.findMany({
-      where: { status: "CONFIRMADA" },
+      where: { status: "CONFIRMADA", startDate: { gte: addDays(now, -7) } },
       include: { cart: { include: { keys: true } }, user: true },
       orderBy: { startDate: "asc" },
     }),
