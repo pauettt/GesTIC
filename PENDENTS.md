@@ -1,8 +1,28 @@
 # Pendents de gesTIC
 
 Registre del que va sortint i **no** es resol sobre la marxa. Quan una cosa es
-tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-11**
-(estat de cada variable verificat contra el `.env` aquell dia).
+tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-12**
+(estat de cada variable verificat contra el `.env`, i el codi repassat buscant
+feina a mitges: no hi ha cap TODO ni cap pàgina esbossada).
+
+---
+
+## 🎯 Per on seguir
+
+Ordre acordat el 2026-09-12. La idea és tancar-ho de dalt a baix, no tot alhora.
+
+1. **La configuració de Vercel** (secció següent). Fins que no estigui, ningú
+   del centre no pot fer servir l'aplicació de debò, així que tota la resta és
+   secundària.
+2. **Que el professorat vegi les seves claus** (punt 9). És l'únic forat obert
+   de la feina d'ahir: se'ls reclama una clau que no poden consultar.
+3. **Els noms dels rols** (punt 7). Mitja hora i treu una confusió diària.
+4. **Netejar les dades de prova** just abans d'ensenyar-ho (punt 10).
+5. **Tests del que fa mal si falla** (punt 11), quan el contingut hi sigui i la
+   forma de l'aplicació ja no es mogui. Escriure'ls ara sobre una cosa que
+   encara canvia és feina per llençar.
+
+Els Dubtes freqüents i els Tutorials no són codi: són contingut per omplir.
 
 ---
 
@@ -106,6 +126,40 @@ s'indexen, però qui rebi l'enllaç l'obre sense passar per gesTIC. Assumit el
 pugin captures de Classroom amb noms d'alumnes**: llavors tocaria passar a
 blobs privats i firmar les URL a cada pàgina, que no és un canvi petit.
 
+### 9. El professorat no pot veure quines claus té
+Consergeria li envia un correu reclamant-li una clau, però si entra a gesTIC no
+troba enlloc quina és ni des de quan. A la portada hi surten les seves
+incidències obertes i el material en préstec; les claus, no. És una asimetria
+que va entrar amb la secció de consergeria el 2026-09-11: `keyLoan` només es
+consulta des de `/consergeria`.
+
+### 10. Netejar les dades de prova abans d'ensenyar-ho
+No és només esborrar incidències. Hi ha els **cinc usuaris de prova**
+(`...prova@local.test`), que sortiran al gestor d'usuaris com si fossin
+professorat de debò; les seves sessions; reserves, préstecs de claus i
+consultes de prova; els tres conserges d'exemple (Sergio, Marta, Joan) i les
+claus C-01 i A-203; i les **fotos pujades provant**, que no marxen soles del
+blob store si no es fa servir el botó d'esborrar incidència.
+
+Compte: producció i desenvolupament comparteixen la mateixa base de dades, així
+que val més un script que digui què esborrarà abans de fer-ho que no anar taula
+per taula.
+
+### 11. No hi ha ni un test
+Ni un, ni script de `test` al `package.json`. El 2026-09-11 van sortir tres
+errors seguits —l'error fals en crear incidències, la pantalla en blanc de
+consergeria i un endpoint sense permisos— i **cap el va enxampar TypeScript, ni
+el lint, ni el build**: van aparèixer obrint el navegador o remenant.
+
+No cal cobrir-ho tot. Amb les regles que fan mal si fallen n'hi hauria prou:
+qui pot veure què, el càlcul del curs escolar, i el bloc d'hores seguides de
+les claus. Quasi totes són funcions pures i es proven sense muntar res.
+
+### 12. Producció i desenvolupament comparteixen base de dades
+Mentre siguis tu provant, tant se val. El dia que el professorat hi entri de
+debò, voldràs una base de dades a part per a desenvolupament o acabaràs amb
+"dfghjmjkljh" barrejat amb incidències reals.
+
 ---
 
 ## ⚪ Menor
@@ -127,6 +181,31 @@ al log. No trenca res —el fitxer puja igual— però embruta la sortida.
 ---
 
 ## ✅ Fet
+
+### 2026-09-11 (nit)
+
+- **Consergeria**: rol nou i secció de control de les claus del centre —aules,
+  magatzems i carros—, amb entrega, retorn, avís manual a qui no torna, CRUD de
+  claus i historial. Les claus lligades a un carro hereten les seves reserves,
+  i d'aquí surt l'hora en què s'havien de tornar; un professor amb el carro
+  reservat hores seguides no baixa la clau entre mig, així que el compte enrere
+  surt del final del bloc, amb 10 minuts de marge. Els conserges no són
+  usuaris: comparteixen un compte i trien el seu nom a cada entrega.
+- **Historial de claus**: una reserva diu qui tenia dret al carro; que se
+  n'entregués la clau confirma que se'l va endur. Enllaçat des de la fitxa del
+  carro ("Qui s'ha endut aquest carro"), que és on es preguntarà de debò quan
+  aparegui un Chromebook trencat.
+- **Pantalla en blanc de consergeria**: `permissions.ts` importava
+  `isConcierge` i alhora el re-exportava amb `export … from`; amb totes dues
+  formes la variable local quedava sense definir en execució i el layout no
+  renderitzava mai. Ni TypeScript ni el build no ho veuen.
+- **Endpoint sense permisos**: `todayReservations` havia quedat exportada d'un
+  fitxer `"use server"` sense comprovar res —a Next això és una ruta cridable
+  des del navegador— i a sobre no la feia servir ningú. I la pantalla de
+  consergeria carregava totes les reserves de la història per ensenyar les
+  d'avui; ara està acotada a la setmana.
+- **Segon professor al dev login**: amb un de sol no es pot comprovar que el
+  professorat no es veu la feina entre si.
 
 ### 2026-09-11
 
