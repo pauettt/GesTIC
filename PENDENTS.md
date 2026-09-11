@@ -12,7 +12,7 @@ El codi ja no bloqueja res: el que queda és configuració.
 
 | | Què | Local | Vercel |
 |---|---|---|---|
-| ☐ | Login de Google operatiu (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | ❌ buides | ❌ |
+| ☐ | Login de Google operatiu (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | ❌ buides | ✅ hi són |
 | ☐ | `APP_URL` amb el domini definitiu (abans d'imprimir QR!) | ❌ absent | ❌ |
 | ☐ | `CRON_SECRET` | ✅ | ❌ **cal copiar-hi el mateix valor** |
 | ☐ | `BLOB_READ_WRITE_TOKEN` | ✅ | ⚠️ sense verificar |
@@ -32,10 +32,10 @@ Comprovat el 2026-09-11: el build de producció arrenca i respon sense errors.
 ## 🔴 Bloquejadors per a producció
 
 ### 1. Falten variables d'entorn
-- **`AUTH_GOOGLE_ID` i `AUTH_GOOGLE_SECRET`** (verificat 2026-09-11: buides al
-  `.env`). Sense elles ningú del centre no pot entrar: en local només funciona
-  pel dev login, que a producció està tancat a propòsit. És **el bloquejador
-  que queda de debò**.
+- **`AUTH_GOOGLE_ID` i `AUTH_GOOGLE_SECRET`**: a Vercel **sí que hi són** (el
+  2026-09-11 la pantalla de Google s'obre des del desplegament). Al `.env`
+  local són buides, així que en local només s'entra pel dev login. Queda
+  confirmar que el login s'acaba de debò i no només que s'obre el diàleg.
 - **`APP_URL`** (verificat 2026-09-11: ni tan sols hi és). Mentre no hi sigui,
   els QR i els enllaços dels correus surten amb el domini des d'on es generin.
 - **`CRON_SECRET` a Vercel**: generat i posat en local, però fins que no hi
@@ -76,6 +76,19 @@ mal posada trenca els estils inline de Base UI. La resta de capçaleres
 ---
 
 ## 🟡 Funcionalitat i UX
+
+### 6b. El login de Google diu "reservaChromebooks"
+Les credencials OAuth són d'un projecte de Google Cloud anterior, i la pantalla
+de consentiment encara en porta el nom: qui entri a gesTIC veu "Iniciar sesión
+con Google · Ir a reservaChromebooks". Es canvia a *Google Cloud Console → APIs
+i serveis → Pantalla de consentiment d'OAuth → Nom de l'aplicació*. **Compte**:
+el nom és del projecte sencer, així que si l'app antiga de reserves encara
+s'usa, canviar-lo també l'afecta; en aquest cas val més crear credencials
+pròpies per a gesTIC.
+
+També cal revisar-hi les **URI de redirecció autoritzades**: han d'incloure el
+domini estable (`ges-tic.vercel.app`), no les adreces de desplegament
+(`ges-xxxxx-pauettt.vercel.app`), que canvien a cada desplegament.
 
 ### 7. Els noms dels rols no diuen el que són
 `SUPER_ADMIN` es mostra com a "Administrador/a" i `ADMIN` com a "Coordinador/a
