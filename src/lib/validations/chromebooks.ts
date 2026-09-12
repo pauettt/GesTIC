@@ -27,6 +27,20 @@ export const upsertChromebookSchema = z.object({
 });
 export type UpsertChromebookInput = z.infer<typeof upsertChromebookSchema>;
 
+// Els equips del pool de préstec a l'alumnat no van a cap carro, per això aquí
+// no hi ha `cartId`. El número de sèrie hi és obligatori, a diferència dels de
+// carro: aquests surten del centre amb una família, i si s'ha de reclamar o
+// donar de baixa un aparell, el que l'identifica de debò és la sèrie i no
+// l'etiqueta que li hem posat nosaltres.
+export const upsertStudentChromebookSchema = z.object({
+  id: z.string().optional(),
+  assetTag: z.string().trim().min(1, "Indica un identificador").max(100),
+  serialNumber: z.string().trim().min(1, "Indica el número de sèrie").max(150),
+  brand: z.string().trim().max(100).optional().or(z.literal("")),
+  model: z.string().trim().max(100).optional().or(z.literal("")),
+});
+export type UpsertStudentChromebookInput = z.infer<typeof upsertStudentChromebookSchema>;
+
 export const deleteChromebookSchema = z.object({ id: z.string() });
 
 export const addChromebookNoteSchema = z.object({

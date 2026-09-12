@@ -83,6 +83,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                     </Button>
                   </form>
                 </div>
+                <form action={devLogin.bind(null, "PROFESSOR_TUTOR")}>
+                  <Button type="submit" variant="outline" className="w-full">
+                    Tutor/a
+                  </Button>
+                </form>
               </div>
             </>
           )}

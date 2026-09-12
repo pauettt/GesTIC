@@ -35,7 +35,37 @@ export async function setUserRole(input: unknown): Promise<ActionResult> {
     };
   }
 
-  await db.user.update({ where: { id: userId }, data: { role } });
+  await db.user.update({
+    where: { id: userId },
+    // Consergeria comparteix un compte de taulell i `requireUser` el treu de
+    // tota la part general de l'aplicació: si algú hi acaba amb la marca de
+    // tutor posada, es queda com una casella marcada que no fa res.
+    data: { role, ...(role === "CONSERGERIA" ? { isTutor: false } : {}) },
+  });
+  revalidatePath("/usuaris");
+  return { success: true };
+}
+
+// La tutoria no és un rol i va a part del desplegable de permisos: se suma al
+// que l'usuari ja té, perquè un coordinador TIC també pot ser tutor d'un grup.
+const setUserTutorSchema = z.object({
+  userId: z.string().min(1),
+  isTutor: z.boolean(),
+});
+
+export async function setUserTutor(input: unknown): Promise<ActionResult> {
+  await requireSuperAdmin();
+  const parsed = setUserTutorSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { userId, isTutor } = parsed.data;
+
+  const target = await db.user.findUnique({ where: { id: userId } });
+  if (!target) return { success: false, error: "Aquest usuari no existeix" };
+  if (target.role === "CONSERGERIA") {
+    return { success: false, error: "El compte de consergeria no pot ser tutor/a" };
+  }
+
+  await db.user.update({ where: { id: userId }, data: { isTutor } });
   revalidatePath("/usuaris");
   return { success: true };
 }

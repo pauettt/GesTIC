@@ -15,6 +15,7 @@ import {
   deleteChromebookSchema,
   upsertCartSchema,
   upsertChromebookSchema,
+  upsertStudentChromebookSchema,
 } from "@/lib/validations/chromebooks";
 
 export type ActionResult = { success: true } | { success: false; error: string };
@@ -84,6 +85,12 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
 
   try {
     if (id) {
+      // Els equips del pool de préstec a l'alumnat no es toquen des d'aquí:
+      // aquest formulari és el del carro i els hi acabaria ficant.
+      const existing = await db.chromebook.findUnique({ where: { id } });
+      if (existing?.isStudentLoanable) {
+        return { success: false, error: "Aquest Chromebook és del pool de préstec a l'alumnat" };
+      }
       await db.chromebook.update({ where: { id }, data: payload });
     } else {
       await db.chromebook.create({ data: { ...payload, cartId } });
@@ -96,10 +103,63 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
   return { success: true };
 }
 
+/**
+ * Alta i edició dels equips del pool de préstec individual a l'alumnat. Va a
+ * part de `upsertChromebook` perquè aquells viuen sempre dins d'un carro i
+ * aquests no en tenen cap: barrejar-ho en una sola acció voldria dir un
+ * `cartId` que de vegades hi és i de vegades no, i acabar decidint a cada línia
+ * de quin dels dos casos parlem.
+ */
+export async function upsertStudentChromebook(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = upsertStudentChromebookSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+  const { id, assetTag, serialNumber, brand, model } = parsed.data;
+  const payload = {
+    assetTag,
+    serialNumber,
+    brand: brand || null,
+    model: model || null,
+  };
+
+  try {
+    if (id) {
+      const existing = await db.chromebook.findUnique({ where: { id } });
+      if (!existing) return { success: false, error: "El Chromebook no existeix" };
+      // La simètrica de la d'abans: des d'aquí no es pot treure d'un carro un
+      // equip d'aula i convertir-lo en equip de préstec sense adonar-se'n.
+      if (!existing.isStudentLoanable) {
+        return { success: false, error: "Aquest Chromebook és d'un carro d'aula" };
+      }
+      await db.chromebook.update({ where: { id }, data: payload });
+    } else {
+      await db.chromebook.create({ data: { ...payload, isStudentLoanable: true } });
+    }
+  } catch {
+    return { success: false, error: "Ja existeix un Chromebook amb aquest identificador o número de sèrie" };
+  }
+
+  revalidatePath("/chromebooks");
+  return { success: true };
+}
+
 export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = deleteChromebookSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+
+  const existing = await db.chromebook.findUnique({ where: { id: parsed.data.id } });
+  if (!existing) return { success: false, error: "El Chromebook no existeix" };
+  // Un equip assignat és a casa d'un alumne: esborrar-lo deixaria el préstec
+  // penjant i ningú sabria quin aparell s'ha de reclamar.
+  if (existing.status === "ASSIGNAT") {
+    return {
+      success: false,
+      error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+    };
+  }
 
   const chromebook = await db.chromebook.delete({ where: { id: parsed.data.id } });
   revalidatePath(chromebook.cartId ? `/chromebooks/${chromebook.cartId}` : "/chromebooks");

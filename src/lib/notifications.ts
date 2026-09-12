@@ -9,10 +9,16 @@ import {
   buildLoanRequestedEmail,
   buildQueryAnsweredEmail,
   buildQueryCreatedEmail,
+  buildStudentDeviceDecisionEmail,
+  buildStudentDeviceRequestedEmail,
   sendEmail,
 } from "@/lib/email";
 import { daysOverdue } from "@/lib/loans";
-import { googleServiceLabels, incidentPriorityLabels } from "@/lib/labels";
+import {
+  googleServiceLabels,
+  incidentPriorityLabels,
+  studentDeviceReasonLabels,
+} from "@/lib/labels";
 import { COORDINATOR_ROLES } from "@/lib/roles";
 import { getBaseUrl } from "@/lib/url";
 
@@ -183,6 +189,56 @@ export async function notifyQueryCreated(queryId: string) {
         authorName: query.author.name ?? query.author.email,
         description: query.description,
         url: `${baseUrl}/consultes/${query.id}`,
+      }),
+    });
+  });
+}
+
+export async function notifyStudentDeviceRequested(requestId: string) {
+  await safely("sol·licitud de Chromebook per a alumnat", async () => {
+    const request = await db.studentDeviceRequest.findUnique({
+      where: { id: requestId },
+      include: { tutor: true },
+    });
+    if (!request) return;
+
+    const to = await coordinatorEmails(request.tutorId);
+    if (to.length === 0) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to,
+      ...buildStudentDeviceRequestedEmail({
+        tutorName: request.tutor.name ?? request.tutor.email,
+        groupName: request.groupName,
+        reason: studentDeviceReasonLabels[request.reason],
+        url: `${baseUrl}/chromebooks`,
+      }),
+    });
+  });
+}
+
+export async function notifyStudentDeviceDecision(requestId: string, approved: boolean) {
+  await safely("resposta a una sol·licitud de Chromebook", async () => {
+    const request = await db.studentDeviceRequest.findUnique({
+      where: { id: requestId },
+      include: { tutor: true, chromebook: true },
+    });
+    if (!request) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to: request.tutor.email,
+      ...buildStudentDeviceDecisionEmail({
+        studentName: `${request.studentFirstName} ${request.studentLastName}`,
+        approved,
+        deviceLabel: request.chromebook
+          ? [request.chromebook.assetTag, request.chromebook.serialNumber]
+              .filter(Boolean)
+              .join(" · ")
+          : null,
+        responseNote: request.responseNote,
+        url: `${baseUrl}/chromebooks`,
       }),
     });
   });

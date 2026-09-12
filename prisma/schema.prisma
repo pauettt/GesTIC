@@ -31,6 +31,11 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role      @default(PROFESSOR)
+  // Tutor/a de grup. No és un rol: és una característica que se suma al que ja
+  // té (un coordinador TIC també pot ser tutor d'un grup). La dona i la treu el
+  // super admin des de /usuaris, i és qui pot demanar Chromebooks en préstec
+  // per a l'alumnat del seu grup.
+  isTutor       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   lastLoginAt   DateTime?
 
@@ -48,6 +53,11 @@ model User {
   loanRequests          LoanRequest[]        @relation("LoanRequester")
   respondedLoanRequests LoanRequest[]        @relation("LoanResponder")
   keyLoans              KeyLoan[]            @relation("KeyBorrower")
+
+  studentDeviceRequests   StudentDeviceRequest[] @relation("StudentDeviceTutor")
+  respondedStudentDevices StudentDeviceRequest[] @relation("StudentDeviceResponder")
+  appointments            Appointment[]
+  openedAppointmentSlots  AppointmentSlot[]      @relation("AppointmentSlotOpener")
 }
 
 model Account {
@@ -195,9 +205,13 @@ model LoanRequest {
 // Carros de Chromebooks
 // ---------------------------------------------------------------------------
 
+// ASSIGNAT: equip del pool de préstec individual que ara té un alumne a casa.
+// És un estat a part de RESERVAT (que és de carro, per hores) perquè dura tot
+// el curs i no el pot alliberar cap horari: només es tanca amb la devolució.
 enum ChromebookStatus {
   DISPONIBLE
   RESERVAT
+  ASSIGNAT
   EN_INCIDENCIA
   BAIXA
 }
@@ -219,26 +233,34 @@ model Cart {
 }
 
 model Chromebook {
-  id           String           @id @default(cuid())
+  id                String           @id @default(cuid())
   // cartId és opcional per poder representar un Chromebook temporalment fora
   // d'un carro (taller, magatzem...) — la ubicació exacta per a aquest cas
   // (Espai) encara està per definir; de moment els Chromebooks es creen i
   // gestionen sempre dins del context d'un carro concret.
-  cartId       String?
-  spaceId      String?
-  assetTag     String           @unique
-  serialNumber String?          @unique
-  brand        String?
-  model        String?
-  status       ChromebookStatus @default(DISPONIBLE)
+  cartId            String?
+  spaceId           String?
+  assetTag          String           @unique
+  serialNumber      String?          @unique
+  brand             String?
+  model             String?
+  status            ChromebookStatus @default(DISPONIBLE)
+  // Equip del pool de préstec individual a l'alumnat. No és el mateix que tenir
+  // `cartId` buit: això vol dir "ara mateix fora del carro" (taller, magatzem)
+  // i l'equip hi ha de tornar. Els del pool no són de cap carro mai, perquè si
+  // en sortissin d'un, les reserves d'aula deixarien de quadrar sense que ningú
+  // se n'adonés fins que falten equips a classe.
+  isStudentLoanable Boolean          @default(false)
 
-  cart      Cart?            @relation(fields: [cartId], references: [id], onDelete: SetNull)
-  space     Space?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
-  incidents Incident[]
-  notes     ChromebookNote[]
+  cart            Cart?                  @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  space           Space?                 @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  incidents       Incident[]
+  notes           ChromebookNote[]
+  studentRequests StudentDeviceRequest[]
 
   @@index([cartId])
   @@index([spaceId])
+  @@index([isStudentLoanable])
 }
 
 // Historial de notes datades d'un Chromebook (avaries, reparacions, seguiment...).
@@ -277,6 +299,65 @@ model Reservation {
 
   @@index([cartId, startDate, endDate])
   @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Préstec de Chromebooks a l'alumnat, demanat pels tutors
+// ---------------------------------------------------------------------------
+
+/// Per què un alumne necessita un equip. És una llista tancada i no text lliure
+/// a propòsit: aquests motius voregen situacions familiars, i un camp obert
+/// convida a escriure-hi coses que després no caldria tenir desades enlloc. El
+/// comentari que l'acompanya serveix per matisar, i només cal a ALTRE.
+enum StudentDeviceReason {
+  SENSE_DISPOSITIU
+  DISPOSITIU_AVARIAT
+  NECESSITAT_EDUCATIVA
+  ALTRE
+}
+
+/// RETORNADA hi és des del primer dia encara que de moment no la posi ningú:
+/// afegir un valor a un enum de Postgres demana una migració a part, i el cicle
+/// sencer (demanar → decidir → tornar) ja està decidit.
+enum StudentDeviceRequestStatus {
+  PENDENT
+  APROVADA
+  REBUTJADA
+  RETORNADA
+  CANCELLADA
+}
+
+/// Sol·licitud d'un tutor perquè un alumne del seu grup tingui un Chromebook
+/// durant el curs. En aprovar-la s'hi assigna un equip del pool
+/// (`Chromebook.isStudentLoanable`), que passa a ASSIGNAT fins a la devolució.
+///
+/// Les dades de l'alumne són d'un menor i només les veuen el tutor que ha fet
+/// la sol·licitud i la coordinació TIC. No s'hi desa cap identificador acadèmic
+/// (expedient, document): amb el nom i el grup n'hi ha prou per saber de qui
+/// es parla, i tota la resta seria guardar dades per guardar-les.
+model StudentDeviceRequest {
+  id               String                     @id @default(cuid())
+  tutorId          String
+  studentFirstName String
+  studentLastName  String
+  groupName        String?
+  reason           StudentDeviceReason
+  reasonNote       String?                    @db.Text
+  status           StudentDeviceRequestStatus @default(PENDENT)
+  chromebookId     String?
+  responseNote     String?                    @db.Text
+  respondedById    String?
+  respondedAt      DateTime?
+  returnedAt       DateTime?
+  createdAt        DateTime                   @default(now())
+
+  tutor       User        @relation("StudentDeviceTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  respondedBy User?       @relation("StudentDeviceResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+  chromebook  Chromebook? @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
+
+  @@index([tutorId])
+  @@index([status])
+  @@index([chromebookId])
 }
 
 // ---------------------------------------------------------------------------
@@ -560,4 +641,50 @@ model KeyLoan {
 
   @@index([keyId, returnedAt])
   @@index([borrowerId])
+}
+
+// ---------------------------------------------------------------------------
+// Cites amb la coordinació TIC
+// ---------------------------------------------------------------------------
+
+/**
+ * Hora que la coordinació TIC obre de la seva disponibilitat perquè algú del
+ * claustre hi demani cita. Es marquen una per una damunt la graella de l'horari
+ * del centre: la gràcia és justament que només hi siguin les hores en què la
+ * coordinació hi pot ser, no totes.
+ * `startDate`/`endDate` surten de combinar el dia amb una sessió de
+ * `SCHOOL_PERIODS`, igual que les reserves de carro. `startDate` és únic: una
+ * hora, una cita.
+ */
+model AppointmentSlot {
+  id         String   @id @default(cuid())
+  startDate  DateTime @unique
+  endDate    DateTime
+  // Qui de coordinació l'ha obert. A coordinació hi som tres, i qui demana
+  // l'hora ha de saber amb qui la té.
+  openedById String?
+  createdAt  DateTime @default(now())
+
+  openedBy    User?        @relation("AppointmentSlotOpener", fields: [openedById], references: [id], onDelete: SetNull)
+  appointment Appointment?
+}
+
+/**
+ * Cita d'algú del claustre en una hora oberta. El motiu és text lliure: passar
+ * el sociograma de la tutoria és el primer ús que se li dona, però l'agenda
+ * serveix per a qualsevol cosa que s'hagi de fer amb la coordinació.
+ * Cancel·lar-la l'esborra i l'hora torna a quedar lliure; no es guarda historial
+ * de cancel·lades perquè no hi ha res a reclamar-ne després.
+ */
+model Appointment {
+  id        String   @id @default(cuid())
+  slotId    String   @unique
+  userId    String
+  purpose   String
+  createdAt DateTime @default(now())
+
+  slot AppointmentSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

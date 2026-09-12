@@ -5,20 +5,73 @@ import { LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
+import { StudentChromebookPool } from "@/components/chromebooks/student-pool";
+import {
+  ActiveStudentAssignments,
+  PendingStudentRequests,
+  TutorStudentRequests,
+} from "@/components/chromebooks/student-requests";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Chromebooks" };
 
 export default async function ChromebooksPage() {
   const user = await requireUser();
+  const admin = isAdmin(user.role);
 
-  const [carts, spaces] = await Promise.all([
-    db.cart.findMany({
-      include: { space: true, chromebooks: true },
-      orderBy: { name: "asc" },
-    }),
-    db.space.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  // Un coordinador TIC pot ser tutor també: les dues parts de la pantalla no
+  // s'exclouen, cadascuna surt si toca.
+  const requestsWithContext = { include: { tutor: true, chromebook: true } } as const;
+
+  const [carts, spaces, studentChromebooks, myRequests, pendingRequests, activeAssignments] =
+    await Promise.all([
+      db.cart.findMany({
+        include: { space: true, chromebooks: true },
+        orderBy: { name: "asc" },
+      }),
+      db.space.findMany({ orderBy: { name: "asc" } }),
+      // El pool de préstec és inventari de la coordinació: al professorat no li
+      // surt, i per això tampoc es demana.
+      admin
+        ? db.chromebook.findMany({
+            where: { isStudentLoanable: true },
+            orderBy: { assetTag: "asc" },
+            select: {
+              id: true,
+              assetTag: true,
+              serialNumber: true,
+              brand: true,
+              model: true,
+              status: true,
+            },
+          })
+        : Promise.resolve([]),
+      // Les seves i prou: les dades d'un alumne no surten a la pantalla d'un
+      // altre tutor, encara que tots dos puguin demanar equips.
+      user.isTutor
+        ? db.studentDeviceRequest.findMany({
+            where: { tutorId: user.id },
+            ...requestsWithContext,
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
+      admin
+        ? db.studentDeviceRequest.findMany({
+            where: { status: "PENDENT" },
+            ...requestsWithContext,
+            orderBy: { createdAt: "asc" },
+          })
+        : Promise.resolve([]),
+      admin
+        ? db.studentDeviceRequest.findMany({
+            where: { status: "APROVADA" },
+            ...requestsWithContext,
+            orderBy: { respondedAt: "desc" },
+          })
+        : Promise.resolve([]),
+    ]);
+
+  const availableDevices = studentChromebooks.filter((cb) => cb.status === "DISPONIBLE");
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,7 +82,7 @@ export default async function ChromebooksPage() {
             Carros de Chromebooks del centre i el seu estat.
           </p>
         </div>
-        {isAdmin(user.role) && <CartDialog spaces={spaces} />}
+        {admin && <CartDialog spaces={spaces} />}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -71,6 +124,16 @@ export default async function ChromebooksPage() {
           <p className="text-muted-foreground">Encara no hi ha cap carro de Chromebooks.</p>
         )}
       </div>
+
+      {user.isTutor && <TutorStudentRequests requests={myRequests} />}
+
+      {admin && (
+        <>
+          <PendingStudentRequests requests={pendingRequests} available={availableDevices} />
+          <ActiveStudentAssignments requests={activeAssignments} />
+          <StudentChromebookPool chromebooks={studentChromebooks} />
+        </>
+      )}
     </div>
   );
 }

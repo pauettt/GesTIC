@@ -340,6 +340,80 @@ export function buildQueryCreatedEmail({
   };
 }
 
+/**
+ * Avís a la coordinació que hi ha una sol·licitud per decidir.
+ *
+ * **No hi va el nom de l'alumne a propòsit.** Qui rep el correu el podria
+ * llegir a gesTIC igualment, però el correu surt cap a bústies de Gmail, es
+ * reenvia i es queda per sempre: per decidir cal entrar a l'aplicació, i amb
+ * saber que hi ha feina n'hi ha prou.
+ */
+export function buildStudentDeviceRequestedEmail({
+  tutorName,
+  groupName,
+  reason,
+  url,
+}: {
+  tutorName: string;
+  groupName: string | null;
+  reason: string;
+  url: string;
+}) {
+  return {
+    subject: "Nova sol·licitud de Chromebook per a un alumne/a",
+    ...layout({
+      intro: `${tutorName} ha demanat un Chromebook en préstec per a un alumne/a del seu grup.`,
+      rows: [
+        ["Tutor/a", tutorName],
+        ["Grup", groupName || "Sense indicar"],
+        ["Motiu", reason],
+      ],
+      cta: { label: "Veure la sol·licitud", url },
+      footer:
+        "Les dades de l'alumne/a són a gesTIC, no en aquest correu. Entra-hi per decidir-ho.",
+    }),
+  };
+}
+
+/**
+ * Resposta al tutor. Aquí sí que hi va el nom de l'alumne: el rep només qui
+ * l'ha escrit, i sense el nom no sabria de quina de les seves sol·licituds
+ * parlem ni quin equip ha d'anar a buscar.
+ */
+export function buildStudentDeviceDecisionEmail({
+  studentName,
+  approved,
+  deviceLabel,
+  responseNote,
+  url,
+}: {
+  studentName: string;
+  approved: boolean;
+  deviceLabel: string | null;
+  responseNote: string | null;
+  url: string;
+}) {
+  return {
+    subject: approved
+      ? `Chromebook aprovat per a ${studentName}`
+      : `Sol·licitud de Chromebook rebutjada: ${studentName}`,
+    ...layout({
+      intro: approved
+        ? `La sol·licitud de Chromebook per a ${studentName} s'ha aprovat.`
+        : `La sol·licitud de Chromebook per a ${studentName} no s'ha pogut acceptar.`,
+      rows: [
+        ["Alumne/a", studentName],
+        ...(approved && deviceLabel ? [["Equip assignat", deviceLabel] as [string, string]] : []),
+      ],
+      ...(responseNote ? { quote: { label: "Nota de la coordinació", body: responseNote } } : {}),
+      cta: { label: "Veure les meves sol·licituds", url },
+      footer: approved
+        ? "Passa per la coordinació TIC a recollir l'equip. És per a tot el curs: quan l'alumne/a el torni, avisa perquè quedi registrat."
+        : "Si les circumstàncies canvien, pots tornar a demanar-ho.",
+    }),
+  };
+}
+
 export function buildKeyNotReturnedEmail({
   keyLabel,
   deliveredAt,

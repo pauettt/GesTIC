@@ -17,20 +17,39 @@ const DEV_USERS = {
     role: "SUPER_ADMIN",
     email: "superadmin.prova@local.test",
     name: "Super admin de prova",
+    isTutor: false,
   },
-  ADMIN: { role: "ADMIN", email: "admin.prova@local.test", name: "Coordinador/a de prova" },
+  ADMIN: {
+    role: "ADMIN",
+    email: "admin.prova@local.test",
+    name: "Coordinador/a de prova",
+    isTutor: false,
+  },
   CONSERGERIA: {
     role: "CONSERGERIA",
     email: "consergeria.prova@local.test",
     name: "Consergeria de prova",
+    isTutor: false,
   },
-  PROFESSOR: { role: "PROFESSOR", email: "professor.prova@local.test", name: "Professor/a de prova" },
+  PROFESSOR: {
+    role: "PROFESSOR",
+    email: "professor.prova@local.test",
+    name: "Professor/a de prova",
+    isTutor: false,
+  },
   PROFESSOR_2: {
     role: "PROFESSOR",
     email: "professor2.prova@local.test",
     name: "Professor/a de prova 2",
+    isTutor: false,
   },
-} satisfies Record<string, { role: Role; email: string; name: string }>;
+  PROFESSOR_TUTOR: {
+    role: "PROFESSOR",
+    email: "tutor.prova@local.test",
+    name: "Tutor/a de prova",
+    isTutor: true,
+  },
+} satisfies Record<string, { role: Role; email: string; name: string; isTutor: boolean }>;
 
 export type DevUserKey = keyof typeof DEV_USERS;
 
@@ -45,11 +64,16 @@ export async function devLogin(key: DevUserKey) {
     throw new Error("El dev login no està disponible.");
   }
 
-  const { role, email, name } = DEV_USERS[key];
+  // El rol i la tutoria de cada compte manen sobre la base de dades a cada
+  // entrada: marcar el "Professor/a de prova" com a tutor des de /usuaris no
+  // s'hi queda. Per provar la part de tutors hi ha el compte "Tutor/a de
+  // prova", i així el professorat de prova segueix servint per comprovar que a
+  // qui no és tutor no li surt res.
+  const { role, email, name, isTutor } = DEV_USERS[key];
   const user = await db.user.upsert({
     where: { email },
-    update: { role },
-    create: { email, name, role },
+    update: { role, isTutor },
+    create: { email, name, role, isTutor },
   });
 
   const sessionToken = randomBytes(32).toString("hex");

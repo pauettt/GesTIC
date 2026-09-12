@@ -59,6 +59,19 @@ export async function requireKeyAccess() {
   return user;
 }
 
+/**
+ * Tutor/a de grup: qui pot demanar Chromebooks per a l'alumnat. La coordinació
+ * TIC no hi entra pel fet de ser-ho —decideix les sol·licituds, no en fa— però
+ * un coordinador que també sigui tutor sí que hi és, perquè porta la marca.
+ */
+export async function requireTutor() {
+  const user = await requireUser();
+  if (!user.isTutor) {
+    redirect("/");
+  }
+  return user;
+}
+
 export async function requireSuperAdmin() {
   const user = await requireUser();
   if (!isSuperAdmin(user.role)) {

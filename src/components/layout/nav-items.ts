@@ -2,6 +2,7 @@ import type { Role } from "@prisma/client";
 import type { Route } from "next";
 import {
   BookOpenIcon,
+  CalendarCheckIcon,
   GraduationCapIcon,
   HelpCircleIcon,
   HomeIcon,
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/chromebooks", label: "Chromebooks", icon: LaptopIcon },
   { href: "/espais", label: "Aules i espais", icon: MapPinIcon, adminOnly: true },
   { href: "/formacio", label: "Formació", icon: GraduationCapIcon },
+  { href: "/cites", label: "Cites", icon: CalendarCheckIcon },
   { href: "/dubtes", label: "Dubtes freqüents", icon: HelpCircleIcon },
   { href: "/consultes", label: "Consultes", icon: MessageCircleQuestionIcon },
   { href: "/tutorials", label: "Tutorials", icon: BookOpenIcon },

@@ -23,6 +23,9 @@ Ordre acordat el 2026-09-12. La idea és tancar-ho de dalt a baix, no tot alhora
    encara canvia és feina per llençar.
 
 Els Dubtes freqüents i els Tutorials no són codi: són contingut per omplir.
+El pla per fer-ho —les cinc categories, el format d'article, el camp
+`sourceUrl` i el script d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md),
+acordat el 2026-09-12. Hi consta també per què s'ha descartat el bot.
 
 ---
 
@@ -134,7 +137,7 @@ que va entrar amb la secció de consergeria el 2026-09-11: `keyLoan` només es
 consulta des de `/consergeria`.
 
 ### 10. Netejar les dades de prova abans d'ensenyar-ho
-No és només esborrar incidències. Hi ha els **cinc usuaris de prova**
+No és només esborrar incidències. Hi ha els **sis usuaris de prova**
 (`...prova@local.test`), que sortiran al gestor d'usuaris com si fossin
 professorat de debò; les seves sessions; reserves, préstecs de claus i
 consultes de prova; els tres conserges d'exemple (Sergio, Marta, Joan) i les
@@ -177,6 +180,31 @@ fitxa de l'equip. Només afecta dades anteriors al canvi.
 `handleUpload` a `/api/blob/upload` declara un `onUploadCompleted` buit, i en
 local Vercel no pot determinar-ne la `callbackUrl`: cada pujada deixa un avís
 al log. No trenca res —el fitxer puja igual— però embruta la sortida.
+
+### 20. Els equips de préstec a l'alumnat no surten al formulari d'incidències
+El formulari d'Incidències → Nova ofereix Chromebooks per carro
+(`db.cart.findMany({ include: { chromebooks } })`), i els del pool de préstec no
+són de cap carro: no hi ha manera de triar-los. Pel QR sí que es pot
+(`/q/chromebook/[id]` va per identificador), així que un equip amb etiqueta
+queda cobert; la resta, no. Va aparèixer el 2026-09-12 amb el pool de préstec i
+no es va tocar llavors perquè primer cal decidir des d'on es reporta: si des de
+la fitxa de l'equip, si afegint una tercera secció al formulari, o si és el
+tutor qui ho fa des de la seva pantalla.
+
+### 21. Dades de l'alumnat: quan s'esborren i qui ho fa
+Amb el préstec de Chromebooks a l'alumnat, gesTIC passarà a desar **nom i
+cognoms de menors** i el motiu pel qual se'ls deixa un equip. Fins ara només hi
+havia dades del professorat. Queda per decidir —i no és una decisió tècnica—
+**quan s'esborren aquestes fitxes a fi de curs i qui les esborra**. Lliga amb el
+§8: el dia que s'hi pugin fotos o documents amb noms d'alumnes, els blobs
+públics deixen de ser assumibles.
+
+### 22. La coordinació no té on veure els préstecs tancats
+Quan es registra una devolució, la fitxa passa a RETORNADA i desapareix de la
+pantalla de la coordinació: qui la conserva és el tutor, a la seva targeta. Amb
+això no es pot respondre "qui tenia aquest equip el curs passat". No s'ha fet
+cap pantalla d'històric a propòsit, perquè xoca de ple amb el §21: abans de
+guardar historial de préstecs de menors cal haver decidit quan s'esborra.
 
 ---
 

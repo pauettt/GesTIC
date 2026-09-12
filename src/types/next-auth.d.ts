@@ -6,16 +6,19 @@ declare module "next-auth" {
     user: {
       id: string;
       role: Role;
+      isTutor: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: Role;
+    isTutor: boolean;
   }
 }
 
 declare module "@auth/core/adapters" {
   interface AdapterUser {
     role: Role;
+    isTutor: boolean;
   }
 }

@@ -16,6 +16,7 @@ const LIMITS = {
   incident: 10,
   loanRequest: 10,
   query: 10,
+  studentDeviceRequest: 10,
 } as const;
 
 export type RateLimitedAction = keyof typeof LIMITS;
@@ -24,6 +25,8 @@ const MESSAGES: Record<RateLimitedAction, string> = {
   incident: "Has creat massa incidències en poca estona. Espera una mica o parla amb la coordinació TIC.",
   loanRequest: "Has fet massa sol·licituds de préstec seguides. Espera una mica abans de fer-ne una altra.",
   query: "Has obert massa consultes seguides. Espera una mica abans de fer-ne una altra.",
+  studentDeviceRequest:
+    "Has fet massa sol·licituds de Chromebook seguides. Espera una mica abans de fer-ne una altra.",
 };
 
 /** Retorna un missatge d'error si s'ha superat el límit, o `null` si es pot continuar. */
@@ -39,7 +42,9 @@ export async function checkRateLimit(
       ? await db.incident.count({ where: { ...where, reporterId: userId } })
       : action === "loanRequest"
         ? await db.loanRequest.count({ where: { ...where, requesterId: userId } })
-        : await db.query.count({ where: { ...where, authorId: userId } });
+        : action === "studentDeviceRequest"
+          ? await db.studentDeviceRequest.count({ where: { ...where, tutorId: userId } })
+          : await db.query.count({ where: { ...where, authorId: userId } });
 
   return recent >= LIMITS[action] ? MESSAGES[action] : null;
 }

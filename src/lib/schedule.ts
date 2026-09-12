@@ -1,3 +1,5 @@
+import { addDays, madridDateKey, startOfWeek, zonedDateTime } from "@/lib/date";
+
 export type SchoolPeriod = {
   id: number;
   label: string;
@@ -35,4 +37,20 @@ export function isPastPeriod(periodEnd: Date, now: Date = new Date()) {
 
 export function getPeriodById(id: number): SchoolPeriod | undefined {
   return SCHOOL_PERIODS.find((period) => period.id === id);
+}
+
+/**
+ * Setmana que ha de sortir per defecte en una graella horària.
+ *
+ * Si de la setmana en curs ja no en queda cap hora viva —un dissabte, o
+ * divendres a les tres— s'obre damunt la següent. Si no, el primer que veu qui
+ * hi entra és una graella sencera apagada on no es pot clicar res, i sembla que
+ * l'aplicació estigui trencada o que li faltin permisos.
+ */
+export function defaultWeekStart(now: Date = new Date()): Date {
+  const weekStart = startOfWeek(now);
+  const friday = addDays(weekStart, 4);
+  const lastPeriod = SCHOOL_PERIODS[SCHOOL_PERIODS.length - 1];
+  const weekEnd = zonedDateTime(madridDateKey(friday), lastPeriod.end);
+  return isPastPeriod(weekEnd, now) ? addDays(weekStart, 7) : weekStart;
 }

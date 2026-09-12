@@ -36,7 +36,15 @@ export default async function QuickChromebookReportPage({
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Chromebook {chromebook.assetTag}</CardTitle>
-          <CardDescription>{chromebook.cart?.name ?? "Sense carro assignat"}</CardDescription>
+          <CardDescription>
+            {/* Els equips del pool no són de cap carro: dir-ne "sense carro" faria
+                pensar que s'ha perdut. I l'estat que hi ha a sota diu "Assignat a
+                alumnat" sense cap nom, que és el que ha de veure qui escanegi
+                l'etiqueta sense ser ni el tutor ni la coordinació. */}
+            {chromebook.isStudentLoanable
+              ? "Equip de préstec a l'alumnat"
+              : (chromebook.cart?.name ?? "Sense carro assignat")}
+          </CardDescription>
           <div className="mt-1 flex justify-center">
             <Badge variant={chromebookStatusVariants[chromebook.status]}>
               {chromebookStatusLabels[chromebook.status]}
