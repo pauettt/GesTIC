@@ -191,13 +191,21 @@ no es va tocar llavors perquè primer cal decidir des d'on es reporta: si des de
 la fitxa de l'equip, si afegint una tercera secció al formulari, o si és el
 tutor qui ho fa des de la seva pantalla.
 
-### 21. Dades de l'alumnat: quan s'esborren i qui ho fa
-Amb el préstec de Chromebooks a l'alumnat, gesTIC passarà a desar **nom i
-cognoms de menors** i el motiu pel qual se'ls deixa un equip. Fins ara només hi
-havia dades del professorat. Queda per decidir —i no és una decisió tècnica—
-**quan s'esborren aquestes fitxes a fi de curs i qui les esborra**. Lliga amb el
-§8: el dia que s'hi pugin fotos o documents amb noms d'alumnes, els blobs
-públics deixen de ser assumibles.
+### 21. Dades de l'alumnat: buidar-les depèn que algú se'n recordi
+Amb el préstec de Chromebooks a l'alumnat, gesTIC desa **nom i cognoms de
+menors** i el motiu pel qual se'ls deixa un equip. Fins ara només hi havia dades
+del professorat.
+
+**Decidit el 2026-09-12**: es buiden al juliol, quan tornen els equips, o
+puntualment al setembre del curs següent, i ho poden fer tant l'administrador
+com la coordinació TIC. Hi ha el botó "Buida-les" a /chromebooks, que només surt
+quan queda alguna sol·licitud tancada i esborra les retornades, les rebutjades i
+les retirades; les pendents i els préstecs actius no els toca.
+
+El que queda obert no és el com, sinó que **és manual**: si ningú no hi entra al
+juliol, els noms s'hi queden. No hi ha avís ni feina programada que ho recordi.
+Lliga amb el §8: el dia que s'hi pugin fotos o documents amb noms d'alumnes, els
+blobs públics deixen de ser assumibles.
 
 ### 22. La coordinació no té on veure els préstecs tancats
 Quan es registra una devolució, la fitxa passa a RETORNADA i desapareix de la

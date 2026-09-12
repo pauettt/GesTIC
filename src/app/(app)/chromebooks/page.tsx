@@ -5,6 +5,7 @@ import { LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
+import { PurgeClosedRequests } from "@/components/chromebooks/purge-closed-requests";
 import { StudentChromebookPool } from "@/components/chromebooks/student-pool";
 import {
   ActiveStudentAssignments,
@@ -23,8 +24,15 @@ export default async function ChromebooksPage() {
   // s'exclouen, cadascuna surt si toca.
   const requestsWithContext = { include: { tutor: true, chromebook: true } } as const;
 
-  const [carts, spaces, studentChromebooks, myRequests, pendingRequests, activeAssignments] =
-    await Promise.all([
+  const [
+    carts,
+    spaces,
+    studentChromebooks,
+    myRequests,
+    pendingRequests,
+    activeAssignments,
+    closedRequests,
+  ] = await Promise.all([
       db.cart.findMany({
         include: { space: true, chromebooks: true },
         orderBy: { name: "asc" },
@@ -69,6 +77,13 @@ export default async function ChromebooksPage() {
             orderBy: { respondedAt: "desc" },
           })
         : Promise.resolve([]),
+      // Les tancades no es llisten enlloc: només se'n compta quantes queden per
+      // buidar a fi de curs.
+      admin
+        ? db.studentDeviceRequest.count({
+            where: { status: { in: ["RETORNADA", "REBUTJADA", "CANCELLADA"] } },
+          })
+        : Promise.resolve(0),
     ]);
 
   const availableDevices = studentChromebooks.filter((cb) => cb.status === "DISPONIBLE");
@@ -132,6 +147,7 @@ export default async function ChromebooksPage() {
           <PendingStudentRequests requests={pendingRequests} available={availableDevices} />
           <ActiveStudentAssignments requests={activeAssignments} />
           <StudentChromebookPool chromebooks={studentChromebooks} />
+          <PurgeClosedRequests count={closedRequests} />
         </>
       )}
     </div>

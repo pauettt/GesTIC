@@ -219,3 +219,27 @@ export async function markStudentDeviceReturned(input: unknown): Promise<ActionR
   revalidatePath("/chromebooks");
   return { success: true };
 }
+
+/**
+ * Buida les sol·licituds tancades: retornades, rebutjades i retirades. Les
+ * pendents i les actives no es toquen mai, que són feina viva.
+ *
+ * Existeix perquè les dades que hi ha aquí són noms de menors i no s'han de
+ * quedar per sempre. La decisió del centre (2026-09-12) és fer-ho al juliol,
+ * quan tornen els equips, o al setembre següent, i que ho pugui fer tant
+ * l'administrador com la coordinació TIC. Si no fos un botó, buidar-ho voldria
+ * dir entrar a la base de dades, i llavors no ho faria ningú.
+ *
+ * Els equips i el seu historial no en depenen: el Chromebook segueix al pool
+ * amb les seves notes i incidències. El que marxa és qui el va tenir.
+ */
+export async function purgeClosedStudentDeviceRequests(): Promise<ActionResult> {
+  await requireAdmin();
+
+  await db.studentDeviceRequest.deleteMany({
+    where: { status: { in: ["RETORNADA", "REBUTJADA", "CANCELLADA"] } },
+  });
+
+  revalidatePath("/chromebooks");
+  return { success: true };
+}

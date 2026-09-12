@@ -10,6 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useServerAction } from "@/hooks/use-server-action";
 import type { SchoolPeriod } from "@/lib/schedule";
 
+// Només el que la casella ensenya. Aquestes dades viatgen al navegador de
+// tothom qui obre la graella, així que aquí no hi entra la fila d'usuari
+// sencera —correu, rol, marca de tutoria— sinó el nom ja resolt.
 export type SlotCellSlot = {
   id: string;
   openedByName: string | null;
@@ -17,7 +20,7 @@ export type SlotCellSlot = {
     id: string;
     purpose: string;
     userId: string;
-    user: { name: string | null; email: string };
+    userName: string;
   } | null;
 };
 
@@ -67,7 +70,7 @@ export function SlotCell({
       <div className={isOwn ? "rounded-md bg-primary/15 p-1.5" : "rounded-md bg-muted p-1.5"}>
         <div className="flex items-center justify-between gap-1">
           <span className="truncate font-medium">
-            {isOwn ? "La teva cita" : (appointment.user.name ?? appointment.user.email)}
+            {isOwn ? "La teva cita" : appointment.userName}
           </span>
           {(isOwn || canManage) && !isPast && (
             <CancelAppointmentButton appointmentId={appointment.id} />

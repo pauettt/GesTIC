@@ -25,7 +25,19 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
   const [slots, upcoming] = await Promise.all([
     db.appointmentSlot.findMany({
       where: { startDate: { gte: weekStart, lt: weekEnd } },
-      include: { openedBy: true, appointment: { include: { user: true } } },
+      select: {
+        id: true,
+        startDate: true,
+        openedBy: { select: { name: true, email: true } },
+        appointment: {
+          select: {
+            id: true,
+            purpose: true,
+            userId: true,
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
       orderBy: { startDate: "asc" },
     }),
     // La coordinació hi veu la seva agenda sencera —és amb qui es demana hora—;
@@ -33,7 +45,14 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
     // mes ha de sortir encara que estiguis mirant la setmana d'ara.
     db.appointment.findMany({
       where: { slot: { endDate: { gt: now } }, ...(canManage ? {} : { userId: user.id }) },
-      include: { slot: { include: { openedBy: true } }, user: true },
+      select: {
+        id: true,
+        purpose: true,
+        slot: {
+          select: { startDate: true, openedBy: { select: { name: true, email: true } } },
+        },
+        user: { select: { name: true, email: true } },
+      },
       orderBy: { slot: { startDate: "asc" } },
       take: 10,
     }),
@@ -89,8 +108,17 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
       <AppointmentWeek
         weekStart={weekStart}
         slots={slots.map((slot) => ({
-          ...slot,
+          id: slot.id,
+          startDate: slot.startDate,
           openedByName: slot.openedBy ? (slot.openedBy.name ?? slot.openedBy.email) : null,
+          appointment: slot.appointment
+            ? {
+                id: slot.appointment.id,
+                purpose: slot.appointment.purpose,
+                userId: slot.appointment.userId,
+                userName: slot.appointment.user.name ?? slot.appointment.user.email,
+              }
+            : null,
         }))}
         currentUserId={user.id}
         canManage={canManage}
