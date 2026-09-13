@@ -2,6 +2,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import {
   BookOpenIcon,
+  CalendarCheckIcon,
   GraduationCapIcon,
   HandCoinsIcon,
   HelpCircleIcon,
@@ -13,11 +14,11 @@ import {
 } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime, formatDateTimeFull } from "@/lib/date";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { incidentStatusLabels, incidentStatusVariants } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MODULE_CARDS: Array<{
@@ -43,6 +44,12 @@ const MODULE_CARDS: Array<{
     title: "Chromebooks",
     description: "Reserva carros de Chromebooks i consulta'n l'estat.",
     icon: LaptopIcon,
+  },
+  {
+    href: "/cites",
+    title: "Cites",
+    description: "Demana hora amb la coordinació TIC per al que necessitis.",
+    icon: CalendarCheckIcon,
   },
   {
     href: "/formacio",
@@ -75,22 +82,52 @@ export const metadata = { title: "Inici" };
 export default async function HomePage() {
   const user = await requireUser();
   const coordinator = isAdmin(user.role);
+  const now = new Date();
 
-  // El que li passa a aquesta persona ara mateix: les seves incidències obertes
-  // i el material que té en préstec.
-  const [myIncidents, myLoans] = await Promise.all([
-    db.incident.findMany({
-      where: { reporterId: user.id, status: { in: ["OBERTA", "EN_CURS"] } },
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    }),
-    db.loanRequest.findMany({
-      where: { requesterId: user.id, status: { in: ["PENDENT", "APROVADA"] } },
-      include: { item: true },
-      orderBy: { startDate: "asc" },
-      take: 4,
-    }),
-  ]);
+  // El que li passa a aquesta persona ara mateix: les seves incidències obertes,
+  // el material i les claus que té, les cites que li queden i, si és tutor/a,
+  // com van els Chromebooks que ha demanat per a l'alumnat.
+  const [myIncidents, myLoans, myKeys, myAppointments, pendingStudentRequests, assignedStudentDevices] =
+    await Promise.all([
+      db.incident.findMany({
+        where: { reporterId: user.id, status: { in: ["OBERTA", "EN_CURS"] } },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+      }),
+      db.loanRequest.findMany({
+        where: { requesterId: user.id, status: { in: ["PENDENT", "APROVADA"] } },
+        include: { item: true },
+        orderBy: { startDate: "asc" },
+        take: 4,
+      }),
+      // Consergeria reclama les claus per correu: qui el rep ha de poder veure
+      // aquí quina clau té i des de quan.
+      db.keyLoan.findMany({
+        where: { borrowerId: user.id, returnedAt: null },
+        include: { key: { select: { number: true, name: true } } },
+        orderBy: { deliveredAt: "asc" },
+      }),
+      db.appointment.findMany({
+        where: { userId: user.id, slot: { endDate: { gt: now } } },
+        select: { id: true, purpose: true, slot: { select: { startDate: true } } },
+        orderBy: { slot: { startDate: "asc" } },
+        take: 4,
+      }),
+      user.isTutor
+        ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "PENDENT" } })
+        : Promise.resolve(0),
+      user.isTutor
+        ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "APROVADA" } })
+        : Promise.resolve(0),
+    ]);
+
+  const hasStudentDevices = pendingStudentRequests + assignedStudentDevices > 0;
+  const hasSomethingOpen =
+    myIncidents.length > 0 ||
+    myLoans.length > 0 ||
+    myKeys.length > 0 ||
+    myAppointments.length > 0 ||
+    hasStudentDevices;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -106,22 +143,22 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button nativeButton={false} render={<Link href="/incidencies/nova" />}>
+          <ButtonLink href="/incidencies/nova">
             <PlusIcon className="size-4" />
             Nova incidència
-          </Button>
-          <Button variant="outline" nativeButton={false} render={<Link href="/chromebooks" />}>
+          </ButtonLink>
+          <ButtonLink variant="outline" href="/chromebooks">
             <LaptopIcon className="size-4" />
             Reservar un carro
-          </Button>
-          <Button variant="outline" nativeButton={false} render={<Link href="/inventari" />}>
+          </ButtonLink>
+          <ButtonLink variant="outline" href="/inventari">
             <HandCoinsIcon className="size-4" />
             Demanar material
-          </Button>
+          </ButtonLink>
         </div>
       </div>
 
-      {(myIncidents.length > 0 || myLoans.length > 0) && (
+      {hasSomethingOpen && (
         <div className="grid gap-4 sm:grid-cols-2">
           {myIncidents.length > 0 && (
             <Card>
@@ -173,6 +210,79 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
+            </Card>
+          )}
+
+          {myKeys.length > 0 && (
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="text-base">Claus que tens</CardTitle>
+                <CardDescription>Torna-les al taulell de consergeria quan acabis.</CardDescription>
+              </CardHeader>
+              <ul className="flex flex-col divide-y px-(--card-spacing)">
+                {myKeys.map((loan) => (
+                  <li key={loan.id} className="py-2">
+                    <span className="block truncate text-sm font-medium">
+                      {loan.key.number} — {loan.key.name}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      Des del {formatDateTime(loan.deliveredAt)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {myAppointments.length > 0 && (
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="text-base">Les meves cites</CardTitle>
+              </CardHeader>
+              <ul className="flex flex-col divide-y px-(--card-spacing)">
+                {myAppointments.map((appointment) => (
+                  <li key={appointment.id}>
+                    <Link
+                      href="/cites"
+                      className="-mx-2 block rounded-md px-2 py-2 hover:bg-muted"
+                    >
+                      <span className="block truncate text-sm font-medium">{appointment.purpose}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatDateTimeFull(appointment.slot.startDate)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {hasStudentDevices && (
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="text-base">Chromebooks per a l&apos;alumnat</CardTitle>
+              </CardHeader>
+              <Link
+                href="/chromebooks"
+                className="mx-(--card-spacing) -mt-2 mb-1 flex flex-col gap-0.5 rounded-md px-2 py-2 text-sm hover:bg-muted"
+              >
+                {pendingStudentRequests > 0 && (
+                  <span>
+                    {pendingStudentRequests}{" "}
+                    {pendingStudentRequests === 1
+                      ? "sol·licitud pendent de resposta"
+                      : "sol·licituds pendents de resposta"}
+                  </span>
+                )}
+                {assignedStudentDevices > 0 && (
+                  <span>
+                    {assignedStudentDevices}{" "}
+                    {assignedStudentDevices === 1
+                      ? "equip assignat al teu alumnat"
+                      : "equips assignats al teu alumnat"}
+                  </span>
+                )}
+              </Link>
             </Card>
           )}
         </div>

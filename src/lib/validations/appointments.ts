@@ -1,9 +1,11 @@
 import { z } from "zod";
 
+import { isDateKey } from "@/lib/validations/common";
+
 // L'hora s'identifica pel dia i la sessió de l'horari del centre, no per una
 // hora lliure: així no se'n poden obrir de fora de l'horari de l'institut.
 export const openAppointmentSlotSchema = z.object({
-  date: z.string().min(1, "Indica la data"),
+  date: z.string().min(1, "Indica la data").refine(isDateKey, "La data no és vàlida"),
   periodId: z.number().int(),
 });
 

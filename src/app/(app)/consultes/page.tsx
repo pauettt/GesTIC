@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
@@ -6,7 +7,7 @@ import { formatDate } from "@/lib/date";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { queryStatusLabels, queryStatusVariants } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import {
   Table,
   TableBody,
@@ -52,25 +53,25 @@ export default async function ConsultesPage({ searchParams }: PageProps<"/consul
               : "Les consultes que has fet."}
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/consultes/nova" />}>
+        <ButtonLink href="/consultes/nova">
           <PlusIcon className="size-4" />
           Fes una pregunta
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {STATUS_FILTERS.map((filter) => (
-          <Button
+          <ButtonLink
             key={filter.value}
             size="sm"
             variant={statusFilter === filter.value ? "default" : "outline"}
-            nativeButton={false}
-            render={
-              <Link href={filter.value === "TOTES" ? "/consultes" : `/consultes?status=${filter.value}`} />
+            current={statusFilter === filter.value}
+            href={
+              filter.value === "TOTES" ? "/consultes" : (`/consultes?status=${filter.value}` as Route)
             }
           >
             {filter.label}
-          </Button>
+          </ButtonLink>
         ))}
       </div>
 

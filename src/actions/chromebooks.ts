@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { syncChromebookStatus } from "@/lib/chromebook-status";
 import { zonedDateTime } from "@/lib/date";
-import { getPeriodById, isPastPeriod } from "@/lib/schedule";
+import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
   addChromebookNoteSchema,
@@ -13,6 +14,7 @@ import {
   deleteCartSchema,
   deleteChromebookNoteSchema,
   deleteChromebookSchema,
+  setChromebookRetiredSchema,
   upsertCartSchema,
   upsertChromebookSchema,
   upsertStudentChromebookSchema,
@@ -55,12 +57,13 @@ export async function deleteCart(input: unknown): Promise<ActionResult> {
 
   // Els Chromebooks només es gestionen des de la fitxa del seu carro, així que
   // esborrar-ne un amb equips a dins els deixaria sense cap pantalla on
-  // aparèixer: desapareixerien del sistema sense avisar.
+  // aparèixer: desapareixerien del sistema sense avisar. Hi compten també els
+  // donats de baixa, que segueixen al carro amb el seu historial.
   const chromebooks = await db.chromebook.count({ where: { cartId: parsed.data.id } });
   if (chromebooks > 0) {
     return {
       success: false,
-      error: `Aquest carro encara té ${chromebooks} Chromebook${chromebooks === 1 ? "" : "s"}. Mou-los a un altre carro o dona'ls de baixa abans d'esborrar-lo.`,
+      error: `Aquest carro encara té ${chromebooks} Chromebook${chromebooks === 1 ? "" : "s"}, comptant els donats de baixa. Mou-los a un altre carro o esborra'ls abans d'esborrar-lo.`,
     };
   }
 
@@ -81,25 +84,38 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
     serialNumber: serialNumber || null,
     brand: brand || null,
     model: model || null,
+    cartId,
   };
 
+  // El carro ha d'existir: en una alta és on va a parar l'equip, i en una
+  // edició canviar-lo és la manera de moure l'equip a un altre carro.
+  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true } });
+  if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+
+  let previousCartId: string | null = null;
   try {
     if (id) {
       // Els equips del pool de préstec a l'alumnat no es toquen des d'aquí:
       // aquest formulari és el del carro i els hi acabaria ficant.
       const existing = await db.chromebook.findUnique({ where: { id } });
-      if (existing?.isStudentLoanable) {
+      if (!existing) return { success: false, error: "El Chromebook no existeix" };
+      if (existing.isStudentLoanable) {
         return { success: false, error: "Aquest Chromebook és del pool de préstec a l'alumnat" };
       }
+      previousCartId = existing.cartId;
       await db.chromebook.update({ where: { id }, data: payload });
     } else {
-      await db.chromebook.create({ data: { ...payload, cartId } });
+      await db.chromebook.create({ data: payload });
     }
   } catch {
     return { success: false, error: "Ja existeix un Chromebook amb aquest identificador o número de sèrie" };
   }
 
   revalidatePath(`/chromebooks/${cartId}`);
+  if (previousCartId && previousCartId !== cartId) {
+    revalidatePath(`/chromebooks/${previousCartId}`);
+  }
+  revalidatePath("/chromebooks");
   return { success: true };
 }
 
@@ -145,6 +161,14 @@ export async function upsertStudentChromebook(input: unknown): Promise<ActionRes
   return { success: true };
 }
 
+/** Compta si un alumne té ara mateix aquest equip a casa. */
+async function isAssignedToStudent(chromebookId: string) {
+  const active = await db.studentDeviceRequest.count({
+    where: { chromebookId, status: "APROVADA" },
+  });
+  return active > 0;
+}
+
 export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = deleteChromebookSchema.safeParse(input);
@@ -153,8 +177,10 @@ export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   const existing = await db.chromebook.findUnique({ where: { id: parsed.data.id } });
   if (!existing) return { success: false, error: "El Chromebook no existeix" };
   // Un equip assignat és a casa d'un alumne: esborrar-lo deixaria el préstec
-  // penjant i ningú sabria quin aparell s'ha de reclamar.
-  if (existing.status === "ASSIGNAT") {
+  // penjant i ningú sabria quin aparell s'ha de reclamar. Es mira la
+  // sol·licitud i no l'estat, perquè amb una incidència oberta l'equip surt com
+  // a EN_INCIDENCIA però l'alumne el continua tenint.
+  if (await isAssignedToStudent(existing.id)) {
     return {
       success: false,
       error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
@@ -162,6 +188,42 @@ export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   }
 
   const chromebook = await db.chromebook.delete({ where: { id: parsed.data.id } });
+  revalidatePath(chromebook.cartId ? `/chromebooks/${chromebook.cartId}` : "/chromebooks");
+  return { success: true };
+}
+
+/**
+ * Dona de baixa un Chromebook o el torna a activar. Retirar-lo en comptes
+ * d'esborrar-lo conserva les notes i l'historial d'incidències, que és el que
+ * justifica demanar-ne un de nou.
+ *
+ * Tornar-lo a activar no el deixa sempre DISPONIBLE: l'estat es recalcula, i si
+ * té alguna incidència oberta torna com a EN_INCIDENCIA.
+ */
+export async function setChromebookRetired(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = setChromebookRetiredSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { id, retired } = parsed.data;
+
+  const chromebook = await db.chromebook.findUnique({ where: { id } });
+  if (!chromebook) return { success: false, error: "El Chromebook no existeix" };
+
+  if (retired) {
+    if (await isAssignedToStudent(id)) {
+      return {
+        success: false,
+        error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+      };
+    }
+    await db.chromebook.update({ where: { id }, data: { status: "BAIXA" } });
+  } else if (chromebook.status === "BAIXA") {
+    await db.$transaction(async (tx) => {
+      await tx.chromebook.update({ where: { id }, data: { status: "DISPONIBLE" } });
+      await syncChromebookStatus(tx, id);
+    });
+  }
+
   revalidatePath(chromebook.cartId ? `/chromebooks/${chromebook.cartId}` : "/chromebooks");
   return { success: true };
 }
@@ -204,17 +266,28 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
   }
   const { cartId, purpose, date, periodIds } = parsed.data;
 
-  const periods = periodIds.map((id) => {
-    const period = getPeriodById(id);
-    if (!period) throw new Error("Sessió no vàlida");
-    return { startDate: zonedDateTime(date, period.start), endDate: zonedDateTime(date, period.end) };
-  });
+  if (!isSchoolDay(date)) {
+    return { success: false, error: "Només es pot reservar de dilluns a divendres" };
+  }
+
+  const periods: { startDate: Date; endDate: Date }[] = [];
+  for (const periodId of periodIds) {
+    const period = getPeriodById(periodId);
+    if (!period) return { success: false, error: "Aquesta sessió no existeix a l'horari del centre" };
+    periods.push({
+      startDate: zonedDateTime(date, period.start),
+      endDate: zonedDateTime(date, period.end),
+    });
+  }
 
   // Una sessió que JA HA ACABAT no es pot reservar. Les que estan en curs sí:
   // el cas real és necessitar el carro ara mateix, a mitja classe.
   if (periods.some(({ endDate }) => isPastPeriod(endDate))) {
     return { success: false, error: "No es poden reservar sessions que ja han passat" };
   }
+
+  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true } });
+  if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
 
   try {
     await db.$transaction(async (tx) => {
@@ -261,6 +334,9 @@ export async function cancelReservation(input: unknown): Promise<ActionResult> {
   if (!reservation) return { success: false, error: "La reserva no existeix" };
   if (!isAdmin(user.role) && reservation.userId !== user.id) {
     return { success: false, error: "No pots cancel·lar aquesta reserva" };
+  }
+  if (reservation.status !== "CONFIRMADA") {
+    return { success: false, error: "Aquesta reserva ja no està confirmada" };
   }
 
   await db.reservation.update({ where: { id: parsed.data.id }, data: { status: "CANCELLADA" } });

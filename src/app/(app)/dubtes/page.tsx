@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ChevronRightIcon, MessageCircleQuestionIcon } from "lucide-react";
 
 import { isAdmin, requireUser } from "@/lib/permissions";
@@ -6,7 +5,7 @@ import { db } from "@/lib/db";
 import { deleteFaq } from "@/actions/faq";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { FaqDialog } from "@/components/faq/faq-dialog";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 
 export const metadata = { title: "Dubtes freqüents" };
 
@@ -80,10 +79,10 @@ export default async function DubtesPage() {
 
       <div className="rounded-lg border bg-background p-4 text-center">
         <p className="mb-2 text-sm text-muted-foreground">No trobes la resposta que busques?</p>
-        <Button variant="outline" nativeButton={false} render={<Link href="/consultes/nova" />}>
+        <ButtonLink variant="outline" href="/consultes/nova">
           <MessageCircleQuestionIcon className="size-4" />
           Fes una pregunta
-        </Button>
+        </ButtonLink>
       </div>
     </div>
   );

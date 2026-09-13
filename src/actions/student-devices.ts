@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { syncChromebookStatus } from "@/lib/chromebook-status";
+import { CLOSED_STUDENT_REQUEST_STATUSES } from "@/lib/panell-data";
 import {
   notifyStudentDeviceDecision,
   notifyStudentDeviceRequested,
@@ -199,13 +202,11 @@ export async function markStudentDeviceReturned(input: unknown): Promise<ActionR
       });
       if (returned.count === 0) throw new Error(ALREADY_RESOLVED);
 
-      // L'equip només es torna a obrir si encara consta assignat: si mentrestant
-      // ha anat a parar a una incidència o a baixa, això no ho ha de desfer.
+      // L'estat es recalcula en comptes de posar DISPONIBLE: si l'equip torna
+      // amb una incidència oberta, o l'han donat de baixa mentrestant, s'ha de
+      // quedar com està.
       if (request.chromebookId) {
-        await tx.chromebook.updateMany({
-          where: { id: request.chromebookId, status: "ASSIGNAT" },
-          data: { status: "DISPONIBLE" },
-        });
+        await syncChromebookStatus(tx, request.chromebookId);
       }
     });
   } catch (error) {
@@ -234,11 +235,20 @@ export async function markStudentDeviceReturned(input: unknown): Promise<ActionR
  * amb les seves notes i incidències. El que marxa és qui el va tenir.
  */
 export async function purgeClosedStudentDeviceRequests(): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireAdmin();
 
-  await db.studentDeviceRequest.deleteMany({
-    where: { status: { in: ["RETORNADA", "REBUTJADA", "CANCELLADA"] } },
+  const purged = await db.studentDeviceRequest.deleteMany({
+    where: { status: { in: [...CLOSED_STUDENT_REQUEST_STATUSES] } },
   });
+
+  // Només el recompte: el registre dura més que aquestes dades i no ha de
+  // guardar cap nom.
+  await recordAudit(
+    user.id,
+    "student-requests.purge",
+    `Buidades ${purged.count} sol·licituds tancades de Chromebooks d'alumnat`,
+  );
+  revalidatePath("/administracio");
 
   revalidatePath("/chromebooks");
   return { success: true };

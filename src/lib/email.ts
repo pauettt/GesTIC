@@ -45,8 +45,14 @@ export async function sendEmail({
   text: string;
   html: string;
 }): Promise<EmailResult> {
-  const recipients = Array.isArray(to) ? to : [to];
-  if (recipients.length === 0) return { sent: false, reason: "Cap destinatari" };
+  // Els comptes del dev login porten adreces @….test, un domini reservat que no
+  // pot rebre correu (RFC 2606). Mentre desenvolupament i producció comparteixin
+  // base de dades surten a les llistes de coordinació i de professorat, i sense
+  // aquest filtre cada avís hi rebotaria i tornaria a la bústia d'enviament.
+  const recipients = (Array.isArray(to) ? to : [to]).filter(
+    (address) => !address.toLowerCase().endsWith(".test"),
+  );
+  if (recipients.length === 0) return { sent: false, reason: "Cap destinatari amb adreça real" };
 
   if (!isEmailConfigured()) {
     console.warn(`[email] SMTP sense configurar; no s'envia "${subject}"`);
@@ -200,6 +206,39 @@ export function buildIncidentReportedEmail({
   };
 }
 
+export function buildIncidentCommentedEmail({
+  toReporter,
+  incidentTitle,
+  authorName,
+  body,
+  url,
+}: {
+  /** Cert si el rep qui va reportar la incidència; fals si el rep la coordinació. */
+  toReporter: boolean;
+  incidentTitle: string;
+  authorName: string;
+  body: string;
+  url: string;
+}) {
+  return {
+    subject: toReporter
+      ? `Nou missatge de la coordinació TIC: ${incidentTitle}`
+      : `Nou comentari a la incidència: ${incidentTitle}`,
+    ...layout({
+      intro: toReporter
+        ? `${authorName} ha escrit al seguiment de la incidència que vas reportar.`
+        : `${authorName} ha afegit un comentari a la incidència que va reportar.`,
+      rows: [
+        ["Incidència", incidentTitle],
+        ["Comentari de", authorName],
+      ],
+      quote: { label: "Comentari", body },
+      cta: { label: "Obrir la incidència", url },
+      footer: toReporter ? "Pots respondre des de gesTIC, al mateix fil de seguiment." : undefined,
+    }),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Préstecs
 // ---------------------------------------------------------------------------
@@ -340,6 +379,31 @@ export function buildQueryCreatedEmail({
   };
 }
 
+export function buildQueryRepliedEmail({
+  title,
+  authorName,
+  body,
+  url,
+}: {
+  title: string;
+  authorName: string;
+  body: string;
+  url: string;
+}) {
+  return {
+    subject: `Nova resposta a la consulta: ${title}`,
+    ...layout({
+      intro: `${authorName} ha tornat a escriure a la seva consulta.`,
+      rows: [
+        ["Consulta", title],
+        ["Feta per", authorName],
+      ],
+      quote: { label: "Missatge", body },
+      cta: { label: "Veure la conversa", url },
+    }),
+  };
+}
+
 /**
  * Avís a la coordinació que hi ha una sol·licitud per decidir.
  *
@@ -435,6 +499,89 @@ export function buildKeyNotReturnedEmail({
         ["Avís enviat per", conciergeName],
       ],
       footer: "Torna-la al taulell de consergeria quan puguis; hi pot haver algú esperant-la.",
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cites amb la coordinació
+// ---------------------------------------------------------------------------
+
+export function buildAppointmentBookedEmail({
+  who,
+  when,
+  purpose,
+  url,
+}: {
+  who: string;
+  when: string;
+  purpose: string;
+  url: string;
+}) {
+  return {
+    subject: `Cita nova amb ${who}`,
+    ...layout({
+      intro: `${who} ha demanat cita en una de les hores que la coordinació TIC té obertes.`,
+      rows: [
+        ["Qui", who],
+        ["Quan", when],
+      ],
+      quote: { label: "Per a què", body: purpose },
+      cta: { label: "Veure l'agenda", url },
+    }),
+  };
+}
+
+export function buildAppointmentCancelledEmail({
+  byOwner,
+  who,
+  when,
+  purpose,
+  url,
+}: {
+  /** Cert si l'ha cancel·lada qui la tenia; fals si ho ha fet la coordinació. */
+  byOwner: boolean;
+  who: string;
+  when: string;
+  purpose: string;
+  url: string;
+}) {
+  return {
+    subject: byOwner
+      ? `Cita cancel·lada: ${who}`
+      : "S'ha cancel·lat la teva cita amb la coordinació TIC",
+    ...layout({
+      intro: byOwner
+        ? `${who} ha cancel·lat la cita que tenia amb la coordinació TIC. L'hora torna a quedar lliure.`
+        : `${who} ha cancel·lat la teva cita amb la coordinació TIC.`,
+      rows: byOwner
+        ? [
+            ["Qui", who],
+            ["Quan", when],
+          ]
+        : [
+            ["Quan", when],
+            ["Cancel·lada per", who],
+          ],
+      quote: { label: "Motiu de la cita", body: purpose },
+      cta: { label: "Veure l'agenda", url },
+      footer: byOwner ? undefined : "Si encara la necessites, demana una altra hora des de gesTIC.",
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Administració
+// ---------------------------------------------------------------------------
+
+/** Correu de prova: comprova que els avisos poden sortir sense haver d'inventar-ne cap. */
+export function buildTestEmail({ name, url }: { name: string; url: string }) {
+  return {
+    subject: "Correu de prova de gesTIC",
+    ...layout({
+      intro: `Hola, ${name}. Si llegeixes això, gesTIC pot enviar correus: els avisos d'incidències, préstecs, consultes i cites arribaran a qui toca.`,
+      rows: [["Aplicació", url]],
+      cta: { label: "Obre gesTIC", url },
     }),
   };
 }

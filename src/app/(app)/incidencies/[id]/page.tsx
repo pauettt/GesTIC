@@ -41,7 +41,10 @@ export default async function IncidentDetailPage({ params }: PageProps<"/inciden
       },
     }),
     isAdmin(user.role)
-      ? db.user.findMany({ where: { role: { in: COORDINATOR_ROLES } }, orderBy: { name: "asc" } })
+      ? db.user.findMany({
+          where: { role: { in: COORDINATOR_ROLES }, disabledAt: null },
+          orderBy: { name: "asc" },
+        })
       : Promise.resolve([]),
   ]);
 

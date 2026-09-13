@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { zonedDateTime } from "@/lib/date";
-import { getPeriodById, isPastPeriod } from "@/lib/schedule";
+import { notifyAppointmentBooked, notifyAppointmentCancelled } from "@/lib/notifications";
+import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
   bookAppointmentSchema,
@@ -30,6 +31,9 @@ export async function openAppointmentSlot(input: unknown): Promise<ActionResult>
   const parsed = openAppointmentSlotSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+  if (!isSchoolDay(parsed.data.date)) {
+    return { success: false, error: "Només es poden obrir hores de dilluns a divendres" };
   }
 
   const period = getPeriodById(parsed.data.periodId);
@@ -94,8 +98,9 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
   }
   const { slotId, purpose } = parsed.data;
 
+  let appointmentId: string;
   try {
-    await db.$transaction(async (tx) => {
+    appointmentId = await db.$transaction(async (tx) => {
       const slot = await tx.appointmentSlot.findUnique({
         where: { id: slotId },
         include: { appointment: true },
@@ -104,7 +109,8 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
       if (isPastPeriod(slot.endDate)) throw new Error("Aquesta hora ja ha passat");
       if (slot.appointment) throw new Error("Algú acaba d'agafar aquesta hora. Torna a provar-ho.");
 
-      await tx.appointment.create({ data: { slotId, userId: user.id, purpose } });
+      const created = await tx.appointment.create({ data: { slotId, userId: user.id, purpose } });
+      return created.id;
     });
   } catch (error) {
     // L'índex únic sobre slotId és el que aguanta de debò els dos clics
@@ -118,6 +124,8 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
     };
   }
 
+  await notifyAppointmentBooked(appointmentId);
+
   revalidatePath("/cites");
   return { success: true };
 }
@@ -127,13 +135,39 @@ export async function cancelAppointment(input: unknown): Promise<ActionResult> {
   const parsed = cancelAppointmentSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
 
-  const appointment = await db.appointment.findUnique({ where: { id: parsed.data.id } });
+  const appointment = await db.appointment.findUnique({
+    where: { id: parsed.data.id },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      slot: {
+        select: {
+          startDate: true,
+          endDate: true,
+          openedBy: { select: { id: true, email: true } },
+        },
+      },
+    },
+  });
   if (!appointment) return { success: false, error: "Aquesta cita no existeix" };
   if (!isAdmin(user.role) && appointment.userId !== user.id) {
     return { success: false, error: "No pots cancel·lar aquesta cita" };
   }
+  if (isPastPeriod(appointment.slot.endDate)) {
+    return { success: false, error: "Aquesta cita ja ha passat" };
+  }
 
   await db.appointment.delete({ where: { id: appointment.id } });
+
+  // Les dades van ja llegides: la cita acaba d'esborrar-se.
+  await notifyAppointmentCancelled({
+    cancelledById: user.id,
+    cancelledByName: user.name ?? "La coordinació TIC",
+    owner: appointment.user,
+    opener: appointment.slot.openedBy,
+    startDate: appointment.slot.startDate,
+    purpose: appointment.purpose,
+  });
+
   revalidatePath("/cites");
   return { success: true };
 }

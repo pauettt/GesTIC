@@ -1,10 +1,18 @@
 import { z } from "zod";
 
+import { isDateKey } from "@/lib/validations/common";
+
 export const createLoanRequestSchema = z
   .object({
     itemId: z.string().min(1),
-    startDate: z.string().min(1, "Indica la data d'inici"),
-    endDate: z.string().min(1, "Indica la data de retorn"),
+    startDate: z
+      .string()
+      .min(1, "Indica la data d'inici")
+      .refine(isDateKey, "La data d'inici no és vàlida"),
+    endDate: z
+      .string()
+      .min(1, "Indica la data de retorn")
+      .refine(isDateKey, "La data de retorn no és vàlida"),
     purpose: z.string().trim().max(500).optional().or(z.literal("")),
   })
   .refine((data) => data.endDate >= data.startDate, {

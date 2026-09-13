@@ -51,9 +51,14 @@ export const addCommentSchema = z.object({
   body: z.string().trim().min(1, "Escriu un comentari").max(2000),
 });
 
+const incidentStatus = z.enum(["OBERTA", "EN_CURS", "RESOLTA", "TANCADA"]);
+
 export const updateIncidentStatusSchema = z.object({
   incidentId: z.string(),
-  status: z.enum(["OBERTA", "EN_CURS", "RESOLTA", "TANCADA"]),
+  status: incidentStatus,
+  // L'estat que veia qui fa el canvi. Si ja no és el que hi ha, algú altre de
+  // coordinació l'acaba de tocar i no es trepitja en silenci.
+  expectedStatus: incidentStatus.optional(),
   // Nota opcional en resoldre: es desa com a comentari del fil i s'inclou al
   // correu d'avís que rep qui va reportar la incidència.
   note: z.string().trim().max(2000).optional().or(z.literal("")),

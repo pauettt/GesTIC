@@ -64,6 +64,9 @@ export function ItemLoanHistory({ loans }: { loans: (LoanRequest & { requester: 
                         {formatDate(loan.returnedAt)}
                         {late ? " (fora de termini)" : ""}
                       </span>
+                    ) : loan.status === "RETORNADA" ? (
+                      // Préstecs tornats abans que es desés la data real de retorn.
+                      "Retornat, sense data"
                     ) : (
                       "—"
                     )}

@@ -1,124 +1,92 @@
 # Pendents de gesTIC
 
-Registre del que va sortint i **no** es resol sobre la marxa. Quan una cosa es
-tanqui, moure-la a "Fet" amb la data. Última revisió completa: **2026-09-12**
-(estat de cada variable verificat contra el `.env`, i el codi repassat buscant
-feina a mitges: no hi ha cap TODO ni cap pàgina esbossada).
+**Aquesta és l'única llista de pendents.** El que va sortint i **no** es resol
+sobre la marxa s'apunta aquí; quan una cosa es tanca, passa a "Fet" amb la data.
+Els plans llargs poden tenir document propi (com [PLA-TUTORIALS.md](PLA-TUTORIALS.md)),
+però el que queda per fer surt també aquí.
+
+Última revisió completa: **2026-09-12**, amb una auditoria de tot el codi —
+esquema contra la base de dades, totes les accions, rutes i pàgines— després de
+diversos dies de feina en sessions paral·leles. El 2026-09-13 es va tancar tot
+el que en quedava obert i era codi.
 
 ---
 
 ## 🎯 Per on seguir
 
-Ordre acordat el 2026-09-12. La idea és tancar-ho de dalt a baix, no tot alhora.
+Només queden dues coses, i cap de les dues no és programar:
 
-1. **La configuració de Vercel** (secció següent). Fins que no estigui, ningú
-   del centre no pot fer servir l'aplicació de debò, així que tota la resta és
-   secundària.
-2. **Que el professorat vegi les seves claus** (punt 9). És l'únic forat obert
-   de la feina d'ahir: se'ls reclama una clau que no poden consultar.
-3. **Els noms dels rols** (punt 7). Mitja hora i treu una confusió diària.
-4. **Netejar les dades de prova** just abans d'ensenyar-ho (punt 10).
-5. **Tests del que fa mal si falla** (punt 11), quan el contingut hi sigui i la
-   forma de l'aplicació ja no es mogui. Escriure'ls ara sobre una cosa que
-   encara canvia és feina per llençar.
+1. **Netejar les dades de prova** just abans d'obrir-la al claustre (punt 10).
+   És un botó a *Administració*, que diu què s'esborrarà abans de fer-ho.
+2. **Omplir els Dubtes freqüents i els Tutorials**. És contingut: el pla —les
+   cinc categories, el format d'article, el camp `sourceUrl` i el script
+   d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md), acordat el
+   2026-09-12, i encara no se n'ha començat cap tasca.
 
-Els Dubtes freqüents i els Tutorials no són codi: són contingut per omplir.
-El pla per fer-ho —les cinc categories, el format d'article, el camp
-`sourceUrl` i el script d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md),
-acordat el 2026-09-12. Hi consta també per què s'ha descartat el bot.
+La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
+decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
+
+Abans de pujar qualsevol canvi: `npm test` i `npm run test:e2e` (vegeu el
+README).
 
 ---
 
 ## 🚀 Llista de desplegament
 
-El codi ja no bloqueja res: el que queda és configuració.
-
 | | Què | Local | Vercel |
 |---|---|---|---|
-| ☐ | Login de Google operatiu (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | ❌ buides | ✅ hi són |
-| ☐ | `APP_URL` amb el domini definitiu (abans d'imprimir QR!) | ❌ absent | ❌ |
-| ☐ | `CRON_SECRET` | ✅ | ❌ **cal copiar-hi el mateix valor** |
-| ☐ | `BLOB_READ_WRITE_TOKEN` | ✅ | ⚠️ sense verificar |
-| ☐ | `ADMIN_EMAILS` | ✅ | ⚠️ sense verificar |
-| ☐ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ⚠️ sense verificar |
-| ☐ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ⚠️ sense verificar |
-| ☐ | Que el build executi `npm run db:deploy` (migracions) | — | ❌ |
+| ✅ | `GOOGLE_WORKSPACE_DOMAIN` | ✅ | ✅ `iesjmthomas.eu` (Production i Preview) |
+| ✅ | `APP_URL` | absent, a propòsit | ✅ `https://ges-tic.vercel.app` |
+| ✅ | `CRON_SECRET` | ✅ | ✅ |
+| ✅ | `ADMIN_EMAILS` | ✅ | ✅ |
+| ✅ | `BLOB_READ_WRITE_TOKEN` | ✅ | ✅ |
+| ✅ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ✅ |
+| ✅ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ✅ |
+| ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
+| ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | buides: en local s'entra pel dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
 
-Les marcades ⚠️ funcionen en local i el desplegament de producció respon, però
-no s'ha entrat a *Settings → Environment Variables* a comprovar-les una per una.
-
-Comprovat el 2026-09-11: el build de producció arrenca i respon sense errors.
-
----
-
-## 🔴 Bloquejadors per a producció
-
-### 1. Falten variables d'entorn
-- **`AUTH_GOOGLE_ID` i `AUTH_GOOGLE_SECRET`**: a Vercel **sí que hi són** (el
-  2026-09-11 la pantalla de Google s'obre des del desplegament). Al `.env`
-  local són buides, així que en local només s'entra pel dev login. Queda
-  confirmar que el login s'acaba de debò i no només que s'obre el diàleg.
-- **`APP_URL`** (verificat 2026-09-11: ni tan sols hi és). Mentre no hi sigui,
-  els QR i els enllaços dels correus surten amb el domini des d'on es generin.
-- **`CRON_SECRET` a Vercel**: generat i posat en local, però fins que no hi
-  sigui a Vercel les dues rutes de cron responen 503 i no fan res — ni els
-  recordatoris de préstec ni el ping que evita que Supabase es pausi.
-
-`ADMIN_EMAILS`, `BLOB_READ_WRITE_TOKEN` i l'SMTP ja hi són en local i s'han
-comprovat funcionant; només queda confirmar que hi són també a Vercel.
-
-### 2. Les etiquetes QR fixen el domini des d'on s'imprimeixen
-`src/lib/url.ts` construeix la URL amb la capçalera `host` del moment. Si
-s'imprimeixen des de `localhost:3000` o d'una URL de preview, els QR queden
-inservibles un cop enganxats als Chromebooks. Afecta també els enllaços dels
-correus automàtics.
-**Ja implementat a mitges**: `APP_URL` mana sobre la detecció automàtica, i la
-pàgina d'etiquetes avisa en vermell ("No imprimeixis encara") quan no hi ha
-domini fixat. Falta només posar la variable amb l'adreça definitiva.
+Tot comprovat el 2026-09-13. Dos avisos per al primer desplegament d'aquests
+canvis:
+- El login ara exigeix que el compte sigui del Workspace del centre (el camp
+  `hd` de Google). Els comptes `@iesjmthomas.eu` el porten, però val la pena
+  tornar a entrar-hi un cop desplegat.
+- S'aplicarà la migració `20260913120000_administracio`: una columna i una
+  taula noves, res que esborri ni canviï dades. Després, *Administració →
+  Configuració del servidor* ha de sortir tota en verd, i el botó de correu de
+  prova confirma que els avisos surten.
 
 ---
 
-## 🟠 Robustesa
+## 🧹 Per fer
 
-### 4. Els esborrats són físics i sense traça
-Equips i categories s'esborren de debò; un clic equivocat no es pot desfer.
-Queda també `TutorialCategory`, que esborra els seus articles en cascada sense
-dir quants se'n perdran. (Els carros amb Chromebooks a dins ja estan protegits.)
+### 10. Netejar les dades de prova abans d'obrir-la al claustre
+A *Administració → Dades de prova* hi ha el recompte i el botó. S'enduu els
+comptes del dev login (adreces `@local.test`, que cap compte real no pot tenir)
+i tot el que en penja: incidències amb les seves fotos, comentaris, préstecs,
+reserves, préstecs de claus, cites, consultes, inscripcions i notes. Abans de
+fer res ensenya què esborrarà, i queda al registre d'activitat. S'ha de fer amb
+el compte del centre: amb un de prova no deixa.
 
-### 5. Dos coordinadors poden trepitjar-se
-Som 3 gestionant. Res no avisa si dos canvien l'estat de la mateixa incidència o
-responen la mateixa sol·licitud alhora: guanya l'últim, en silenci. Les reserves
-i les inscripcions ja estan protegides; això és per a la resta d'edicions.
+El que no penja de cap compte s'ha de mirar a mà:
+- els tres conserges d'exemple (Sergio, Marta, Joan): *Usuaris i permisos →
+  Conserges*, donar-los de baixa;
+- les claus C-01 i A-203: *Claus → Gestiona les claus*;
+- equips, aules o carros creats provant, si n'hi ha.
+
+Com que es prova sobre producció (§12), s'ha de fer **just abans d'obrir-la al
+claustre**, i a partir d'aquí ja no s'hi han de fer proves amb dades inventades.
+
+---
+
+## 📌 Decisions preses
+
+No són feina pendent: el que s'ha decidit assumir o ajornar, i quan cal tornar-hi.
 
 ### 6. Sense CSP
 Deixada fora conscientment: a Next.js necessita nonces via `proxy.ts` i una CSP
 mal posada trenca els estils inline de Base UI. La resta de capçaleres
 (X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) ja hi són.
-
----
-
-## 🟡 Funcionalitat i UX
-
-### 6b. El login de Google diu "reservaChromebooks"
-Les credencials OAuth són d'un projecte de Google Cloud anterior, i la pantalla
-de consentiment encara en porta el nom: qui entri a gesTIC veu "Iniciar sesión
-con Google · Ir a reservaChromebooks". Es canvia a *Google Cloud Console → APIs
-i serveis → Pantalla de consentiment d'OAuth → Nom de l'aplicació*. **Compte**:
-el nom és del projecte sencer, així que si l'app antiga de reserves encara
-s'usa, canviar-lo també l'afecta; en aquest cas val més crear credencials
-pròpies per a gesTIC.
-
-També cal revisar-hi les **URI de redirecció autoritzades**: han d'incloure el
-domini estable (`ges-tic.vercel.app`), no les adreces de desplegament
-(`ges-xxxxx-pauettt.vercel.app`), que canvien a cada desplegament.
-
-### 7. Els noms dels rols no diuen el que són
-`SUPER_ADMIN` es mostra com a "Administrador/a" i `ADMIN` com a "Coordinador/a
-TIC", però qui coordina de debò és el super admin: llegint la pantalla de login
-no s'entén qui mana. Els tres rols ja encaixen amb la realitat del centre
-(coordinació · comissió TIC · professorat); és només qüestió de reanomenar les
-etiquetes de `roleLabels` a `src/lib/labels.ts`, sense tocar cap permís.
 
 ### 8. Les fotos són públiques per a qui tingui l'enllaç
 El blob store és **Public** perquè el codi puja amb `access: "public"` i les
@@ -129,94 +97,191 @@ s'indexen, però qui rebi l'enllaç l'obre sense passar per gesTIC. Assumit el
 pugin captures de Classroom amb noms d'alumnes**: llavors tocaria passar a
 blobs privats i firmar les URL a cada pàgina, que no és un canvi petit.
 
-### 9. El professorat no pot veure quines claus té
-Consergeria li envia un correu reclamant-li una clau, però si entra a gesTIC no
-troba enlloc quina és ni des de quan. A la portada hi surten les seves
-incidències obertes i el material en préstec; les claus, no. És una asimetria
-que va entrar amb la secció de consergeria el 2026-09-11: `keyLoan` només es
-consulta des de `/consergeria`.
-
-### 10. Netejar les dades de prova abans d'ensenyar-ho
-No és només esborrar incidències. Hi ha els **sis usuaris de prova**
-(`...prova@local.test`), que sortiran al gestor d'usuaris com si fossin
-professorat de debò; les seves sessions; reserves, préstecs de claus i
-consultes de prova; els tres conserges d'exemple (Sergio, Marta, Joan) i les
-claus C-01 i A-203; i les **fotos pujades provant**, que no marxen soles del
-blob store si no es fa servir el botó d'esborrar incidència.
-
-Compte: producció i desenvolupament comparteixen la mateixa base de dades, així
-que val més un script que digui què esborrarà abans de fer-ho que no anar taula
-per taula.
-
-### 11. No hi ha ni un test
-Ni un, ni script de `test` al `package.json`. El 2026-09-11 van sortir tres
-errors seguits —l'error fals en crear incidències, la pantalla en blanc de
-consergeria i un endpoint sense permisos— i **cap el va enxampar TypeScript, ni
-el lint, ni el build**: van aparèixer obrint el navegador o remenant.
-
-No cal cobrir-ho tot. Amb les regles que fan mal si fallen n'hi hauria prou:
-qui pot veure què, el càlcul del curs escolar, i el bloc d'hores seguides de
-les claus. Quasi totes són funcions pures i es proven sense muntar res.
-
 ### 12. Producció i desenvolupament comparteixen base de dades
-Mentre siguis tu provant, tant se val. El dia que el professorat hi entri de
-debò, voldràs una base de dades a part per a desenvolupament o acabaràs amb
-"dfghjmjkljh" barrejat amb incidències reals.
+El `.env` local i Vercel apunten al mateix projecte de Supabase, així que tot el
+que es prova en local va a parar a la base de dades real.
 
----
+**Decidit el 2026-09-13: de moment es prova sobre producció.** El compte de
+Supabase és al pla gratuït, que no deixa tenir més de dos projectes actius, i
+pagar el Pro (25 $/mes) només per tenir-ne un de proves no s'ho val mentre
+l'aplicació no la faci servir ningú més.
 
-## ⚪ Menor
+Mentre sigui així, dues regles:
+- **No executar `npm run db:migrate`** (`prisma migrate dev`): si detecta
+  diferències ofereix **resetejar** la base de dades, i esborraria les dades
+  reals. Les migracions noves s'escriuen a mà (es poden generar amb
+  `prisma migrate diff` contra la base de dades local de les proves) i les
+  aplica el desplegament.
+- **No executar `npm run db:seed`**: hi posaria aules, equips i un carro de
+  Chromebooks d'exemple.
 
-### 15. Els xips de filtre són enllaços que s'anuncien com a botons
-`Button` amb `render={<Link/>}` genera un `<a href>` amb `role="button"`.
-L'enllaç funciona (clic central, teclat), però un lector de pantalla l'anuncia
-com a botó. Afecta tots els filtres de l'aplicació.
+Les proves automàtiques no hi tenen res a veure: `npm run test:e2e` fa servir
+un PostgreSQL local propi que es buida a cada execució. Això només afecta les
+proves a mà.
 
-### 18. Préstecs antics sense data de retorn
-Els marcats com a retornats abans d'afegir `returnedAt` surten amb "—" a la
-fitxa de l'equip. Només afecta dades anteriors al canvi.
-
-### 19. Avís de `onUploadCompleted` a cada pujada
-`handleUpload` a `/api/blob/upload` declara un `onUploadCompleted` buit, i en
-local Vercel no pot determinar-ne la `callbackUrl`: cada pujada deixa un avís
-al log. No trenca res —el fitxer puja igual— però embruta la sortida.
-
-### 20. Els equips de préstec a l'alumnat no surten al formulari d'incidències
-El formulari d'Incidències → Nova ofereix Chromebooks per carro
-(`db.cart.findMany({ include: { chromebooks } })`), i els del pool de préstec no
-són de cap carro: no hi ha manera de triar-los. Pel QR sí que es pot
-(`/q/chromebook/[id]` va per identificador), així que un equip amb etiqueta
-queda cobert; la resta, no. Va aparèixer el 2026-09-12 amb el pool de préstec i
-no es va tocar llavors perquè primer cal decidir des d'on es reporta: si des de
-la fitxa de l'equip, si afegint una tercera secció al formulari, o si és el
-tutor qui ho fa des de la seva pantalla.
-
-### 21. Dades de l'alumnat: buidar-les depèn que algú se'n recordi
-Amb el préstec de Chromebooks a l'alumnat, gesTIC desa **nom i cognoms de
-menors** i el motiu pel qual se'ls deixa un equip. Fins ara només hi havia dades
-del professorat.
-
-**Decidit el 2026-09-12**: es buiden al juliol, quan tornen els equips, o
-puntualment al setembre del curs següent, i ho poden fer tant l'administrador
-com la coordinació TIC. Hi ha el botó "Buida-les" a /chromebooks, que només surt
-quan queda alguna sol·licitud tancada i esborra les retornades, les rebutjades i
-les retirades; les pendents i els préstecs actius no els toca.
-
-El que queda obert no és el com, sinó que **és manual**: si ningú no hi entra al
-juliol, els noms s'hi queden. No hi ha avís ni feina programada que ho recordi.
-Lliga amb el §8: el dia que s'hi pugin fotos o documents amb noms d'alumnes, els
-blobs públics deixen de ser assumibles.
+**A revisar quan el professorat hi entri de debò**: llavors les proves amb dades
+inventades barrejades amb incidències reals, i els correus de prova a la
+coordinació, ja no són assumibles. Opcions sense pagar: pausar l'altre projecte
+de Supabase si ja no es fa servir (els pausats no compten per al límit), o una
+base de dades PostgreSQL al mateix ordinador. Si mai es passa al Pro, que sigui
+per les còpies de seguretat diàries de les dades reals, que el pla gratuït no
+té, i no pas per les proves.
 
 ### 22. La coordinació no té on veure els préstecs tancats
 Quan es registra una devolució, la fitxa passa a RETORNADA i desapareix de la
 pantalla de la coordinació: qui la conserva és el tutor, a la seva targeta. Amb
 això no es pot respondre "qui tenia aquest equip el curs passat". No s'ha fet
-cap pantalla d'històric a propòsit, perquè xoca de ple amb el §21: abans de
-guardar historial de préstecs de menors cal haver decidit quan s'esborra.
+cap pantalla d'històric a propòsit, perquè xoca de ple amb les dades de menors:
+les sol·licituds tancades es buiden en acabar el curs, i guardar-ne l'historial
+seria desfer aquella decisió.
 
 ---
 
 ## ✅ Fet
+
+### 2026-09-13
+
+- **Administració**: pàgina nova del superadministrador amb l'estat de la
+  configuració del servidor (sense ensenyar cap secret) i un botó de correu de
+  prova, les dades personals pendents de buidar, l'esborrat de les dades de
+  prova (antic §10, que passa a ser un botó) i el registre d'activitat.
+- **Treure l'accés a qui deixa el centre**, a *Usuaris i permisos*: ja no pot
+  entrar, la sessió que tingui oberta es tanca a l'instant i deixa de rebre
+  avisos, però el que va fer continua dient qui ho va fer. La pantalla de login
+  li diu que parli amb la coordinació. La taula d'usuaris té cercador i filtres
+  (coordinació, tutors, consergeria, sense accés).
+- **Registre d'activitat**: canvis de permisos i de tutoria, accessos retirats i
+  retornats, incidències esborrades i neteges de dades, amb qui i quan. Sense
+  cap dada de l'alumnat. Migració `20260913120000_administracio`.
+- **Dos coordinadors alhora** (antic §5): canviar l'estat d'una incidència o
+  d'una consulta, o respondre un préstec, ja no trepitja en silenci el que
+  acaba de fer una altra persona: ho diu i refresca la pantalla.
+- **Esborrats que perdien l'historial** (antic §4): un equip d'inventari amb
+  préstecs o incidències ja no es pot esborrar, es dona de baixa; esborrar una
+  sessió de formació diu quantes inscripcions es perdran. Les categories de
+  tutorials ja deien quants articles s'esborraven.
+- **Chromebooks del pool al formulari d'incidències** (antic §20): surten com a
+  «Préstec a l'alumnat» a la secció de Chromebooks, només amb l'identificador.
+- **Recordatori de les dades de l'alumnat** (antic §21): de juliol a setembre, el
+  panell avisa si queden sol·licituds tancades per buidar; *Administració* ho
+  diu sempre.
+- **Enllaços que es feien passar per botons** (antic §15): els filtres i els
+  botons que porten a una altra pàgina ara són enllaços de debò (`ButtonLink`),
+  i el filtre actiu es marca amb `aria-current`.
+- **Préstecs antics sense data de retorn** (antic §18): diuen «Retornat, sense
+  data» en comptes d'un guió.
+- **Avís a cada pujada de fotos** (antic §19): fora l'`onUploadCompleted` buit.
+- **Vulnerabilitats de npm**: les quatre venien del CLI de Prisma
+  (`deepmerge-ts`, `mysql2`) i es forcen les versions corregides amb `overrides`.
+  `npm audit` en dona zero.
+- Verificat amb TypeScript, lint, 72 proves unitàries i 20 end-to-end.
+- **Un compte de Google entrava com un altre usuari**: entrant com a coordtic
+  amb la sessió d'un professor oberta al mateix navegador, Auth.js no va crear
+  cap usuari, sinó que va vincular el compte de coordtic al del professor; des
+  de llavors coordtic hi entrava com a professor i `ADMIN_EMAILS` no el
+  reconeixia. Arreglat a la base de dades (esborrades la vinculació i aquella
+  sessió) i al codi: entrar amb Google tanca la sessió oberta d'un altre
+  usuari, i un compte de Google només pot entrar com l'usuari del seu mateix
+  correu.
+- **Tests** (antic §11): `npm test` amb 61 proves unitàries (Vitest) de dates i
+  curs escolar, estat dels Chromebooks, préstecs, claus, permisos, CSV, adreces
+  de blob i validacions; i `npm run test:e2e` amb 16 proves end-to-end
+  (Playwright) que recorren l'aplicació amb cada rol —permisos, incidències, QR,
+  préstec a l'alumnat, reserves, claus, préstecs i cites— contra un PostgreSQL
+  local. Les unitàries corren en una zona horària llunyana per enxampar qualsevol
+  càlcul que depengui de la del servidor, i els e2e no arrenquen si la base de
+  dades no és local i de proves. Comprovat que fallen quan toca: amb l'error de
+  la doble assignació del pool reintroduït a propòsit, la prova corresponent cau.
+- **Claus en hora de pati**: escrivint les proves va sortir que la clau d'un
+  carro reservat a 3a i 4a hora sortia com a "Per tornar" en ple pati, tot i que
+  el comentari del codi deia just el contrari. Ara el bloc de reserves seguides
+  salta el pati.
+- **Login de Google** (antics §1 i §6b): provat de principi a fi a producció, i
+  la pantalla de Google ja diu "gesTIC".
+- **Variables de Vercel**: totes comprovades, entre elles
+  `GOOGLE_WORKSPACE_DOMAIN` (`iesjmthomas.eu`), `APP_URL` i `CRON_SECRET`.
+  `CRON_SECRET` no cal que coincideixi amb el del `.env` local: Vercel Cron
+  envia el valor que té Vercel.
+- **Domini dels QR** (antic §2): `APP_URL` és `https://ges-tic.vercel.app`, així
+  que les etiquetes i els correus ja surten amb el domini estable, s'imprimeixin
+  des d'on s'imprimeixin. Si algun dia el centre hi posa un domini propi, aquest
+  s'ha de mantenir actiu: les etiquetes ja enganxades hi apunten.
+- **Noms dels rols** (antic §7): Superadministrador/a, Coordinador/a TIC,
+  Consergeria i Professorat. Canviats a les etiquetes i als textos que en
+  parlen; cap permís no s'ha tocat.
+- **Converses per correu a les incidències i consultes** (antics §23 i §24):
+  quan hi escriu la coordinació, rep correu qui l'ha oberta; quan hi escriu qui
+  l'ha oberta, en rep tota la coordinació. Abans, a les incidències no avisava
+  cap de les dues bandes, i a les consultes només la coordinació cap al
+  professorat.
+- **Base de dades de proves** (§12): decidit no pagar el Pro de Supabase i
+  continuar provant sobre producció fins que el claustre hi entri.
+
+### 2026-09-12 (auditoria)
+
+Repàs de tot el codi després de diversos dies amb sessions en paral·lel. Tot
+verificat amb TypeScript, lint, el build de producció, comprovacions de la
+lògica nova i una prova de 34 pàgines amb els cinc rols; cap canvi d'esquema ni
+de base de dades.
+
+- **Login tancat si falta el domini**: sense `GOOGLE_WORKSPACE_DOMAIN` el filtre
+  se saltava i entrava qualsevol compte de Google. Ara no entra ningú, i a més
+  s'exigeix el camp `hd` de Google, que només porten els comptes gestionats pel
+  Workspace.
+- **Préstecs que es cancel·laven amb l'equip a casa**: el professorat podia
+  cancel·lar un préstec aprovat que ja tenia, i desapareixia dels actius, dels
+  vençuts i dels recordatoris. Ara només es pot retirar mentre no ha començat,
+  i sense trepitjar una decisió de la coordinació feta al mateix moment.
+- **Estat dels Chromebooks**: cada acció hi escrivia el seu, i tancar una
+  incidència el deixava DISPONIBLE encara que en tingués una altra d'oberta o
+  fos a casa d'un alumne (i llavors es podia assignar a un segon alumne). Ara el
+  calcula `syncChromebookStatus` a partir dels fets, i BAIXA només es posa a mà.
+- **Donar de baixa i moure Chromebooks**: no hi havia manera de fer cap de les
+  dues coses, tot i que l'error d'esborrar un carro ho demanava. Botó "Dona de
+  baixa / Torna a activar" als carros i al pool, i selector de carro en editar.
+  Els donats de baixa no surten al formulari d'incidències ni a les etiquetes.
+- **Etiquetes QR del pool d'alumnat**, que no es podien imprimir enlloc.
+- **QR sense duplicats ni allaus**: un doble toc porta a la incidència que ja hi
+  ha, i el QR respecta el mateix límit per hora que el formulari.
+- **Cites**: la graella ensenyava a tothom el nom i el motiu de les cites dels
+  altres; ara només els veuen la coordinació i qui té la cita. I ara s'avisa per
+  correu quan algú demana cita i quan se'n cancel·la una, a l'altra banda.
+- **Inici i panell al dia**: la portada ensenya les claus que tens (tanca l'antic
+  §9), les teves cites i, als tutors, els seus Chromebooks d'alumnat; la targeta
+  de Cites hi faltava. El panell té dues cues noves, sol·licituds de Chromebook
+  pendents i properes cites, i les mètriques van en hora del centre i amb els
+  mesos en ordre.
+- **Consergeria**: l'entrega sense reserva només oferia el rol professorat i
+  deixava fora la coordinació. L'entrega comprova que la reserva sigui d'aquell
+  carro i d'aquella persona, i que la clau no s'hagi entregat ja.
+- **Dates validades a totes les accions**: una data mal formada donava un error
+  genèric en comptes d'un missatge, i no es poden obrir hores ni reservar en cap
+  de setmana. La pàgina del carro ja no peta amb un `?week=` inventat i obre la
+  setmana que toca, com /cites.
+- **Consultes**: passar de Resolta a Tancada ja no canvia la data de resolució.
+- **Base de dades compartida**: els previews de Vercel ja no hi apliquen
+  migracions, els correus a les adreces `@….test` dels usuaris de prova ja no
+  s'intenten enviar, i el seed ja no duplica la formació ni els dubtes.
+- **Documentació**: README al dia (rols, migracions, avís de la base de dades
+  compartida) i `.env.example` sense "CoordTIC". El `.env.example` no s'havia
+  pujat mai al repositori perquè `.env*` del `.gitignore` també l'ignorava.
+
+### 2026-09-12
+
+- **Tutors de grup**: marca `isTutor` que se suma al rol en comptes de
+  substituir-lo, perquè un coordinador també pot ser tutor. La dona i la treu el
+  superadministrador a /usuaris.
+- **Préstec de Chromebooks a l'alumnat**: pool d'equips separat dels carros,
+  sol·licituds dels tutors amb motiu tancat, decisió i assignació d'equip per la
+  coordinació, devolució manual i estat ASSIGNAT. El nom de l'alumne només el
+  veuen el tutor i la coordinació.
+- **Buidar les sol·licituds tancades**: botó a /chromebooks per esborrar les
+  retornades, rebutjades i retirades a fi de curs.
+- **Agenda de cites de la coordinació** a /cites: la coordinació obre les hores
+  que té lliures i qualsevol del claustre n'agafa una. Substitueix les taules
+  del sociograma creades el mateix matí.
+- **Migracions en desplegar**: el build de Vercel aplica `prisma migrate deploy`
+  abans de compilar.
 
 ### 2026-09-11 (nit)
 

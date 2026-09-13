@@ -21,7 +21,9 @@ export async function POST(request: Request) {
           maximumSizeInBytes: 10 * 1024 * 1024,
         };
       },
-      onUploadCompleted: async () => {},
+      // Sense `onUploadCompleted`: no hi ha res a fer quan acaba la pujada (la URL
+      // es desa quan s'envia el formulari), i declarar-lo buit feia que en local
+      // Vercel busqués una adreça de retorn i deixés un avís a cada pujada.
     });
 
     return NextResponse.json(jsonResponse);

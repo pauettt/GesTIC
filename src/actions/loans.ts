@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { zonedDateTime } from "@/lib/date";
+import { isCancellable } from "@/lib/loans";
 import {
   notifyLoanDecision,
   notifyLoanRequested,
@@ -93,10 +94,16 @@ export async function respondLoanRequest(input: unknown): Promise<ActionResult> 
     }
   }
 
-  await db.loanRequest.update({
-    where: { id },
+  // Condicionat a PENDENT: si dues persones de coordinació la responen alhora,
+  // només compta la primera i el professor no rep dos correus contradictoris.
+  const responded = await db.loanRequest.updateMany({
+    where: { id, status: "PENDENT" },
     data: { status, responseNote: responseNote || null, respondedById: admin.id, respondedAt: new Date() },
   });
+  if (responded.count === 0) {
+    revalidatePath("/inventari");
+    return { success: false, error: "Algú altre acaba de respondre aquesta sol·licitud" };
+  }
 
   await notifyLoanDecision(id, status === "APROVADA");
 
@@ -117,8 +124,23 @@ export async function cancelLoanRequest(input: unknown): Promise<ActionResult> {
   if (request.status !== "PENDENT" && request.status !== "APROVADA") {
     return { success: false, error: "Aquesta sol·licitud ja està tancada" };
   }
+  if (!isCancellable(request)) {
+    return {
+      success: false,
+      error:
+        "Aquest préstec ja ha començat. Quan es torni l'equip, la coordinació TIC en registrarà la devolució.",
+    };
+  }
 
-  await db.loanRequest.update({ where: { id: parsed.data.id }, data: { status: "CANCELLADA" } });
+  // Condicionat a l'estat que s'acaba de llegir: si mentrestant la coordinació
+  // l'ha aprovat, rebutjat o marcat com a retornat, no es trepitja.
+  const cancelled = await db.loanRequest.updateMany({
+    where: { id: request.id, status: request.status },
+    data: { status: "CANCELLADA" },
+  });
+  if (cancelled.count === 0) {
+    return { success: false, error: "Aquesta sol·licitud acaba de canviar. Torna-ho a mirar." };
+  }
   revalidatePath("/inventari");
   return { success: true };
 }

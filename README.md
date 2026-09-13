@@ -1,14 +1,16 @@
 # gesTIC
 
-Plataforma de coordinació TIC del centre: incidències, inventari TIC, carros de Chromebooks, formació del professorat, dubtes freqüents i tutorials.
+Plataforma de coordinació TIC del centre: incidències, inventari i préstecs, carros de Chromebooks i préstec d'equips a l'alumnat, cites amb la coordinació, formació, dubtes freqüents, tutorials i control de claus de consergeria.
+
+Què falta, què s'ha fet i per què és a [PENDENTS.md](PENDENTS.md).
 
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript, Server Actions)
-- **Prisma 7** + **PostgreSQL** (pensat per a Supabase)
-- **Auth.js v5** amb **Google** (restringit al domini Google Workspace del centre)
+- **Prisma 7** + **PostgreSQL** a Supabase, amb migracions
+- **Auth.js v5** amb **Google**, restringit als comptes del Google Workspace del centre
 - **Tailwind CSS 4** + **shadcn/ui** (estil `base-nova`, sobre Base UI)
-- **Vercel Blob** per als fitxers adjunts
+- **Vercel Blob** per a les fotos i **Nodemailer** amb el Gmail del centre per als avisos
 
 ## Configuració inicial
 
@@ -27,20 +29,16 @@ Plataforma de coordinació TIC del centre: incidències, inventari TIC, carros d
 3. **APIs & Services → Credentials → Create Credentials → OAuth client ID** (tipus "Web application"):
    - **Authorized redirect URI**: `https://<el-teu-domini>/api/auth/callback/google` (i `http://localhost:3000/api/auth/callback/google` per a desenvolupament local).
 4. Copia el **Client ID** i **Client Secret** a `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-5. Defineix `GOOGLE_WORKSPACE_DOMAIN` amb el domini del centre (ex: `elteucentre.cat`) perquè només aquest domini pugui iniciar sessió.
-6. Defineix `ADMIN_EMAILS` amb els correus que han de rebre el rol de coordinador/a TIC (`ADMIN`) automàticament en el primer inici de sessió.
+5. Defineix `GOOGLE_WORKSPACE_DOMAIN` amb el domini del centre (ex: `elteucentre.cat`). **És obligatòria**: sense aquesta variable no hi pot entrar ningú.
+6. Defineix `ADMIN_EMAILS` amb els correus dels superadministradors (`SUPER_ADMIN`), els únics que poden repartir permisos. El rol es reconcilia a cada inici de sessió.
 
-### 3. Fitxers adjunts (Vercel Blob)
+### 3. Fitxers (Vercel Blob)
 
-Un cop desplegat a Vercel, activa **Vercel Blob** des del dashboard del projecte i copia el token a `BLOB_READ_WRITE_TOKEN`.
+Crea un store amb accés **Public** i copia el token a `BLOB_READ_WRITE_TOKEN`. Ha de ser públic perquè el codi puja amb `access: "public"`, i l'accés d'un store no es pot canviar un cop creat.
 
 ### 4. Variables d'entorn
 
-Copia `.env.example` a `.env.local` (desenvolupament) i omple els valors:
-
-```bash
-cp .env.example .env.local
-```
+Copia `.env.example` a `.env` i omple els valors. Cada variable hi porta explicat per a què serveix.
 
 `AUTH_SECRET` es pot generar amb:
 
@@ -52,33 +50,59 @@ npx auth secret
 
 ```bash
 npm install
-npx prisma db push   # crea les taules a la base de dades
-npm run db:seed      # (opcional) dades d'exemple
 npm run dev
+```
+
+Amb `ENABLE_DEV_LOGIN="true"` al `.env`, la pantalla d'inici de sessió ofereix botons per entrar amb cada rol sense passar per Google. En producció no s'activa mai, encara que la variable hi sigui.
+
+> **Compte:** ara mateix desenvolupament i producció comparteixen la mateixa base de dades (PENDENTS.md §12). Tot el que facis en local ho fas sobre les dades reals. No executis `npm run db:migrate` ni `npm run db:seed` fins que desenvolupament en tingui una de pròpia.
+
+## Migracions
+
+Cada canvi d'esquema va amb una migració a `prisma/migrations/`. En desplegar a producció, [scripts/vercel-build.sh](scripts/vercel-build.sh) les aplica abans del build. Als previews no, perquè apuntarien a la mateixa base de dades.
+
+## Proves
+
+- **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
+- **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs i cites. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
+
+Per preparar-les el primer cop cal PostgreSQL a l'ordinador (per exemple, `brew install postgresql@16`):
+
+```bash
+createdb gestic_e2e
+npx playwright install chromium
 ```
 
 ## Scripts
 
-| Script            | Descripció                                  |
-| ----------------- | -------------------------------------------- |
-| `npm run dev`      | Servidor de desenvolupament                  |
-| `npm run build`    | Build de producció                           |
-| `npm run start`    | Servidor de producció (després de `build`)   |
-| `npm run lint`     | ESLint                                       |
-| `npm run db:push`  | Sincronitza l'esquema Prisma amb la BD       |
-| `npm run db:migrate` | Crea/aplica migracions Prisma              |
-| `npm run db:seed`  | Carrega dades d'exemple                      |
-| `npm run db:studio`| Obre Prisma Studio                           |
+| Script               | Descripció                                                      |
+| -------------------- | --------------------------------------------------------------- |
+| `npm run dev`        | Servidor de desenvolupament                                     |
+| `npm run build`      | Build de producció (no aplica migracions)                       |
+| `npm run start`      | Servidor de producció (després de `build`)                      |
+| `npm run lint`       | ESLint                                                          |
+| `npm test`           | Proves unitàries                                                |
+| `npm run test:watch` | Proves unitàries, tornant-les a passar a cada canvi             |
+| `npm run test:e2e`   | Proves end-to-end (vegeu *Proves*)                              |
+| `npm run db:deploy`  | Aplica les migracions pendents                                  |
+| `npm run db:migrate` | Crea una migració nova (`prisma migrate dev`); vegeu l'avís de dalt |
+| `npm run db:seed`    | Carrega dades d'exemple; vegeu l'avís de dalt                   |
+| `npm run db:studio`  | Obre Prisma Studio                                              |
 
 ## Desplegament (Vercel)
 
-1. Puja el projecte a un repositori Git i importa'l a [Vercel](https://vercel.com/new).
-2. Configura totes les variables de `.env.example` a **Project Settings → Environment Variables**.
-3. Un cop desplegat, actualitza la **Authorized redirect URI** a Google Cloud amb el domini definitiu.
+1. Importa el repositori a [Vercel](https://vercel.com/new).
+2. Configura les variables de `.env.example` a **Project Settings → Environment Variables**, totes excepte `ENABLE_DEV_LOGIN`.
+3. Afegeix el domini definitiu a les URI de redirecció autoritzades de Google Cloud, i posa'l a `APP_URL` **abans d'imprimir cap etiqueta QR**.
+4. `vercel.json` ja programa els dos crons (`/api/cron/loan-reminders` i `/api/cron/keep-alive`); sense `CRON_SECRET` no s'executen.
 
 ## Rols
 
-- **ADMIN** (coordinador/a TIC): gestiona inventari, carros de Chromebooks, formacions, dubtes freqüents, tutorials i veu totes les incidències.
-- **PROFESSOR**: reporta incidències, reserva carros de Chromebooks, s'inscriu a formacions i consulta dubtes/tutorials.
+- **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, dades personals pendents de buidar, esborrat de les dades de prova i registre d'activitat. Es defineix a `ADMIN_EMAILS`.
+- **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, formació, dubtes, tutorials i claus.
+- **Consergeria (`CONSERGERIA`)**: compte compartit del taulell; només veu el control de claus.
+- **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites, s'inscriu a formacions i fa consultes.
 
-El primer usuari amb un correu inclòs a `ADMIN_EMAILS` rep el rol `ADMIN` automàticament en iniciar sessió per primer cop. Per afegir més coordinadors/es TIC més endavant, actualitza `ADMIN_EMAILS` (per a nous usuaris) o canvia el camp `role` directament a la base de dades (per a usuaris existents).
+A banda del rol, qualsevol usuari que no sigui consergeria pot portar la marca de **tutor/a**, que li permet demanar Chromebooks en préstec per a l'alumnat del seu grup. La posa i la treu el superadministrador/a.
+
+Els permisos es canvien a *Usuaris i permisos* (`/usuaris`), no a la base de dades.

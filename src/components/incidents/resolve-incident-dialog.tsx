@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MailIcon } from "lucide-react";
+import type { IncidentStatus } from "@prisma/client";
 
 import { updateIncidentStatus } from "@/actions/incidents";
 import { useServerAction } from "@/hooks/use-server-action";
@@ -18,12 +19,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function ResolveIncidentDialog({
   incidentId,
+  currentStatus,
   reporterName,
   notifies,
   open,
   onOpenChange,
 }: {
   incidentId: string;
+  /** L'estat que es veu a la pantalla: si algú altre el canvia mentrestant, no es trepitja. */
+  currentStatus: IncidentStatus;
   reporterName: string;
   /** Fals quan qui resol és qui va reportar-la: llavors no s'envia cap correu. */
   notifies: boolean;
@@ -84,7 +88,9 @@ export function ResolveIncidentDialog({
             <Button
               type="button"
               disabled={isPending}
-              onClick={() => run({ incidentId, status: "RESOLTA", note })}
+              onClick={() =>
+                run({ incidentId, status: "RESOLTA", note, expectedStatus: currentStatus })
+              }
             >
               {isPending ? "Desant…" : notifies ? "Resol i avisa" : "Resol"}
             </Button>

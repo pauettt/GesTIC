@@ -95,11 +95,12 @@ export function IncidentStatusSelect({
             setResolving(true);
             return;
           }
-          run({ incidentId, status: next as IncidentStatus });
+          run({ incidentId, status: next as IncidentStatus, expectedStatus: status });
         }}
       />
       <ResolveIncidentDialog
         incidentId={incidentId}
+        currentStatus={status}
         reporterName={reporterName}
         notifies={notifies}
         open={resolving}

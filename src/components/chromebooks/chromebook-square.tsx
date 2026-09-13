@@ -12,7 +12,8 @@ import { chromebookStatusLabels, chromebookStatusSquareClasses } from "@/lib/lab
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChromebookDialog } from "@/components/chromebooks/chromebook-dialog";
+import { ChromebookDialog, type CartOption } from "@/components/chromebooks/chromebook-dialog";
+import { RetireChromebookButton } from "@/components/chromebooks/retire-chromebook-button";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -66,7 +67,15 @@ function ChromebookNoteForm({ chromebookId }: { chromebookId: string }) {
   );
 }
 
-export function ChromebookSquare({ cartId, chromebook }: { cartId: string; chromebook: Chromebook }) {
+export function ChromebookSquare({
+  cartId,
+  carts,
+  chromebook,
+}: {
+  cartId: string;
+  carts: CartOption[];
+  chromebook: Chromebook;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -104,9 +113,14 @@ export function ChromebookSquare({ cartId, chromebook }: { cartId: string; chrom
             <HistoryIcon className="size-3.5" />
             Veure historial d&apos;incidències
           </Link>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <RetireChromebookButton
+              chromebookId={chromebook.id}
+              retired={chromebook.status === "BAIXA"}
+            />
             <ChromebookDialog
               cartId={cartId}
+              carts={carts}
               chromebook={{
                 id: chromebook.id,
                 cartId,
@@ -123,6 +137,7 @@ export function ChromebookSquare({ cartId, chromebook }: { cartId: string; chrom
               action={deleteChromebook}
               input={{ id: chromebook.id }}
               title="Eliminar aquest Chromebook?"
+              description="Es perden també les seves notes, i les incidències queden sense equip. Si només ha deixat de funcionar, dona'l de baixa: així se'n conserva l'historial."
             />
           </div>
 
@@ -158,10 +173,11 @@ export function ChromebookSquare({ cartId, chromebook }: { cartId: string; chrom
   );
 }
 
-export function AddChromebookSquare({ cartId }: { cartId: string }) {
+export function AddChromebookSquare({ cartId, carts }: { cartId: string; carts: CartOption[] }) {
   return (
     <ChromebookDialog
       cartId={cartId}
+      carts={carts}
       trigger={
         <button
           type="button"

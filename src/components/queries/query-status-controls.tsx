@@ -16,7 +16,9 @@ export function QueryStatusControls({ queryId, status }: { queryId: string; stat
       <FieldLabel htmlFor="query-status">Estat</FieldLabel>
       <Select
         value={status}
-        onValueChange={(value) => run({ queryId, status: value as QueryStatus })}
+        onValueChange={(value) =>
+          run({ queryId, status: value as QueryStatus, expectedStatus: status })
+        }
         items={queryStatusLabels}
       >
         <SelectTrigger id="query-status" className="w-full sm:w-64">

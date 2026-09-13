@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { formatDateTime, formatTime } from "@/lib/date";
 import { requireKeyAccess } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const metadata = { title: "Historial de claus" };
@@ -84,24 +84,24 @@ export default async function HistorialPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button
+        <ButtonLink
           size="sm"
           variant={!clau && !professor ? "default" : "outline"}
-          nativeButton={false}
-          render={<Link href={href({ clau: "", professor: "" })} />}
+          current={!clau && !professor}
+          href={href({ clau: "", professor: "" })}
         >
           Tot
-        </Button>
+        </ButtonLink>
         {keys.map((key) => (
-          <Button
+          <ButtonLink
             key={key.id}
             size="sm"
             variant={clau === key.id ? "default" : "outline"}
-            nativeButton={false}
-            render={<Link href={href({ clau: key.id })} />}
+            current={clau === key.id}
+            href={href({ clau: key.id })}
           >
             {key.number}
-          </Button>
+          </ButtonLink>
         ))}
       </div>
 
@@ -109,15 +109,15 @@ export default async function HistorialPage({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Professorat:</span>
           {teachers.map((teacher) => (
-            <Button
+            <ButtonLink
               key={teacher.id}
               size="sm"
               variant={professor === teacher.id ? "default" : "outline"}
-              nativeButton={false}
-              render={<Link href={href({ professor: teacher.id })} />}
+              current={professor === teacher.id}
+              href={href({ professor: teacher.id })}
             >
               {teacher.name ?? teacher.email}
-            </Button>
+            </ButtonLink>
           ))}
         </div>
       )}

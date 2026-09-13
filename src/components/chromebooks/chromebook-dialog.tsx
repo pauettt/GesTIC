@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
 
 import { upsertChromebook } from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
+import { toSelectItems } from "@/lib/utils";
 import {
   upsertChromebookSchema,
   type UpsertChromebookInput,
@@ -21,18 +22,25 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export type CartOption = { id: string; name: string };
 
 export function ChromebookDialog({
   cartId,
+  carts,
   chromebook,
   trigger,
 }: {
   cartId: string;
+  /** Carros on es pot moure l'equip en editar-lo. */
+  carts: CartOption[];
   chromebook?: UpsertChromebookInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -52,7 +60,7 @@ export function ChromebookDialog({
     successMessage: chromebook ? "Chromebook actualitzat" : "Chromebook afegit",
     onSuccess: () => {
       setOpen(false);
-      reset({ cartId, assetTag: "", serialNumber: "", brand: "", model: "" });
+      if (!chromebook) reset({ cartId, assetTag: "", serialNumber: "", brand: "", model: "" });
     },
   });
 
@@ -95,6 +103,34 @@ export function ChromebookDialog({
               <FieldLabel htmlFor="serialNumber">Número de sèrie</FieldLabel>
               <Input id="serialNumber" {...register("serialNumber")} />
             </Field>
+            {chromebook && (
+              <Field data-invalid={Boolean(errors.cartId)}>
+                <FieldLabel htmlFor="cartId">Carro</FieldLabel>
+                <Controller
+                  control={control}
+                  name="cartId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={toSelectItems(carts, (c) => c.id, (c) => c.name)}
+                    >
+                      <SelectTrigger id="cartId" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {carts.map((cart) => (
+                          <SelectItem key={cart.id} value={cart.id}>
+                            {cart.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={errors.cartId ? [errors.cartId] : undefined} />
+              </Field>
+            )}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel·la

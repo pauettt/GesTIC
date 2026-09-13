@@ -105,6 +105,11 @@ export default async function FormacioPage() {
                         action={deleteTrainingSession}
                         input={{ id: session.id }}
                         title="Eliminar aquesta sessió?"
+                        description={
+                          session._count.enrollments > 0
+                            ? `S'esborraran també les ${session._count.enrollments} inscripcions, i ningú no rebrà cap avís. No es pot desfer.`
+                            : "Aquesta acció no es pot desfer."
+                        }
                       />
                     </div>
                   )}

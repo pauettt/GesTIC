@@ -1,22 +1,23 @@
 import type { Route } from "next";
-import Link from "next/link";
 import {
   AlertTriangleIcon,
+  CalendarCheckIcon,
   DownloadIcon,
   HandCoinsIcon,
+  LaptopIcon,
   MapPinIcon,
   MessageCircleQuestionIcon,
   TicketIcon,
 } from "lucide-react";
 
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTimeFull } from "@/lib/date";
 import { daysOverdue } from "@/lib/loans";
-import { getCourseStats, getPendingWork } from "@/lib/panell-data";
+import { getCourseStats, getPendingWork, getStudentDataReminder } from "@/lib/panell-data";
 import { incidentPriorityLabels, incidentPriorityVariants } from "@/lib/labels";
 import { requireAdmin } from "@/lib/permissions";
 import { CourseMetrics } from "@/components/panell/course-metrics";
 import { WorkQueue } from "@/components/panell/work-queue";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Panell del coordinador" };
@@ -25,7 +26,11 @@ const who = (user: { name: string | null; email: string }) => user.name ?? user.
 
 export default async function PanellPage() {
   await requireAdmin();
-  const [work, stats] = await Promise.all([getPendingWork(), getCourseStats()]);
+  const [work, stats, studentDataReminder] = await Promise.all([
+    getPendingWork(),
+    getCourseStats(),
+    getStudentDataReminder(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -34,11 +39,26 @@ export default async function PanellPage() {
           <h1 className="text-2xl font-semibold">Panell del coordinador</h1>
           <p className="text-muted-foreground">Què necessita la teva atenció avui.</p>
         </div>
-        <Button variant="outline" nativeButton={false} render={<Link href="/espais" />}>
+        <ButtonLink variant="outline" href="/espais">
           <MapPinIcon className="size-4" />
           Gestiona aules i espais
-        </Button>
+        </ButtonLink>
       </div>
+
+      {studentDataReminder && (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm">
+              Queden <strong>{studentDataReminder.closed}</strong> sol·licituds tancades de
+              Chromebooks d&apos;alumnat, amb noms de menors. Es va decidir buidar-les en acabar el
+              curs.
+            </p>
+            <ButtonLink variant="outline" size="sm" href="/chromebooks">
+              Buida-les a Chromebooks
+            </ButtonLink>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <WorkQueue
@@ -92,6 +112,36 @@ export default async function PanellPage() {
             href: `/consultes/${query.id}` as Route,
             main: query.title,
             meta: `${who(query.author)} · ${formatDate(query.createdAt)}`,
+            badge: null,
+          }))}
+        />
+
+        <WorkQueue
+          title="Chromebooks per a l'alumnat"
+          icon={LaptopIcon}
+          empty="No hi ha sol·licituds de Chromebook pendents."
+          items={work.pendingStudentRequests.map((request) => ({
+            id: request.id,
+            href: "/chromebooks" as Route,
+            main: request.groupName
+              ? `Sol·licitud per a un alumne/a de ${request.groupName}`
+              : "Sol·licitud per a un alumne/a",
+            meta: `${who(request.tutor)} · ${formatDate(request.createdAt)}`,
+            badge: null,
+          }))}
+        />
+
+        <WorkQueue
+          title="Properes cites"
+          icon={CalendarCheckIcon}
+          empty="No hi ha cap cita demanada."
+          items={work.upcomingAppointments.map((appointment) => ({
+            id: appointment.id,
+            href: "/cites" as Route,
+            main: `${who(appointment.user)} · ${appointment.purpose}`,
+            meta: `${formatDateTimeFull(appointment.slot.startDate)}${
+              appointment.slot.openedBy ? ` · amb ${who(appointment.slot.openedBy)}` : ""
+            }`,
             badge: null,
           }))}
         />

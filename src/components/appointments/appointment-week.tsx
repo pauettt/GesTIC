@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import Link from "next/link";
+import type { Route } from "next";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
@@ -10,7 +10,7 @@ import {
   SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
 } from "@/lib/schedule";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { SlotCell, type SlotCellSlot } from "@/components/appointments/slot-cell";
 
 type Slot = SlotCellSlot & { startDate: Date };
@@ -23,12 +23,10 @@ type Slot = SlotCellSlot & { startDate: Date };
 export function AppointmentWeek({
   weekStart,
   slots,
-  currentUserId,
   canManage,
 }: {
   weekStart: Date;
   slots: Slot[];
-  currentUserId: string;
   canManage: boolean;
 }) {
   const days = SCHOOL_WEEKDAYS.map((label, index) => ({ label, date: addDays(weekStart, index) }));
@@ -45,25 +43,15 @@ export function AppointmentWeek({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          nativeButton={false}
-          render={<Link href={`/cites?week=${prevWeek}`} />}
-        >
+        <ButtonLink variant="outline" size="sm" href={`/cites?week=${prevWeek}` as Route}>
           <ChevronLeftIcon className="size-4" />
           Setmana anterior
-        </Button>
+        </ButtonLink>
         <p className="text-sm font-medium">{rangeLabel}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          nativeButton={false}
-          render={<Link href={`/cites?week=${nextWeek}`} />}
-        >
+        <ButtonLink variant="outline" size="sm" href={`/cites?week=${nextWeek}` as Route}>
           Setmana següent
           <ChevronRightIcon className="size-4" />
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-background">
@@ -107,7 +95,6 @@ export function AppointmentWeek({
                           period={period}
                           slot={slot}
                           canManage={canManage}
-                          isOwn={slot?.appointment?.userId === currentUserId}
                           isPast={isPastPeriod(zonedDateTime(dayKey, period.end))}
                         />
                       </td>

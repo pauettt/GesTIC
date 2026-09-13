@@ -103,6 +103,9 @@ export default async function ChromebooksPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {carts.map((cart) => {
           const available = cart.chromebooks.filter((cb) => cb.status === "DISPONIBLE").length;
+          // Els donats de baixa segueixen al carro amb el seu historial, però ja
+          // no compten com a equips que s'hi puguin fer servir.
+          const inService = cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length;
           return (
             <Link key={cart.id} href={`/chromebooks/${cart.id}`}>
               <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/50 hover:bg-muted/40">
@@ -127,7 +130,7 @@ export default async function ChromebooksPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">
-                    <span className="font-medium">{available}</span> / {cart.chromebooks.length}{" "}
+                    <span className="font-medium">{available}</span> / {inService}{" "}
                     disponibles
                   </p>
                 </CardContent>

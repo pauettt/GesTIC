@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+# Sessions de prova i identificadors que genera cada execució dels e2e
+/e2e/.auth/
 
 # next.js
 /.next/
@@ -32,6 +36,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# La plantilla sí que va al repositori: sense ella, qui cloni el projecte no sap
+# quines variables calen. Abans `.env*` també se l'enduia i no s'havia pujat mai.
+!.env.example
 
 # vercel
 .vercel

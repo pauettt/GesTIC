@@ -19,7 +19,7 @@ import { InventorySearch } from "@/components/inventory/inventory-search";
 import { LoanableItemsView } from "@/components/inventory/loanable-items-view";
 import { ActiveLoans, PendingLoanRequests } from "@/components/inventory/loan-queues";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -111,36 +111,36 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          <Button
+          <ButtonLink
             size="sm"
-            nativeButton={false}
             variant={!categoryFilter ? "default" : "outline"}
-            render={<Link href={filterHref({ category: "" })} />}
+            current={!categoryFilter}
+            href={filterHref({ category: "" })}
           >
             Totes
-          </Button>
+          </ButtonLink>
           {categories.map((category) => (
-            <Button
+            <ButtonLink
               key={category.id}
               size="sm"
-              nativeButton={false}
               variant={categoryFilter === category.id ? "default" : "outline"}
-              render={<Link href={filterHref({ category: category.id })} />}
+              current={categoryFilter === category.id}
+              href={filterHref({ category: category.id })}
             >
               {category.name}
-            </Button>
+            </ButtonLink>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <Button
+          <ButtonLink
             size="sm"
-            nativeButton={false}
             variant={onlyLoanable ? "default" : "outline"}
-            render={<Link href={filterHref({ prestable: !onlyLoanable })} />}
+            current={onlyLoanable}
+            href={filterHref({ prestable: !onlyLoanable })}
           >
             <HandCoinsIcon className="size-4" />
             Només prestable
-          </Button>
+          </ButtonLink>
           <Separator orientation="vertical" className="h-5" />
           <CategoryManagerDialog
             categories={categories.map((category) => ({

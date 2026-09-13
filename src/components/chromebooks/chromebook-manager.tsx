@@ -1,5 +1,6 @@
 import type { ChromebookStatus } from "@prisma/client";
 
+import type { CartOption } from "@/components/chromebooks/chromebook-dialog";
 import { AddChromebookSquare, ChromebookSquare } from "@/components/chromebooks/chromebook-square";
 
 type Note = {
@@ -21,17 +22,19 @@ type Chromebook = {
 
 export function ChromebookManager({
   cartId,
+  carts,
   chromebooks,
 }: {
   cartId: string;
+  carts: CartOption[];
   chromebooks: Chromebook[];
 }) {
   return (
     <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
       {chromebooks.map((chromebook) => (
-        <ChromebookSquare key={chromebook.id} cartId={cartId} chromebook={chromebook} />
+        <ChromebookSquare key={chromebook.id} cartId={cartId} carts={carts} chromebook={chromebook} />
       ))}
-      <AddChromebookSquare cartId={cartId} />
+      <AddChromebookSquare cartId={cartId} carts={carts} />
     </div>
   );
 }

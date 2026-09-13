@@ -18,7 +18,7 @@ import {
   IncidentStatusSelect,
 } from "@/components/incidents/incident-badge-selects";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import {
   Table,
   TableBody,
@@ -182,36 +182,36 @@ export default async function IncidenciesPage({
             )}
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/incidencies/nova" />}>
+        <ButtonLink href="/incidencies/nova">
           <PlusIcon className="size-4" />
           Nova incidència
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((filter) => (
-          <Button
+          <ButtonLink
             key={filter.value}
             size="sm"
             variant={statusFilter === filter.value ? "default" : "outline"}
-            nativeButton={false}
-            render={<Link href={filterHref({ status: filter.value })} />}
+            current={statusFilter === filter.value}
+            href={filterHref({ status: filter.value })}
           >
             {filter.label}
-          </Button>
+          </ButtonLink>
         ))}
         {isAdmin(user.role) && (
           <>
             <span className="mx-1 h-5 w-px bg-border" />
-            <Button
+            <ButtonLink
               size="sm"
               variant={onlyMine ? "default" : "outline"}
-              nativeButton={false}
-              render={<Link href={filterHref({ mine: !onlyMine })} />}
+              current={onlyMine}
+              href={filterHref({ mine: !onlyMine })}
             >
               <UserIcon className="size-4" />
               Les meves
-            </Button>
+            </ButtonLink>
           </>
         )}
 
@@ -219,24 +219,24 @@ export default async function IncidenciesPage({
           <>
             <span className="mx-1 h-5 w-px bg-border" />
             {schoolYears.map((year) => (
-              <Button
+              <ButtonLink
                 key={year}
                 size="sm"
                 variant={schoolYear === year ? "default" : "outline"}
-                nativeButton={false}
-                render={<Link href={filterHref({ curs: year })} />}
+                current={schoolYear === year}
+                href={filterHref({ curs: year })}
               >
                 {year === currentSchoolYear ? `Curs ${year}` : year}
-              </Button>
+              </ButtonLink>
             ))}
-            <Button
+            <ButtonLink
               size="sm"
               variant={schoolYear === "TOTS" ? "default" : "outline"}
-              nativeButton={false}
-              render={<Link href={filterHref({ curs: "TOTS" })} />}
+              current={schoolYear === "TOTS"}
+              href={filterHref({ curs: "TOTS" })}
             >
               Tots els cursos
-            </Button>
+            </ButtonLink>
           </>
         )}
       </div>

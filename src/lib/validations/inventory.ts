@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 import { isBlobUrl } from "@/lib/blob";
+import { isDateKey } from "@/lib/validations/common";
+
+const optionalDate = z
+  .string()
+  .refine((value) => !value || isDateKey(value), "La data no és vàlida")
+  .optional()
+  .or(z.literal(""));
 
 export const upsertInventoryItemSchema = z.object({
   id: z.string().optional(),
@@ -16,8 +23,8 @@ export const upsertInventoryItemSchema = z.object({
   spaceId: z.string().optional().or(z.literal("")),
   status: z.enum(["ACTIU", "EN_REPARACIO", "BAIXA"]),
   isLoanable: z.boolean(),
-  purchaseDate: z.string().optional().or(z.literal("")),
-  warrantyUntil: z.string().optional().or(z.literal("")),
+  purchaseDate: optionalDate,
+  warrantyUntil: optionalDate,
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 

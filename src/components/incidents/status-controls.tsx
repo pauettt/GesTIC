@@ -59,7 +59,7 @@ export function StatusControls({
               setResolving(true);
               return;
             }
-            statusAction.run({ incidentId, status: value as IncidentStatus });
+            statusAction.run({ incidentId, status: value as IncidentStatus, expectedStatus: status });
           }}
           items={incidentStatusLabels}
         >
@@ -123,6 +123,7 @@ export function StatusControls({
 
       <ResolveIncidentDialog
         incidentId={incidentId}
+        currentStatus={status}
         reporterName={reporterName}
         notifies={notifies}
         open={resolving}

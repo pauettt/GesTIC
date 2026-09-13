@@ -6,6 +6,7 @@ import { LaptopIcon, QrCodeIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
+import { defaultWeekStart } from "@/lib/schedule";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
@@ -18,29 +19,44 @@ export default async function CartDetailPage({
   searchParams,
 }: PageProps<"/chromebooks/[id]">) {
   const user = await requireUser();
+  const admin = isAdmin(user.role);
   const { id } = await params;
   const { week } = await searchParams;
 
-  const weekStart = startOfWeek(typeof week === "string" ? new Date(week) : new Date());
+  // Igual que a /cites: sense setmana a la URL s'obre la que toca mirar, que en
+  // cap de setmana ja és la vinent, i una data inventada no tomba la pàgina.
+  const requested = typeof week === "string" ? new Date(week) : null;
+  const weekStart =
+    requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
   const weekEnd = addDays(weekStart, 7);
 
-  const [cart, spaces] = await Promise.all([
+  const [cart, spaces, carts] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
         space: true,
         chromebooks: {
           orderBy: { assetTag: "asc" },
-          include: { notes: { include: { author: true }, orderBy: { createdAt: "desc" } } },
+          include: {
+            notes: {
+              include: { author: { select: { name: true, email: true } } },
+              orderBy: { createdAt: "desc" },
+            },
+          },
         },
         reservations: {
           where: { status: "CONFIRMADA", startDate: { lt: weekEnd }, endDate: { gte: weekStart } },
-          include: { user: true },
+          // La graella viatja al navegador de tot el professorat: només el nom
+          // i el correu de qui ha reservat, no la fila d'usuari sencera.
+          include: { user: { select: { name: true, email: true } } },
           orderBy: { startDate: "asc" },
         },
       },
     }),
     db.space.findMany({ orderBy: { name: "asc" } }),
+    admin
+      ? db.cart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : Promise.resolve([]),
   ]);
 
   if (!cart) notFound();
@@ -84,7 +100,7 @@ export default async function CartDetailPage({
               </div>
             </div>
           </div>
-          {isAdmin(user.role) && (
+          {admin && (
             <div className="flex gap-2">
               <CartDialog
                 spaces={spaces}
@@ -96,7 +112,7 @@ export default async function CartDetailPage({
                   imageUrl: cart.imageUrl ?? "",
                 }}
                 trigger={
-                  <button className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted">
+                  <button className="rounded-md border px-2 py-1.5 text-sm hover:bg-muted">
                     Edita
                   </button>
                 }
@@ -105,7 +121,7 @@ export default async function CartDetailPage({
                 action={deleteCart}
                 input={{ id: cart.id }}
                 title="Eliminar aquest carro?"
-                description="Els Chromebooks del carro no s'eliminaran, però quedaran sense carro assignat. Les reserves associades sí que s'eliminaran."
+                description="Només es pot esborrar un carro buit: si hi queden Chromebooks, mou-los abans a un altre carro. Les reserves del carro s'eliminaran, i les claus que hi estiguin lligades quedaran sense carro."
               />
             </div>
           )}
@@ -122,11 +138,11 @@ export default async function CartDetailPage({
           weekStart={weekStart}
           reservations={cart.reservations}
           currentUserId={user.id}
-          isAdmin={isAdmin(user.role)}
+          isAdmin={admin}
         />
       </div>
 
-      {isAdmin(user.role) && (
+      {admin && (
         <>
           <Separator />
           <div>
@@ -145,9 +161,6 @@ export default async function CartDetailPage({
                 <span className="size-3 rounded-sm border-2 border-green-400 bg-green-100" /> Disponible
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-3 rounded-sm border-2 border-blue-400 bg-blue-100" /> Reservat
-              </span>
-              <span className="flex items-center gap-1.5">
                 <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> En incidència
               </span>
               <span className="flex items-center gap-1.5">
@@ -155,9 +168,10 @@ export default async function CartDetailPage({
               </span>
             </div>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un Chromebook per veure-hi detalls, editar-lo o eliminar-lo.
+              Clica un Chromebook per veure&apos;n els detalls, editar-lo, moure&apos;l a un altre carro
+              o donar-lo de baixa.
             </p>
-            <ChromebookManager cartId={cart.id} chromebooks={cart.chromebooks} />
+            <ChromebookManager cartId={cart.id} carts={carts} chromebooks={cart.chromebooks} />
           </div>
         </>
       )}

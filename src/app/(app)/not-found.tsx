@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { SearchXIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 
 export default function NotFound() {
   return (
@@ -15,9 +14,7 @@ export default function NotFound() {
           Potser l&apos;element s&apos;ha eliminat o no hi tens accés.
         </p>
       </div>
-      <Button nativeButton={false} render={<Link href="/" />}>
-        Torna a l&apos;inici
-      </Button>
+      <ButtonLink href="/">Torna a l&apos;inici</ButtonLink>
     </div>
   );
 }

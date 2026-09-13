@@ -17,20 +17,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { IncidentPhotosField } from "@/components/incidents/incident-photos-field";
 
-type Cart = { id: string; name: string; chromebooks: { id: string; assetTag: string }[] };
+type ChromebookOption = { id: string; assetTag: string };
+type Cart = { id: string; name: string; chromebooks: ChromebookOption[] };
 
 type ObjectOption =
   | { value: string; label: string; targetType: "CART" }
   | { value: string; label: string; targetType: "CHROMEBOOK"; chromebookId: string };
 
-export function CartIncidentForm({ carts }: { carts: Cart[] }) {
+/**
+ * Valor del primer desplegable per als equips de préstec a l'alumnat. No són de
+ * cap carro, però qui reporta l'avaria els busca al mateix lloc que la resta de
+ * Chromebooks. El servidor no el fa servir: per a un Chromebook només mira quin.
+ */
+const STUDENT_POOL = "__prestec-alumnat__";
+
+const chromebookOption = (chromebook: ChromebookOption): ObjectOption => ({
+  value: `chromebook:${chromebook.id}`,
+  label: `Chromebook ${chromebook.assetTag}`,
+  targetType: "CHROMEBOOK",
+  chromebookId: chromebook.id,
+});
+
+export function CartIncidentForm({
+  carts,
+  studentPool,
+}: {
+  carts: Cart[];
+  /** Equips de préstec a l'alumnat. Només l'identificador: de qui és, no cal saber-ho. */
+  studentPool: ChromebookOption[];
+}) {
   const router = useRouter();
   const [objectValue, setObjectValue] = useState("");
   const {
     control,
     register,
     handleSubmit,
-        setValue,
+    setValue,
     formState: { errors },
   } = useForm<CreateIncidentInput>({
     resolver: zodResolver(createIncidentSchema),
@@ -47,22 +69,22 @@ export function CartIncidentForm({ carts }: { carts: Cart[] }) {
   const { run, isPending } = useServerAction(createIncident);
   const cartId = useWatch({ control, name: "cartId" });
   const targetType = useWatch({ control, name: "targetType" });
+  const isStudentPool = cartId === STUDENT_POOL;
   const selectedCart = carts.find((cart) => cart.id === cartId);
 
+  const cartItems = {
+    ...toSelectItems(carts, (c) => c.id, (c) => c.name),
+    ...(studentPool.length > 0 ? { [STUDENT_POOL]: "Préstec a l'alumnat" } : {}),
+  };
+
   const objectOptions = useMemo<ObjectOption[]>(() => {
+    if (isStudentPool) return studentPool.map(chromebookOption);
     if (!selectedCart) return [];
     return [
       { value: "cart", label: "El carro sencer", targetType: "CART" },
-      ...selectedCart.chromebooks.map(
-        (chromebook): ObjectOption => ({
-          value: `chromebook:${chromebook.id}`,
-          label: `Chromebook ${chromebook.assetTag}`,
-          targetType: "CHROMEBOOK",
-          chromebookId: chromebook.id,
-        }),
-      ),
+      ...selectedCart.chromebooks.map(chromebookOption),
     ];
-  }, [selectedCart]);
+  }, [isStudentPool, selectedCart, studentPool]);
 
   function handleCartChange(value: string | null) {
     setValue("cartId", value ?? "");
@@ -89,11 +111,7 @@ export function CartIncidentForm({ carts }: { carts: Cart[] }) {
       <FieldGroup>
         <Field data-invalid={Boolean(errors.cartId)}>
           <FieldLabel htmlFor="cart-cartId">1. Quin carro?</FieldLabel>
-          <Select
-            value={cartId}
-            onValueChange={handleCartChange}
-            items={toSelectItems(carts, (c) => c.id, (c) => c.name)}
-          >
+          <Select value={cartId} onValueChange={handleCartChange} items={cartItems}>
             <SelectTrigger id="cart-cartId" className="w-full">
               <SelectValue placeholder="Selecciona el carro (no cal saber en quina aula és ara)" />
             </SelectTrigger>
@@ -103,6 +121,9 @@ export function CartIncidentForm({ carts }: { carts: Cart[] }) {
                   {cart.name}
                 </SelectItem>
               ))}
+              {studentPool.length > 0 && (
+                <SelectItem value={STUDENT_POOL}>Préstec a l&apos;alumnat</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <FieldError errors={errors.cartId ? [errors.cartId] : undefined} />
@@ -110,7 +131,9 @@ export function CartIncidentForm({ carts }: { carts: Cart[] }) {
 
         {cartId && (
           <Field data-invalid={Boolean(errors.chromebookId)}>
-            <FieldLabel htmlFor="cart-objectId">2. El carro sencer o un Chromebook concret?</FieldLabel>
+            <FieldLabel htmlFor="cart-objectId">
+              {isStudentPool ? "2. Quin Chromebook?" : "2. El carro sencer o un Chromebook concret?"}
+            </FieldLabel>
             <Select
               value={objectValue}
               onValueChange={handleObjectChange}

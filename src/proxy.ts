@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const SESSION_COOKIE_NAMES = [
-  "__Secure-authjs.session-token",
-  "authjs.session-token",
-];
+import { SESSION_COOKIE_NAMES } from "@/lib/session-cookie";
 
 // Comprovació optimista: només mira si existeix la cookie de sessió.
 // La validació real (usuari vàlid + rol) es fa sempre a cada layout/Server Action,

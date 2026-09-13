@@ -1,3 +1,5 @@
+import type { LoanRequestStatus } from "@prisma/client";
+
 /**
  * Un préstec està fora de termini quan la data prevista de retorn ja ha passat
  * i encara no s'ha marcat com a retornat. `endDate` es desa a les 23:59 del dia
@@ -9,4 +11,20 @@ export function isOverdue(endDate: Date, now: Date = new Date()) {
 
 export function daysOverdue(endDate: Date, now: Date = new Date()) {
   return Math.max(0, Math.floor((now.getTime() - endDate.getTime()) / 86_400_000));
+}
+
+/**
+ * Un préstec es pot retirar mentre no hagi començat: pendent, o aprovat però
+ * amb la data d'inici encara per arribar.
+ *
+ * Un cop començat, l'equip pot ser ja a les mans de qui l'ha demanat, i el que
+ * toca és registrar-ne la devolució, que fa la coordinació quan el rep. Si es
+ * pogués cancel·lar, desapareixeria dels préstecs actius, dels vençuts i dels
+ * recordatoris amb l'equip encara fora, i l'aplicació el donaria per lliure.
+ */
+export function isCancellable(
+  loan: { status: LoanRequestStatus; startDate: Date },
+  now: Date = new Date(),
+) {
+  return loan.status === "PENDENT" || (loan.status === "APROVADA" && loan.startDate > now);
 }

@@ -40,6 +40,16 @@ export function getPeriodById(id: number): SchoolPeriod | undefined {
 }
 
 /**
+ * Dilluns a divendres, per a una data "YYYY-MM-DD". Les graelles només ensenyen
+ * aquests dies, i una acció cridada a mà no n'ha de poder crear cap altre.
+ */
+export function isSchoolDay(dateKey: string): boolean {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+  return weekday >= 1 && weekday <= 5;
+}
+
+/**
  * Setmana que ha de sortir per defecte en una graella horària.
  *
  * Si de la setmana en curs ja no en queda cap hora viva —un dissabte, o

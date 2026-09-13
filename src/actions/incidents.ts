@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { OPEN_INCIDENT_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { sendIncidentResolvedEmail } from "@/lib/email";
-import { notifyIncidentReported } from "@/lib/notifications";
+import { notifyIncidentComment, notifyIncidentReported } from "@/lib/notifications";
 import { getBaseUrl } from "@/lib/url";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAdmin, requireAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
@@ -14,6 +16,7 @@ import {
   googleServiceLabels,
   incidentCategoryDefaultPriority,
   incidentCategoryLabels,
+  incidentStatusLabels,
 } from "@/lib/labels";
 import {
   addCommentSchema,
@@ -39,19 +42,28 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
   const limited = await checkRateLimit("incident", user.id);
   if (limited) return { success: false, error: limited };
 
+  // Tot el que la incidència assenyala s'ha de poder trobar: si algú ho ha
+  // esborrat mentre el formulari era obert, val més dir-ho que fallar en desar.
   const space = data.spaceId ? await db.space.findUnique({ where: { id: data.spaceId } }) : null;
+  if (data.spaceId && !space) return { success: false, error: "Aquesta aula ja no existeix" };
   const spaceSuffix = space ? ` — ${space.name}` : "";
 
   let title = `Incidència general${spaceSuffix}`;
   if (data.targetType === "INVENTORY_ITEM" && data.inventoryItemId) {
     const item = await db.inventoryItem.findUnique({ where: { id: data.inventoryItemId } });
-    if (item) title = `${item.brand} ${item.model}${spaceSuffix}`;
+    if (!item) return { success: false, error: "Aquest equip ja no és a l'inventari" };
+    title = `${item.brand} ${item.model}${spaceSuffix}`;
   } else if (data.targetType === "CART" && data.cartId) {
     const cart = await db.cart.findUnique({ where: { id: data.cartId } });
-    if (cart) title = `Carro ${cart.name}${spaceSuffix}`;
+    if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+    title = `Carro ${cart.name}${spaceSuffix}`;
   } else if (data.targetType === "CHROMEBOOK" && data.chromebookId) {
     const chromebook = await db.chromebook.findUnique({ where: { id: data.chromebookId } });
-    if (chromebook) title = `Chromebook ${chromebook.assetTag}${spaceSuffix}`;
+    if (!chromebook) return { success: false, error: "Aquest Chromebook ja no existeix" };
+    if (chromebook.status === "BAIXA") {
+      return { success: false, error: "Aquest Chromebook està donat de baixa" };
+    }
+    title = `Chromebook ${chromebook.assetTag}${spaceSuffix}`;
   } else if (data.targetType === "GOOGLE_WORKSPACE" && data.googleService) {
     title = `Entorn Google — ${googleServiceLabels[data.googleService]}`;
   }
@@ -82,11 +94,8 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
     });
   }
 
-  if (data.targetType === "CHROMEBOOK" && data.chromebookId) {
-    await db.chromebook.update({
-      where: { id: data.chromebookId },
-      data: { status: "EN_INCIDENCIA" },
-    });
+  if (incident.chromebookId) {
+    await syncChromebookStatus(db, incident.chromebookId);
   }
 
   await notifyIncidentReported(incident.id);
@@ -107,6 +116,34 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
   if (!chromebook) {
     throw new Error("Aquest Chromebook no existeix");
   }
+  // La pàgina del QR ja ho diu i no ensenya els botons: això és per si algú hi
+  // arriba igualment.
+  if (chromebook.status === "BAIXA") {
+    redirect(`/q/chromebook/${chromebookId}`);
+  }
+
+  // Un doble toc al mòbil crearia la mateixa incidència dues vegades i avisaria
+  // dos cops tota la coordinació. Si aquesta persona ja té oberta la mateixa
+  // avaria d'aquest equip, se la porta a la que ja hi ha.
+  const duplicate = await db.incident.findFirst({
+    where: {
+      reporterId: user.id,
+      chromebookId,
+      category,
+      status: { in: OPEN_INCIDENT_STATUSES },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    redirect(`/incidencies/${duplicate.id}`);
+  }
+
+  // El mateix límit que el formulari: cada incidència avisa per correu tota la
+  // coordinació, i des del QR n'hi ha prou amb un toc per crear-ne una.
+  const limited = await checkRateLimit("incident", user.id);
+  if (limited) {
+    redirect(`/q/chromebook/${chromebookId}?avis=limit`);
+  }
 
   const categoryLabel = incidentCategoryLabels[category];
   const incident = await db.incident.create({
@@ -121,7 +158,7 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
     },
   });
 
-  await db.chromebook.update({ where: { id: chromebookId }, data: { status: "EN_INCIDENCIA" } });
+  await syncChromebookStatus(db, chromebookId);
 
   await notifyIncidentReported(incident.id);
 
@@ -142,13 +179,15 @@ export async function addComment(input: unknown): Promise<ActionResult> {
     return { success: false, error: "No tens permís per comentar aquesta incidència" };
   }
 
-  await db.incidentComment.create({
+  const comment = await db.incidentComment.create({
     data: {
       incidentId: parsed.data.incidentId,
       authorId: user.id,
       body: parsed.data.body,
     },
   });
+
+  await notifyIncidentComment(comment.id);
 
   revalidatePath(`/incidencies/${parsed.data.incidentId}`);
   return { success: true };
@@ -160,7 +199,7 @@ export async function updateIncidentStatus(input: unknown): Promise<ActionResult
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { incidentId, status, note } = parsed.data;
+  const { incidentId, status, expectedStatus, note } = parsed.data;
 
   const before = await db.incident.findUnique({
     where: { id: incidentId },
@@ -168,26 +207,41 @@ export async function updateIncidentStatus(input: unknown): Promise<ActionResult
   });
   if (!before) return { success: false, error: "La incidència no existeix" };
 
+  // Som tres a coordinació. Si l'estat ja no és el que tenia a la pantalla qui
+  // fa el canvi, algú altre l'acaba de tocar: abans guanyava l'últim en silenci.
+  // L'actualització també va condicionada a l'estat llegit, per als dos clics
+  // que arriben alhora.
   const isClosing = status === "RESOLTA" || status === "TANCADA";
-  const incident = await db.incident.update({
-    where: { id: incidentId },
-    data: {
-      status,
-      // Es conserva la data de la primera resolució: si després es tanca, no
-      // s'ha de perdre quan es va resoldre realment.
-      resolvedAt: isClosing ? (before.resolvedAt ?? new Date()) : null,
-    },
-  });
+  const updated =
+    expectedStatus && before.status !== expectedStatus
+      ? { count: 0 }
+      : await db.incident.updateMany({
+          where: { id: incidentId, status: before.status },
+          data: {
+            status,
+            // Es conserva la data de la primera resolució: si després es tanca,
+            // no s'ha de perdre quan es va resoldre realment.
+            resolvedAt: isClosing ? (before.resolvedAt ?? new Date()) : null,
+          },
+        });
+  if (updated.count === 0) {
+    revalidatePath(`/incidencies/${incidentId}`);
+    revalidatePath("/incidencies");
+    return {
+      success: false,
+      error: `Algú altre acaba de canviar aquesta incidència (ara és «${incidentStatusLabels[before.status]}»). Torna-ho a mirar abans de tocar-la.`,
+    };
+  }
 
   if (note) {
     await db.incidentComment.create({ data: { incidentId, authorId: admin.id, body: note } });
   }
 
-  if (incident.chromebookId && isClosing) {
-    await db.chromebook.update({
-      where: { id: incident.chromebookId },
-      data: { status: "DISPONIBLE" },
-    });
+  // Tancar-la no vol dir que l'equip torni a estar bé —en pot tenir una altra
+  // d'oberta, o ser a casa d'un alumne— i reobrir-la el torna a treure de
+  // servei. Per això l'estat es recalcula en comptes d'escriure-hi DISPONIBLE.
+  if (before.chromebookId) {
+    await syncChromebookStatus(db, before.chromebookId);
   }
 
   revalidatePath(`/incidencies/${incidentId}`);
@@ -264,7 +318,7 @@ export async function assignIncident(input: unknown): Promise<ActionResult> {
  * dades es queda a mitges.
  */
 export async function deleteIncident(input: unknown): Promise<ActionResult> {
-  await requireSuperAdmin();
+  const superAdmin = await requireSuperAdmin();
   const parsed = deleteIncidentSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
@@ -272,7 +326,7 @@ export async function deleteIncident(input: unknown): Promise<ActionResult> {
 
   const incident = await db.incident.findUnique({
     where: { id: parsed.data.incidentId },
-    include: { attachments: true },
+    include: { attachments: true, reporter: { select: { name: true, email: true } } },
   });
   if (!incident) return { success: false, error: "La incidència no existeix" };
 
@@ -289,6 +343,19 @@ export async function deleteIncident(input: unknown): Promise<ActionResult> {
   }
 
   await db.incident.delete({ where: { id: incident.id } });
+
+  // Què s'ha esborrat, de qui era i de quan: la incidència ja no hi és per dir-ho.
+  await recordAudit(
+    superAdmin.id,
+    "incident.delete",
+    `«${incident.title}», reportada per ${incident.reporter.name ?? incident.reporter.email} el ${incident.createdAt.toISOString().slice(0, 10)}, amb ${incident.attachments.length} fitxers adjunts`,
+  );
+
+  // Una incidència oberta que s'esborra (un duplicat, una prova) no pot deixar
+  // l'equip marcat com a avariat per sempre.
+  if (incident.chromebookId) {
+    await syncChromebookStatus(db, incident.chromebookId);
+  }
 
   revalidatePath("/incidencies");
   redirect("/incidencies");

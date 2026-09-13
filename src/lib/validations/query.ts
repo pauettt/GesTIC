@@ -11,7 +11,11 @@ export const addQueryCommentSchema = z.object({
   body: z.string().trim().min(1, "Escriu un comentari").max(2000),
 });
 
+const queryStatus = z.enum(["OBERTA", "EN_CURS", "RESOLTA", "TANCADA"]);
+
 export const updateQueryStatusSchema = z.object({
   queryId: z.string(),
-  status: z.enum(["OBERTA", "EN_CURS", "RESOLTA", "TANCADA"]),
+  status: queryStatus,
+  // L'estat que veia qui fa el canvi: si ja no hi és, algú altre l'ha tocat.
+  expectedStatus: queryStatus.optional(),
 });

@@ -1,10 +1,13 @@
+import { QrCodeIcon } from "lucide-react";
 import type { ChromebookStatus } from "@prisma/client";
 
 import { deleteChromebook } from "@/actions/chromebooks";
 import { chromebookStatusLabels, chromebookStatusVariants } from "@/lib/labels";
+import { RetireChromebookButton } from "@/components/chromebooks/retire-chromebook-button";
 import { StudentChromebookDialog } from "@/components/chromebooks/student-chromebook-dialog";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -33,6 +36,9 @@ type PoolChromebook = {
  */
 export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChromebook[] }) {
   const available = chromebooks.filter((cb) => cb.status === "DISPONIBLE").length;
+  // Els donats de baixa es queden a la llista amb el seu historial, però no
+  // compten com a equips del pool.
+  const inService = chromebooks.filter((cb) => cb.status !== "BAIXA").length;
 
   return (
     <Card>
@@ -41,15 +47,23 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
           <CardTitle>Chromebooks de préstec a l&apos;alumnat</CardTitle>
           <p className="text-sm text-muted-foreground">
             Equips que no són de cap carro i que es deixen a un alumne per a tot el curs.{" "}
-            {chromebooks.length > 0 && (
+            {inService > 0 && (
               <>
-                <span className="font-medium text-foreground">{available}</span> de{" "}
-                {chromebooks.length} lliures.
+                <span className="font-medium text-foreground">{available}</span> de {inService}{" "}
+                lliures.
               </>
             )}
           </p>
         </div>
-        <StudentChromebookDialog />
+        <div className="flex flex-wrap gap-2">
+          {inService > 0 && (
+            <ButtonLink variant="outline" size="sm" href="/chromebooks/alumnat/etiquetes">
+              <QrCodeIcon className="size-4" />
+              Etiquetes QR
+            </ButtonLink>
+          )}
+          <StudentChromebookDialog />
+        </div>
       </CardHeader>
       <CardContent>
         {chromebooks.length === 0 ? (
@@ -66,7 +80,7 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                   <TableHead>Marca i model</TableHead>
                   <TableHead>Núm. de sèrie</TableHead>
                   <TableHead>Estat</TableHead>
-                  <TableHead className="w-24 text-right">Accions</TableHead>
+                  <TableHead className="text-right">Accions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -86,6 +100,10 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
+                        <RetireChromebookButton
+                          chromebookId={chromebook.id}
+                          retired={chromebook.status === "BAIXA"}
+                        />
                         <StudentChromebookDialog
                           chromebook={{
                             id: chromebook.id,
@@ -104,7 +122,7 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                           action={deleteChromebook}
                           input={{ id: chromebook.id }}
                           title="Eliminar aquest Chromebook?"
-                          description="Desapareixerà del pool de préstec. Si està assignat a un alumne, primer cal registrar-ne la devolució."
+                          description="Desapareixerà del pool de préstec amb el seu historial. Si només ha deixat de funcionar, dona'l de baixa. Si està assignat a un alumne, primer cal registrar-ne la devolució."
                         />
                       </div>
                     </TableCell>

@@ -38,9 +38,15 @@ model User {
   isTutor       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   lastLoginAt   DateTime?
+  // Accés retirat pel superadministrador: algú que ja no és al centre però que
+  // encara té el compte de Google actiu (una substitució acabada, un trasllat).
+  // L'usuari no s'esborra perquè el que va fer —incidències, préstecs, claus—
+  // ha de continuar dient qui ho va fer.
+  disabledAt    DateTime?
 
-  accounts Account[]
-  sessions Session[]
+  accounts    Account[]
+  sessions    Session[]
+  auditEvents AuditEvent[]
 
   reportedIncidents     Incident[]           @relation("IncidentReporter")
   assignedIncidents     Incident[]           @relation("IncidentAssignee")
@@ -58,6 +64,28 @@ model User {
   respondedStudentDevices StudentDeviceRequest[] @relation("StudentDeviceResponder")
   appointments            Appointment[]
   openedAppointmentSlots  AppointmentSlot[]      @relation("AppointmentSlotOpener")
+}
+
+/**
+ * Registre de les accions de govern: canvis de permisos, accessos retirats,
+ * esborrats definitius i neteges de dades. Permet respondre "qui ho va fer i
+ * quan" amb tres persones amb permisos de coordinació i dades de menors pel mig.
+ *
+ * `action` és un codi estable per filtrar (p. ex. `user.role`); va com a text i
+ * no com a enum perquè afegir-ne un de nou no demani una migració. El resum ja
+ * va redactat i no porta mai dades de l'alumnat: el registre dura més que les
+ * dades que descriu.
+ */
+model AuditEvent {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  summary   String   @db.Text
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }
 
 model Account {
@@ -205,9 +233,15 @@ model LoanRequest {
 // Carros de Chromebooks
 // ---------------------------------------------------------------------------
 
+// L'estat no l'escriu cada acció pel seu compte: el calcula
+// `syncChromebookStatus` (src/lib/chromebook-status.ts) a partir de les
+// incidències obertes i de si un alumne té l'equip. Només BAIXA es posa i es
+// treu a mà.
 // ASSIGNAT: equip del pool de préstec individual que ara té un alumne a casa.
-// És un estat a part de RESERVAT (que és de carro, per hores) perquè dura tot
-// el curs i no el pot alliberar cap horari: només es tanca amb la devolució.
+// Dura tot el curs i només el tanca la devolució.
+// RESERVAT: no el fa servir cap codi, perquè les reserves són del carro sencer i
+// no de cada equip. Es manté perquè treure un valor d'un enum de Postgres
+// demana recrear el tipus amb una migració, i no fa cap mal.
 enum ChromebookStatus {
   DISPONIBLE
   RESERVAT

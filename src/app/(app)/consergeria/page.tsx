@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { HistoryIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
@@ -9,6 +8,7 @@ import { DeliverKeyDialog } from "@/components/keys/deliver-key-dialog";
 import { RemindKeyButton, ReturnKeyButton } from "@/components/keys/key-loan-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -46,7 +46,13 @@ export default async function ConsergeriaPage() {
       orderBy: { number: "asc" },
     }),
     db.concierge.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
-    db.user.findMany({ where: { role: "PROFESSOR" }, orderBy: { name: "asc" } }),
+    // Tot el claustre, coordinació inclosa: els de coordinació també fan classe
+    // i també baixen a buscar claus. Només en queda fora el compte de consergeria.
+    // Sense qui ja no té accés: ja no és al centre i no se li ha d'entregar res.
+    db.user.findMany({
+      where: { role: { not: "CONSERGERIA" }, disabledAt: null },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const todayReservations = reservations.filter((r) => madridDateKey(r.startDate) === today);
@@ -103,18 +109,14 @@ export default async function ConsergeriaPage() {
               </Button>
             }
           />
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href="/consergeria/historial" />}
-          >
+          <ButtonLink variant="outline" href="/consergeria/historial">
             <HistoryIcon className="size-4" />
             Historial
-          </Button>
-          <Button nativeButton={false} render={<Link href="/consergeria/claus" />}>
+          </ButtonLink>
+          <ButtonLink href="/consergeria/claus">
             <SettingsIcon className="size-4" />
             Gestiona les claus
-          </Button>
+          </ButtonLink>
         </div>
       </div>
 

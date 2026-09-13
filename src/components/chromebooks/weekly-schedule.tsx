@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import Link from "next/link";
+import type { Route } from "next";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
@@ -10,7 +10,7 @@ import {
   SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
 } from "@/lib/schedule";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { ReservationCell } from "@/components/chromebooks/reservation-cell";
 
 type Reservation = {
@@ -50,25 +50,23 @@ export function WeeklySchedule({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <Button
+        <ButtonLink
           variant="outline"
           size="sm"
-          nativeButton={false}
-          render={<Link href={`/chromebooks/${cartId}?week=${prevWeek}`} />}
+          href={`/chromebooks/${cartId}?week=${prevWeek}` as Route}
         >
           <ChevronLeftIcon className="size-4" />
           Setmana anterior
-        </Button>
+        </ButtonLink>
         <p className="text-sm font-medium">{rangeLabel}</p>
-        <Button
+        <ButtonLink
           variant="outline"
           size="sm"
-          nativeButton={false}
-          render={<Link href={`/chromebooks/${cartId}?week=${nextWeek}`} />}
+          href={`/chromebooks/${cartId}?week=${nextWeek}` as Route}
         >
           Setmana següent
           <ChevronRightIcon className="size-4" />
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-background">

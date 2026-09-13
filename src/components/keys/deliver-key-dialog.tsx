@@ -159,7 +159,7 @@ export function DeliverKeyDialog({
             </div>
             {concierges.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No hi ha cap conserge donat d&apos;alta. L&apos;administrador/a els crea a
+                No hi ha cap conserge donat d&apos;alta. El superadministrador/a els crea a
                 &quot;Usuaris i permisos&quot;.
               </p>
             )}

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { notifyQueryAnswered, notifyQueryCreated } from "@/lib/notifications";
+import { notifyQueryComment, notifyQueryCreated } from "@/lib/notifications";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -60,7 +60,7 @@ export async function addQueryComment(input: unknown): Promise<ActionResult> {
     },
   });
 
-  await notifyQueryAnswered(parsed.data.queryId, comment.id);
+  await notifyQueryComment(comment.id);
 
   revalidatePath(`/consultes/${parsed.data.queryId}`);
   return { success: true };
@@ -73,14 +73,35 @@ export async function updateQueryStatus(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
 
-  const isClosing = parsed.data.status === "RESOLTA" || parsed.data.status === "TANCADA";
-  await db.query.update({
-    where: { id: parsed.data.queryId },
-    data: {
-      status: parsed.data.status,
-      resolvedAt: isClosing ? new Date() : null,
-    },
+  const { queryId, status, expectedStatus } = parsed.data;
+
+  const before = await db.query.findUnique({
+    where: { id: queryId },
+    select: { status: true, resolvedAt: true },
   });
+  if (!before) return { success: false, error: "La consulta no existeix" };
+
+  // Com a les incidències: si l'estat ja no és el que veia qui el canvia, algú
+  // altre de coordinació l'acaba de tocar, i no es trepitja en silenci.
+  const isClosing = status === "RESOLTA" || status === "TANCADA";
+  const updated =
+    expectedStatus && before.status !== expectedStatus
+      ? { count: 0 }
+      : await db.query.updateMany({
+          where: { id: queryId, status: before.status },
+          data: {
+            status,
+            // Passar de Resolta a Tancada no ha de canviar quan es va resoldre.
+            resolvedAt: isClosing ? (before.resolvedAt ?? new Date()) : null,
+          },
+        });
+  if (updated.count === 0) {
+    revalidatePath(`/consultes/${queryId}`);
+    return {
+      success: false,
+      error: "Algú altre acaba de canviar l'estat d'aquesta consulta. Torna-ho a mirar.",
+    };
+  }
 
   revalidatePath(`/consultes/${parsed.data.queryId}`);
   revalidatePath("/consultes");

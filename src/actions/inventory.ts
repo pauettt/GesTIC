@@ -57,6 +57,21 @@ export async function deleteInventoryItem(input: unknown): Promise<ActionResult>
     return { success: false, error: "Dades no vàlides" };
   }
 
+  // Esborrar un equip s'enduria el seu historial de préstecs, i les incidències
+  // quedarien sense equip: justament el que serveix per justificar-ne un de nou.
+  // Per retirar-lo ja hi ha l'estat «Donat de baixa».
+  const [loans, incidents] = await Promise.all([
+    db.loanRequest.count({ where: { itemId: parsed.data.id } }),
+    db.incident.count({ where: { inventoryItemId: parsed.data.id } }),
+  ]);
+  if (loans + incidents > 0) {
+    return {
+      success: false,
+      error:
+        "Aquest equip ja té préstecs o incidències. Posa'l com a «Donat de baixa» per retirar-lo sense perdre'n l'historial.",
+    };
+  }
+
   await db.inventoryItem.delete({ where: { id: parsed.data.id } });
   revalidatePath("/inventari");
   return { success: true };

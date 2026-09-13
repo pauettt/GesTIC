@@ -125,42 +125,52 @@ async function main() {
     });
   }
 
-  const trainingDate = new Date();
-  trainingDate.setDate(trainingDate.getDate() + 14);
-  await db.trainingSession.create({
-    data: {
-      title: "Introducció a Google Classroom",
-      description:
-        "Sessió pràctica per aprendre a crear classes, assignar tasques i corregir des de Google Classroom.",
-      date: trainingDate,
-      spaceId: aulaInformatica.id,
-      capacity: 20,
-    },
-  });
+  // El títol no és únic i no hi ha upsert possible: es comprova a mà. Si no,
+  // cada execució del seed afegia una sessió de formació repetida.
+  const trainingTitle = "Introducció a Google Classroom";
+  const existingTraining = await db.trainingSession.findFirst({ where: { title: trainingTitle } });
+  if (!existingTraining) {
+    const trainingDate = new Date();
+    trainingDate.setDate(trainingDate.getDate() + 14);
+    await db.trainingSession.create({
+      data: {
+        title: trainingTitle,
+        description:
+          "Sessió pràctica per aprendre a crear classes, assignar tasques i corregir des de Google Classroom.",
+        date: trainingDate,
+        spaceId: aulaInformatica.id,
+        capacity: 20,
+      },
+    });
+  }
 
-  await db.faqEntry.createMany({
-    data: [
-      {
-        category: "Chromebooks",
-        question: "Com reservo un carro de Chromebooks?",
-        answer: "Vés a l'apartat Chromebooks, selecciona el carro i indica les dates a l'apartat de reserves.",
-        order: 1,
-      },
-      {
-        category: "Chromebooks",
-        question: "Què faig si un Chromebook no s'engega?",
-        answer: "Reporta-ho com a incidència des de l'apartat Incidències TIC, indicant el carro i el Chromebook afectat.",
-        order: 2,
-      },
-      {
-        category: "Incidències",
-        question: "Quant triga a resoldre's una incidència?",
-        answer: "Depèn de la prioritat i disponibilitat de material, però el coordinador TIC en farà seguiment i podràs veure'n l'estat en tot moment.",
-        order: 1,
-      },
-    ],
-    skipDuplicates: true,
-  });
+  // Les preguntes no tenen cap camp únic, així que `skipDuplicates` no les
+  // frenava i cada execució les tornava a afegir. Només es posen si no n'hi ha cap.
+  const faqCount = await db.faqEntry.count();
+  if (faqCount === 0) {
+    await db.faqEntry.createMany({
+      data: [
+        {
+          category: "Chromebooks",
+          question: "Com reservo un carro de Chromebooks?",
+          answer: "Vés a l'apartat Chromebooks, obre el carro i clica una sessió lliure de la graella.",
+          order: 1,
+        },
+        {
+          category: "Chromebooks",
+          question: "Què faig si un Chromebook no s'engega?",
+          answer: "Escaneja el codi QR de l'etiqueta o reporta-ho des d'Incidències TIC, indicant el carro i el Chromebook afectat.",
+          order: 2,
+        },
+        {
+          category: "Incidències",
+          question: "Quant triga a resoldre's una incidència?",
+          answer: "Depèn de la prioritat i disponibilitat de material, però el coordinador TIC en farà seguiment i podràs veure'n l'estat en tot moment.",
+          order: 1,
+        },
+      ],
+    });
+  }
 
   const categoria = await db.tutorialCategory.upsert({
     where: { name: "Primers passos" },

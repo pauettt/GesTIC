@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isBlobUrl } from "@/lib/blob";
+import { isDateKey } from "@/lib/validations/common";
 
 export const upsertCartSchema = z.object({
   id: z.string().optional(),
@@ -19,7 +20,8 @@ export const deleteCartSchema = z.object({ id: z.string() });
 
 export const upsertChromebookSchema = z.object({
   id: z.string().optional(),
-  cartId: z.string(),
+  // En una edició, canviar-lo és moure l'equip a un altre carro.
+  cartId: z.string().min(1, "Tria el carro"),
   assetTag: z.string().trim().min(1, "Indica un identificador").max(100),
   serialNumber: z.string().trim().max(150).optional().or(z.literal("")),
   brand: z.string().trim().max(100).optional().or(z.literal("")),
@@ -43,6 +45,11 @@ export type UpsertStudentChromebookInput = z.infer<typeof upsertStudentChromeboo
 
 export const deleteChromebookSchema = z.object({ id: z.string() });
 
+export const setChromebookRetiredSchema = z.object({
+  id: z.string().min(1),
+  retired: z.boolean(),
+});
+
 export const addChromebookNoteSchema = z.object({
   chromebookId: z.string(),
   body: z.string().trim().min(1, "Escriu una nota").max(1000),
@@ -53,7 +60,7 @@ export const deleteChromebookNoteSchema = z.object({ id: z.string() });
 
 export const createReservationSchema = z.object({
   cartId: z.string(),
-  date: z.string().min(1, "Indica la data"),
+  date: z.string().min(1, "Indica la data").refine(isDateKey, "La data no és vàlida"),
   periodIds: z.array(z.number().int()).min(1, "Selecciona almenys una sessió"),
   purpose: z.string().trim().max(300).optional().or(z.literal("")),
 });

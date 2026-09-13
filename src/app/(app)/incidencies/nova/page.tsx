@@ -11,7 +11,7 @@ export const metadata = { title: "Nova incidència" };
 export default async function NovaIncidenciaPage() {
   await requireUser();
 
-  const [spaces, inventoryItems, carts] = await Promise.all([
+  const [spaces, inventoryItems, carts, studentPool] = await Promise.all([
     db.space.findMany({ orderBy: { name: "asc" } }),
     db.inventoryItem.findMany({
       where: { status: { not: "BAIXA" } },
@@ -20,7 +20,17 @@ export default async function NovaIncidenciaPage() {
     }),
     db.cart.findMany({
       orderBy: { name: "asc" },
-      include: { chromebooks: { orderBy: { assetTag: "asc" } } },
+      // Un equip donat de baixa ja no es fa servir: no s'hi han d'obrir incidències.
+      include: {
+        chromebooks: { where: { status: { not: "BAIXA" } }, orderBy: { assetTag: "asc" } },
+      },
+    }),
+    // Els equips de préstec a l'alumnat no són de cap carro. Només l'identificador:
+    // qui reporta l'avaria no ha de saber de quin alumne és.
+    db.chromebook.findMany({
+      where: { isStudentLoanable: true, status: { not: "BAIXA" } },
+      orderBy: { assetTag: "asc" },
+      select: { id: true, assetTag: true },
     }),
   ]);
 
@@ -42,13 +52,14 @@ export default async function NovaIncidenciaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Incidència en un carro de Chromebooks</CardTitle>
+          <CardTitle>Incidència en un Chromebook</CardTitle>
           <CardDescription>
-            Per als carros o Chromebooks — no cal saber en quina aula és el carro ara mateix.
+            Per als carros i els seus Chromebooks, i per als equips de préstec a l&apos;alumnat. No
+            cal saber en quina aula és el carro ara mateix.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CartIncidentForm carts={carts} />
+          <CartIncidentForm carts={carts} studentPool={studentPool} />
         </CardContent>
       </Card>
 

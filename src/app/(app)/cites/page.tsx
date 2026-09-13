@@ -107,20 +107,28 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
 
       <AppointmentWeek
         weekStart={weekStart}
-        slots={slots.map((slot) => ({
-          id: slot.id,
-          startDate: slot.startDate,
-          openedByName: slot.openedBy ? (slot.openedBy.name ?? slot.openedBy.email) : null,
-          appointment: slot.appointment
-            ? {
-                id: slot.appointment.id,
-                purpose: slot.appointment.purpose,
-                userId: slot.appointment.userId,
-                userName: slot.appointment.user.name ?? slot.appointment.user.email,
-              }
-            : null,
-        }))}
-        currentUserId={user.id}
+        slots={slots.map((slot) => {
+          const appointment = slot.appointment;
+          const isOwn = appointment?.userId === user.id;
+          // Qui la té i per a què, només per a la coordinació i per a la mateixa
+          // persona. El motiu és text lliure, i el que arriba a un component de
+          // client es pot llegir encara que no es pinti: per això es retalla
+          // aquí i no a la casella.
+          const canSeeDetails = canManage || isOwn;
+          return {
+            id: slot.id,
+            startDate: slot.startDate,
+            openedByName: slot.openedBy ? (slot.openedBy.name ?? slot.openedBy.email) : null,
+            appointment: appointment
+              ? {
+                  id: appointment.id,
+                  isOwn,
+                  purpose: canSeeDetails ? appointment.purpose : null,
+                  userName: canSeeDetails ? (appointment.user.name ?? appointment.user.email) : null,
+                }
+              : null,
+          };
+        })}
         canManage={canManage}
       />
 

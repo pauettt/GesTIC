@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { formatDate } from "@/lib/date";
+import { isCancellable } from "@/lib/loans";
 import { loanRequestStatusLabels, loanRequestStatusVariants } from "@/lib/labels";
 import { InventorySearch } from "@/components/inventory/inventory-search";
 import { LoanRequestDialog } from "@/components/inventory/loan-request-dialog";
@@ -107,7 +108,7 @@ export function LoanableItemsView({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {(request.status === "PENDENT" || request.status === "APROVADA") && (
+                    {isCancellable(request) && (
                       <div className="flex justify-end">
                         <CancelLoanRequestButton id={request.id} />
                       </div>

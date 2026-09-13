@@ -1,14 +1,18 @@
 import "server-only";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTimeFull } from "@/lib/date";
 import {
+  buildAppointmentBookedEmail,
+  buildAppointmentCancelledEmail,
+  buildIncidentCommentedEmail,
   buildIncidentReportedEmail,
   buildLoanDecisionEmail,
   buildLoanOverdueEmail,
   buildLoanRequestedEmail,
   buildQueryAnsweredEmail,
   buildQueryCreatedEmail,
+  buildQueryRepliedEmail,
   buildStudentDeviceDecisionEmail,
   buildStudentDeviceRequestedEmail,
   sendEmail,
@@ -41,6 +45,8 @@ async function coordinatorEmails(exceptUserId?: string) {
   const coordinators = await db.user.findMany({
     where: {
       role: { in: COORDINATOR_ROLES },
+      // Qui ja no té accés a gesTIC no ha de rebre'n els avisos.
+      disabledAt: null,
       ...(exceptUserId ? { id: { not: exceptUserId } } : {}),
     },
     select: { email: true },
@@ -145,26 +151,92 @@ export async function sendLoanOverdueReminder(loanRequestId: string) {
   });
 }
 
-/** Avisa l'autor/a quan la coordinació respon la seva consulta. */
-export async function notifyQueryAnswered(queryId: string, commentId: string) {
-  await safely("resposta a una consulta", async () => {
+/**
+ * Avís a l'altra banda de la conversa quan algú escriu a una consulta. Si
+ * respon la coordinació, a qui la va fer. Si hi torna a escriure qui la va fer,
+ * a tota la coordinació: abans aquesta resposta no avisava ningú i es quedava a
+ * gesTIC fins que algú hi entrava.
+ */
+export async function notifyQueryComment(commentId: string) {
+  await safely("comentari a una consulta", async () => {
     const comment = await db.queryComment.findUnique({
       where: { id: commentId },
       include: { author: true, query: { include: { author: true } } },
     });
     if (!comment) return;
 
-    // Només s'avisa qui va obrir la consulta, i mai de la seva pròpia resposta.
-    if (comment.authorId === comment.query.authorId) return;
-
     const baseUrl = await getBaseUrl();
+    const url = `${baseUrl}/consultes/${comment.queryId}`;
+    const authorName = comment.author.name ?? comment.author.email;
+
+    if (comment.authorId === comment.query.authorId) {
+      const to = await coordinatorEmails(comment.authorId);
+      if (to.length === 0) return;
+      await sendEmail({
+        to,
+        ...buildQueryRepliedEmail({
+          title: comment.query.title,
+          authorName,
+          body: comment.body,
+          url,
+        }),
+      });
+      return;
+    }
+
     await sendEmail({
       to: comment.query.author.email,
       ...buildQueryAnsweredEmail({
         title: comment.query.title,
-        answeredBy: comment.author.name ?? comment.author.email,
+        answeredBy: authorName,
         body: comment.body,
-        url: `${baseUrl}/consultes/${comment.queryId}`,
+        url,
+      }),
+    });
+  });
+}
+
+/**
+ * Avís a l'altra banda quan algú escriu al seguiment d'una incidència, igual
+ * que a les consultes. Si hi escriu la coordinació, a qui la va reportar, que si
+ * no no se n'assabentaria fins que la incidència es resolgués. Si hi escriu qui
+ * la va reportar —sovint per respondre una pregunta—, a tota la coordinació.
+ */
+export async function notifyIncidentComment(commentId: string) {
+  await safely("comentari a una incidència", async () => {
+    const comment = await db.incidentComment.findUnique({
+      where: { id: commentId },
+      include: {
+        author: true,
+        incident: {
+          select: {
+            id: true,
+            title: true,
+            reporterId: true,
+            reporter: { select: { email: true } },
+          },
+        },
+      },
+    });
+    if (!comment) return;
+
+    // Només poden comentar qui la va reportar i la coordinació (`addComment`),
+    // així que si no l'ha escrit qui la va reportar, l'ha escrit la coordinació.
+    const byReporter = comment.authorId === comment.incident.reporterId;
+    const to = byReporter
+      ? await coordinatorEmails(comment.authorId)
+      : [comment.incident.reporter.email];
+    if (to.length === 0) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to,
+      ...buildIncidentCommentedEmail({
+        toReporter: !byReporter,
+        incidentTitle: comment.incident.title,
+        authorName: comment.author.name ?? comment.author.email,
+        body: comment.body,
+        url: `${baseUrl}/incidencies/${comment.incident.id}`,
       }),
     });
   });
@@ -239,6 +311,86 @@ export async function notifyStudentDeviceDecision(requestId: string, approved: b
           : null,
         responseNote: request.responseNote,
         url: `${baseUrl}/chromebooks`,
+      }),
+    });
+  });
+}
+
+/**
+ * A qui de coordinació li interessa una cita: qui va obrir l'hora, que és amb
+ * qui es té. Si l'hora ja no té qui l'obrís, o qui la demana és la mateixa
+ * persona, s'avisa la resta de la coordinació.
+ */
+async function appointmentCoordinationEmails(
+  opener: { id: string; email: string } | null,
+  exceptUserId: string,
+) {
+  if (opener && opener.id !== exceptUserId) return [opener.email];
+  return coordinatorEmails(exceptUserId);
+}
+
+export async function notifyAppointmentBooked(appointmentId: string) {
+  await safely("cita demanada", async () => {
+    const appointment = await db.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        user: { select: { name: true, email: true } },
+        slot: { select: { startDate: true, openedBy: { select: { id: true, email: true } } } },
+      },
+    });
+    if (!appointment) return;
+
+    const to = await appointmentCoordinationEmails(appointment.slot.openedBy, appointment.userId);
+    if (to.length === 0) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to,
+      ...buildAppointmentBookedEmail({
+        who: appointment.user.name ?? appointment.user.email,
+        when: formatDateTimeFull(appointment.slot.startDate),
+        purpose: appointment.purpose,
+        url: `${baseUrl}/cites`,
+      }),
+    });
+  });
+}
+
+/**
+ * Avís a l'altra banda quan es cancel·la una cita. Si la cancel·la la
+ * coordinació, a qui la tenia, que si no es presentaria igualment. Si la
+ * cancel·la qui la tenia, a la coordinació, que es guardaria l'hora per a
+ * ningú. Rep les dades ja llegides perquè la cita ja no existeix.
+ */
+export async function notifyAppointmentCancelled({
+  cancelledById,
+  cancelledByName,
+  owner,
+  opener,
+  startDate,
+  purpose,
+}: {
+  cancelledById: string;
+  cancelledByName: string;
+  owner: { id: string; name: string | null; email: string };
+  opener: { id: string; email: string } | null;
+  startDate: Date;
+  purpose: string;
+}) {
+  await safely("cita cancel·lada", async () => {
+    const byOwner = cancelledById === owner.id;
+    const to = byOwner ? await appointmentCoordinationEmails(opener, owner.id) : [owner.email];
+    if (to.length === 0) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to,
+      ...buildAppointmentCancelledEmail({
+        byOwner,
+        who: byOwner ? (owner.name ?? owner.email) : cancelledByName,
+        when: formatDateTimeFull(startDate),
+        purpose,
+        url: `${baseUrl}/cites`,
       }),
     });
   });

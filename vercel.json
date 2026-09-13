@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run db:deploy && npm run build",
+  "buildCommand": "sh scripts/vercel-build.sh",
   "crons": [
     {
       "path": "/api/cron/loan-reminders",

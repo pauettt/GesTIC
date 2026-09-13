@@ -12,6 +12,7 @@ import {
   MapPinIcon,
   MessageCircleQuestionIcon,
   PackageIcon,
+  ShieldCheckIcon,
   TicketIcon,
   UsersIcon,
 } from "lucide-react";
@@ -47,6 +48,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/panell", label: "Panell coordinador", icon: LayoutDashboardIcon, adminOnly: true },
   { href: "/usuaris", label: "Usuaris i permisos", icon: UsersIcon, superAdminOnly: true },
+  { href: "/administracio", label: "Administració", icon: ShieldCheckIcon, superAdminOnly: true },
 ];
 
 export function navItemsForRole(role: Role) {

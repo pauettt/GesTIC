@@ -16,11 +16,17 @@ import type { SchoolPeriod } from "@/lib/schedule";
 export type SlotCellSlot = {
   id: string;
   openedByName: string | null;
+  /**
+   * La cita de l'hora. Qui la té i per a què només hi van si qui mira és la
+   * coordinació o la mateixa persona: la resta del claustre veu que l'hora està
+   * agafada i prou. El motiu és text lliure, i el filtre es fa al servidor,
+   * abans que arribi aquí.
+   */
   appointment: {
     id: string;
-    purpose: string;
-    userId: string;
-    userName: string;
+    isOwn: boolean;
+    purpose: string | null;
+    userName: string | null;
   } | null;
 };
 
@@ -35,7 +41,6 @@ export function SlotCell({
   period,
   slot,
   canManage,
-  isOwn,
   isPast,
 }: {
   dayKey: string;
@@ -44,7 +49,6 @@ export function SlotCell({
   slot?: SlotCellSlot;
   /** Coordinació TIC: obre i tanca hores. */
   canManage: boolean;
-  isOwn: boolean;
   /** Hora que ja ha acabat: es mostra apagada i no s'hi pot fer res. */
   isPast: boolean;
 }) {
@@ -67,16 +71,18 @@ export function SlotCell({
   if (slot?.appointment) {
     const { appointment } = slot;
     return (
-      <div className={isOwn ? "rounded-md bg-primary/15 p-1.5" : "rounded-md bg-muted p-1.5"}>
+      <div className={appointment.isOwn ? "rounded-md bg-primary/15 p-1.5" : "rounded-md bg-muted p-1.5"}>
         <div className="flex items-center justify-between gap-1">
           <span className="truncate font-medium">
-            {isOwn ? "La teva cita" : appointment.userName}
+            {appointment.isOwn ? "La teva cita" : (appointment.userName ?? "Ocupada")}
           </span>
-          {(isOwn || canManage) && !isPast && (
+          {(appointment.isOwn || canManage) && !isPast && (
             <CancelAppointmentButton appointmentId={appointment.id} />
           )}
         </div>
-        <p className="truncate text-muted-foreground">{appointment.purpose}</p>
+        {appointment.purpose && (
+          <p className="truncate text-muted-foreground">{appointment.purpose}</p>
+        )}
       </div>
     );
   }

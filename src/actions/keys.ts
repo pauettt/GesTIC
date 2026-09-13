@@ -131,11 +131,23 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
   }
   const { keyId, borrowerId, deliveredById, reservationId, reason } = parsed.data;
 
-  const key = await db.key.findUnique({
-    where: { id: keyId },
-    include: { _count: { select: { loans: { where: { returnedAt: null } } } } },
-  });
+  const [key, borrower, concierge] = await Promise.all([
+    db.key.findUnique({
+      where: { id: keyId },
+      include: { _count: { select: { loans: { where: { returnedAt: null } } } } },
+    }),
+    db.user.findUnique({ where: { id: borrowerId }, select: { role: true } }),
+    db.concierge.findUnique({ where: { id: deliveredById }, select: { active: true } }),
+  ]);
   if (!key) return { success: false, error: "Aquesta clau no existeix" };
+  // El formulari només ofereix el claustre i els conserges actius; això és per
+  // si l'acció es crida amb una altra cosa.
+  if (!borrower || borrower.role === "CONSERGERIA") {
+    return { success: false, error: "Tria a qui s'entrega la clau" };
+  }
+  if (!concierge?.active) {
+    return { success: false, error: "Tria quin conserge entrega la clau" };
+  }
 
   // No es poden entregar més còpies de les que hi ha al clauer.
   if (key._count.loans >= key.copies) {
@@ -143,6 +155,31 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
       success: false,
       error: `No queda cap còpia: les ${key.copies} estan fora`,
     };
+  }
+
+  // La reserva ha de ser d'aquest carro i d'aquesta persona, i no pot tenir ja
+  // la clau entregada: un doble clic al taulell no ha de treure dues còpies.
+  if (reservationId) {
+    const reservation = await db.reservation.findUnique({
+      where: { id: reservationId },
+      select: {
+        cartId: true,
+        userId: true,
+        status: true,
+        _count: { select: { keyLoans: { where: { returnedAt: null } } } },
+      },
+    });
+    if (
+      !reservation ||
+      reservation.status !== "CONFIRMADA" ||
+      reservation.cartId !== key.cartId ||
+      reservation.userId !== borrowerId
+    ) {
+      return { success: false, error: "Aquesta reserva no correspon a aquesta clau" };
+    }
+    if (reservation._count.keyLoans > 0) {
+      return { success: false, error: "La clau d'aquesta reserva ja està entregada" };
+    }
   }
 
   await db.keyLoan.create({
@@ -198,7 +235,7 @@ export async function remindKeyReturn(input: unknown): Promise<ActionResult> {
   if (loan.returnedAt) return { success: false, error: "Aquesta clau ja consta tornada" };
 
   const concierge = await db.concierge.findUnique({ where: { id: parsed.data.remindedById } });
-  if (!concierge) return { success: false, error: "Aquest conserge no existeix" };
+  if (!concierge?.active) return { success: false, error: "Tria quin conserge envia l'avís" };
 
   const result = await sendEmail({
     to: loan.borrower.email,
