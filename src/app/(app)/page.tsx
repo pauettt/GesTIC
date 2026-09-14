@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   BookOpenIcon,
   CalendarCheckIcon,
-  GraduationCapIcon,
   HandCoinsIcon,
   HelpCircleIcon,
   LaptopIcon,
@@ -50,12 +49,6 @@ const MODULE_CARDS: Array<{
     title: "Cites",
     description: "Demana hora amb la coordinació TIC per al que necessitis.",
     icon: CalendarCheckIcon,
-  },
-  {
-    href: "/formacio",
-    title: "Formació",
-    description: "Sessions de formació TIC per al professorat.",
-    icon: GraduationCapIcon,
   },
   {
     href: "/consultes",

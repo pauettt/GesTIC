@@ -43,8 +43,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </div>
           <CardTitle className="text-xl">gesTIC</CardTitle>
           <CardDescription>
-            Coordinació TIC del centre: incidències, inventari, Chromebooks,
-            formació i tutorials.
+            Coordinació TIC del centre: incidències, inventari, Chromebooks i
+            tutorials.
           </CardDescription>
         </CardHeader>
         <CardContent>

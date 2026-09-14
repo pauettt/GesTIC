@@ -64,7 +64,7 @@ canvis:
 A *Administració → Dades de prova* hi ha el recompte i el botó. S'enduu els
 comptes del dev login (adreces `@local.test`, que cap compte real no pot tenir)
 i tot el que en penja: incidències amb les seves fotos, comentaris, préstecs,
-reserves, préstecs de claus, cites, consultes, inscripcions i notes. Abans de
+reserves, préstecs de claus, cites, consultes i notes. Abans de
 fer res ensenya què esborrarà, i queda al registre d'activitat. S'ha de fer amb
 el compte del centre: amb un de prova no deixa.
 
@@ -101,7 +101,7 @@ mal posada trenca els estils inline de Base UI. La resta de capçaleres
 ### 8. Les fotos són públiques per a qui tingui l'enllaç
 El blob store és **Public** perquè el codi puja amb `access: "public"` i les
 URL desades es mostren directament amb `<Image>` i `<a href>` a inventari,
-Chromebooks, formació i incidències. Les adreces són llargues i aleatòries i no
+Chromebooks i incidències. Les adreces són llargues i aleatòries i no
 s'indexen, però qui rebi l'enllaç l'obre sense passar per gesTIC. Assumit el
 2026-09-11 per a fotos de material espatllat. **A revisar el dia que s'hi
 pugin captures de Classroom amb noms d'alumnes**: llavors tocaria passar a
@@ -180,6 +180,12 @@ per escrit.**
     (`staleTimes.dynamic`). Els canvis propis es veuen al moment, perquè totes
     les accions criden `revalidatePath`; els d'altres persones poden trigar fins
     a 30 s sense recarregar.
+- **Fora l'apartat de Formació**: no el feia servir ningú (dues sessions de
+  prova i cap inscripció), una sessió presencial s'anuncia on el professorat ja
+  mira —correu, claustre, Calendar— i el menú ja tenia massa entrades. Se n'han
+  tret la pàgina, les accions, el menú, la targeta de l'inici, el recompte de
+  *Administració* i el seed. La migració `20260914130000_treure_formacio`
+  esborra les taules `TrainingSession` i `TrainingEnrollment`.
 
 ### 2026-09-13
 

@@ -94,7 +94,6 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
     appointments,
     queries,
     studentRequests,
-    enrollments,
     notes,
   ] = await Promise.all([
     db.incident.count({ where: { reporterId: ids } }),
@@ -106,7 +105,6 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
     db.appointment.count({ where: { userId: ids } }),
     db.query.count({ where: { authorId: ids } }),
     db.studentDeviceRequest.count({ where: { tutorId: ids } }),
-    db.trainingEnrollment.count({ where: { userId: ids } }),
     db.chromebookNote.count({ where: { authorId: ids } }),
   ]);
 
@@ -126,7 +124,6 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
         one: "sol·licitud de Chromebook d'alumnat",
         many: "sol·licituds de Chromebook d'alumnat",
       },
-      { count: enrollments, one: "inscripció a formació", many: "inscripcions a formació" },
       { count: notes, one: "nota de Chromebook", many: "notes de Chromebook" },
     ],
   };

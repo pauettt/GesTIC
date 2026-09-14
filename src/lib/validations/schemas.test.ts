@@ -7,7 +7,6 @@ import {
   createStudentDeviceRequestSchema,
   respondStudentDeviceRequestSchema,
 } from "@/lib/validations/student-devices";
-import { upsertTrainingSessionSchema } from "@/lib/validations/training";
 
 const BLOB = "https://abc123.public.blob.vercel-storage.com";
 
@@ -93,17 +92,5 @@ describe("altres formularis", () => {
     expect(request("2026-09-14", "2026-09-18")).toBe(true);
     expect(request("2026-09-18", "2026-09-14")).toBe(false);
     expect(request("2026-09-14", "2026-02-31")).toBe(false);
-  });
-
-  it("l'enllaç de materials d'una formació no pot ser un javascript:", () => {
-    const session = (materialsUrl: string) =>
-      upsertTrainingSessionSchema.safeParse({
-        title: "Classroom",
-        description: "Sessió pràctica de Classroom",
-        date: "2026-09-14T17:00",
-        materialsUrl,
-      }).success;
-    expect(session("https://docs.google.com/presentation/d/1")).toBe(true);
-    expect(session("javascript:alert(1)")).toBe(false);
   });
 });

@@ -79,7 +79,8 @@ Quatre blocs i res més:
 4. **Enllaç oficial** — si n'hi ha
 
 **Regla dura: ha de cabre en una pantalla de mòbil sense fer scroll.** Si no hi
-cap, no és un tutorial: és una formació, i per a això ja hi ha `/formacio`.
+cap, no és un tutorial: o es parteix en articles més curts, o és una cosa que
+cal ensenyar en persona, i per a això hi ha les cites amb la coordinació (`/cites`).
 
 ---
 

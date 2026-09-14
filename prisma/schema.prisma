@@ -48,17 +48,16 @@ model User {
   sessions    Session[]
   auditEvents AuditEvent[]
 
-  reportedIncidents     Incident[]           @relation("IncidentReporter")
-  assignedIncidents     Incident[]           @relation("IncidentAssignee")
+  reportedIncidents     Incident[]        @relation("IncidentReporter")
+  assignedIncidents     Incident[]        @relation("IncidentAssignee")
   incidentComments      IncidentComment[]
   reservations          Reservation[]
-  trainingEnrollments   TrainingEnrollment[]
   chromebookNotes       ChromebookNote[]
   queries               Query[]
   queryComments         QueryComment[]
-  loanRequests          LoanRequest[]        @relation("LoanRequester")
-  respondedLoanRequests LoanRequest[]        @relation("LoanResponder")
-  keyLoans              KeyLoan[]            @relation("KeyBorrower")
+  loanRequests          LoanRequest[]     @relation("LoanRequester")
+  respondedLoanRequests LoanRequest[]     @relation("LoanResponder")
+  keyLoans              KeyLoan[]         @relation("KeyBorrower")
 
   studentDeviceRequests   StudentDeviceRequest[] @relation("StudentDeviceTutor")
   respondedStudentDevices StudentDeviceRequest[] @relation("StudentDeviceResponder")
@@ -136,11 +135,10 @@ model Space {
   building String?
   floor    String?
 
-  inventoryItems   InventoryItem[]
-  carts            Cart[]
-  chromebooks      Chromebook[]
-  trainingSessions TrainingSession[]
-  incidents        Incident[]
+  inventoryItems InventoryItem[]
+  carts          Cart[]
+  chromebooks    Chromebook[]
+  incidents      Incident[]
 
   @@unique([name])
 }
@@ -513,38 +511,6 @@ model IncidentAttachment {
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
-}
-
-// ---------------------------------------------------------------------------
-// Formació del professorat
-// ---------------------------------------------------------------------------
-
-model TrainingSession {
-  id           String   @id @default(cuid())
-  title        String
-  description  String   @db.Text
-  date         DateTime
-  spaceId      String?
-  capacity     Int?
-  materialsUrl String[] @default([])
-  createdAt    DateTime @default(now())
-
-  space       Space?               @relation(fields: [spaceId], references: [id], onDelete: SetNull)
-  enrollments TrainingEnrollment[]
-
-  @@index([date])
-}
-
-model TrainingEnrollment {
-  id         String   @id @default(cuid())
-  sessionId  String
-  userId     String
-  enrolledAt DateTime @default(now())
-
-  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, userId])
 }
 
 // ---------------------------------------------------------------------------

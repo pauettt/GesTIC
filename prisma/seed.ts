@@ -125,25 +125,6 @@ async function main() {
     });
   }
 
-  // El títol no és únic i no hi ha upsert possible: es comprova a mà. Si no,
-  // cada execució del seed afegia una sessió de formació repetida.
-  const trainingTitle = "Introducció a Google Classroom";
-  const existingTraining = await db.trainingSession.findFirst({ where: { title: trainingTitle } });
-  if (!existingTraining) {
-    const trainingDate = new Date();
-    trainingDate.setDate(trainingDate.getDate() + 14);
-    await db.trainingSession.create({
-      data: {
-        title: trainingTitle,
-        description:
-          "Sessió pràctica per aprendre a crear classes, assignar tasques i corregir des de Google Classroom.",
-        date: trainingDate,
-        spaceId: aulaInformatica.id,
-        capacity: 20,
-      },
-    });
-  }
-
   // Les preguntes no tenen cap camp únic, així que `skipDuplicates` no les
   // frenava i cada execució les tornava a afegir. Només es posen si no n'hi ha cap.
   const faqCount = await db.faqEntry.count();

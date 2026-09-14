@@ -1,6 +1,6 @@
 # gesTIC
 
-Plataforma de coordinació TIC del centre: incidències, inventari i préstecs, carros de Chromebooks i préstec d'equips a l'alumnat, cites amb la coordinació, formació, dubtes freqüents, tutorials i control de claus de consergeria.
+Plataforma de coordinació TIC del centre: incidències, inventari i préstecs, carros de Chromebooks i préstec d'equips a l'alumnat, cites amb la coordinació, dubtes freqüents, tutorials i control de claus de consergeria.
 
 Què falta, què s'ha fet i per què és a [PENDENTS.md](PENDENTS.md).
 
@@ -99,9 +99,9 @@ npx playwright install chromium
 ## Rols
 
 - **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, quines dades personals es guarden, esborrat de les dades de prova i registre d'activitat. Es defineix a `ADMIN_EMAILS`.
-- **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, formació, dubtes, tutorials i claus.
+- **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, dubtes, tutorials i claus.
 - **Consergeria (`CONSERGERIA`)**: compte compartit del taulell; només veu el control de claus.
-- **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites, s'inscriu a formacions i fa consultes.
+- **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites i fa consultes.
 
 A banda del rol, qualsevol usuari que no sigui consergeria pot portar la marca de **tutor/a**, que li permet demanar Chromebooks en préstec per a l'alumnat del seu grup. La posa i la treu el superadministrador/a.
 
