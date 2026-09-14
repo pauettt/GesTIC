@@ -1,8 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { DEV_ACCOUNT_INCIDENT_TITLE, PRIVATE_INCIDENT_TITLE } from "./data";
 import { BASE_URL } from "./env";
 import { authFile, pageAs } from "./helpers";
+
+/** La taula d'usuaris filtrada per un sol correu. */
+async function openUserRow(page: Page, email: string) {
+  await page.goto("/usuaris");
+  await page.getByLabel("Cerca usuaris").fill(email);
+}
+
+/**
+ * Les accions de servidor de /usuaris són un POST a la mateixa pàgina. Amb
+ * aquest retard, un control que esperés la resposta no canviaria dins el marge
+ * que li donen les proves; un que canviï al moment, sí.
+ */
+async function slowServerActions(page: Page) {
+  await page.route("**/usuaris", async (route) => {
+    if (route.request().method() === "POST") await new Promise((resolve) => setTimeout(resolve, 3_000));
+    await route.continue();
+  });
+}
 
 test.describe("coordinació TIC", () => {
   test.use({ storageState: authFile("admin") });
@@ -47,6 +65,53 @@ test.describe("superadministració", () => {
     await page.goto("/administracio");
     await expect(page.getByText("Accés retirat a Substituta E2E (substituta@e2e.test)")).toBeVisible();
     await expect(page.getByText("Accés retornat a Substituta E2E (substituta@e2e.test)")).toBeVisible();
+  });
+
+  test("la casella de tutor/a es marca al moment, sense esperar el servidor", async ({ page }) => {
+    const checkbox = page.getByRole("checkbox", { name: "Tutor/a de grup: Professor Un" });
+
+    await openUserRow(page, "professor@e2e.test");
+    await expect(checkbox).not.toBeChecked();
+
+    await slowServerActions(page);
+    await checkbox.click();
+    await expect(checkbox).toBeChecked({ timeout: 1_000 });
+    await expect(page.getByText("Professor Un ara consta com a tutor/a")).toBeVisible();
+    await page.unroute("**/usuaris");
+
+    await openUserRow(page, "professor@e2e.test");
+    await expect(checkbox).toBeChecked();
+
+    // Es deixa com estava: el Professor Un de les dades de prova no és tutor.
+    await checkbox.click();
+    await expect(page.getByText("Professor Un ja no consta com a tutor/a")).toBeVisible();
+    await openUserRow(page, "professor@e2e.test");
+    await expect(checkbox).not.toBeChecked();
+  });
+
+  test("el desplegable de permís canvia al moment, sense esperar el servidor", async ({ page }) => {
+    const trigger = page.getByLabel("Permís de Professor Un");
+
+    await openUserRow(page, "professor@e2e.test");
+    await expect(trigger).toContainText("Professorat");
+
+    await slowServerActions(page);
+    await trigger.click();
+    await page.getByRole("option", { name: "Coordinador/a TIC" }).click();
+    await expect(trigger).toContainText("Coordinador/a TIC", { timeout: 1_000 });
+    await expect(page.getByText("Permisos de Professor Un actualitzats")).toBeVisible();
+    await page.unroute("**/usuaris");
+
+    await openUserRow(page, "professor@e2e.test");
+    await expect(trigger).toContainText("Coordinador/a TIC");
+
+    // Es deixa com estava: les altres proves entren com a Professor Un sense
+    // cap permís de coordinació.
+    await trigger.click();
+    await page.getByRole("option", { name: "Professorat" }).click();
+    await expect(page.getByText("Permisos de Professor Un actualitzats")).toBeVisible();
+    await openUserRow(page, "professor@e2e.test");
+    await expect(trigger).toContainText("Professorat");
   });
 
   test("esborra els comptes de prova i el que en penja, i res més", async ({ page }) => {

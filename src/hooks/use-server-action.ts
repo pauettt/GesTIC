@@ -8,16 +8,30 @@ type ActionResult = { success: true } | { success: false; error: string };
 
 export function useServerAction<TInput>(
   action: (input: TInput) => Promise<ActionResult>,
-  options?: { onSuccess?: () => void; successMessage?: string },
+  options?: {
+    onSuccess?: () => void;
+    successMessage?: string | ((input: TInput) => string);
+    /**
+     * Per al `set` d'un `useOptimistic`. Es crida dins la transició i abans
+     * d'anar al servidor, que és on ha de ser perquè el valor es vegi a l'instant
+     * i torni sol al del servidor quan la transició acaba, també si ha fallat.
+     */
+    optimistic?: (input: TInput) => void;
+  },
 ) {
   const [isPending, startTransition] = useTransition();
 
   function run(input: TInput) {
     startTransition(async () => {
+      options?.optimistic?.(input);
       try {
         const result = await action(input);
         if (result.success) {
-          if (options?.successMessage) toast.success(options.successMessage);
+          const message =
+            typeof options?.successMessage === "function"
+              ? options.successMessage(input)
+              : options?.successMessage;
+          if (message) toast.success(message);
           options?.onSuccess?.();
         } else {
           toast.error(result.error);
