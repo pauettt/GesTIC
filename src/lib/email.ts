@@ -472,7 +472,7 @@ export function buildStudentDeviceDecisionEmail({
       ...(responseNote ? { quote: { label: "Nota de la coordinació", body: responseNote } } : {}),
       cta: { label: "Veure les meves sol·licituds", url },
       footer: approved
-        ? "Passa per la coordinació TIC a recollir l'equip. És per a tot el curs: quan l'alumne/a el torni, avisa perquè quedi registrat."
+        ? "L'equip queda apartat per a l'alumne/a. Quan el vingui a recollir, la coordinació TIC n'anotarà l'entrega. És per a tot el curs: quan el torni, avisa perquè quedi registrat."
         : "Si les circumstàncies canvien, pots tornar a demanar-ho.",
     }),
   };

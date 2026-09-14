@@ -48,4 +48,6 @@ export type RespondStudentDeviceRequestInput = z.infer<typeof respondStudentDevi
 
 export const cancelStudentDeviceRequestSchema = z.object({ id: z.string().min(1) });
 
+export const markStudentDeviceDeliveredSchema = z.object({ id: z.string().min(1) });
+
 export const markStudentDeviceReturnedSchema = z.object({ id: z.string().min(1) });

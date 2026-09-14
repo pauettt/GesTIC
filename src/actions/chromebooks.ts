@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { syncChromebookStatus } from "@/lib/chromebook-status";
+import { ACTIVE_STUDENT_REQUEST_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { zonedDateTime } from "@/lib/date";
 import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
@@ -161,10 +161,10 @@ export async function upsertStudentChromebook(input: unknown): Promise<ActionRes
   return { success: true };
 }
 
-/** Compta si un alumne té ara mateix aquest equip a casa. */
+/** Compta si l'equip és d'un alumne ara mateix: apartat per entregar o ja a casa seva. */
 async function isAssignedToStudent(chromebookId: string) {
   const active = await db.studentDeviceRequest.count({
-    where: { chromebookId, status: "APROVADA" },
+    where: { chromebookId, status: { in: ACTIVE_STUDENT_REQUEST_STATUSES } },
   });
   return active > 0;
 }

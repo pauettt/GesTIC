@@ -87,7 +87,15 @@ export default async function HomePage() {
   // El que li passa a aquesta persona ara mateix: les seves incidències obertes,
   // el material i les claus que té, les cites que li queden i, si és tutor/a,
   // com van els Chromebooks que ha demanat per a l'alumnat.
-  const [myIncidents, myLoans, myKeys, myAppointments, pendingStudentRequests, assignedStudentDevices] =
+  const [
+    myIncidents,
+    myLoans,
+    myKeys,
+    myAppointments,
+    pendingStudentRequests,
+    toCollectStudentDevices,
+    deliveredStudentDevices,
+  ] =
     await Promise.all([
       db.incident.findMany({
         where: { reporterId: user.id, status: { in: ["OBERTA", "EN_CURS"] } },
@@ -119,9 +127,13 @@ export default async function HomePage() {
       user.isTutor
         ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "APROVADA" } })
         : Promise.resolve(0),
+      user.isTutor
+        ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "ENTREGADA" } })
+        : Promise.resolve(0),
     ]);
 
-  const hasStudentDevices = pendingStudentRequests + assignedStudentDevices > 0;
+  const hasStudentDevices =
+    pendingStudentRequests + toCollectStudentDevices + deliveredStudentDevices > 0;
   const hasSomethingOpen =
     myIncidents.length > 0 ||
     myLoans.length > 0 ||
@@ -274,12 +286,20 @@ export default async function HomePage() {
                       : "sol·licituds pendents de resposta"}
                   </span>
                 )}
-                {assignedStudentDevices > 0 && (
+                {toCollectStudentDevices > 0 && (
                   <span>
-                    {assignedStudentDevices}{" "}
-                    {assignedStudentDevices === 1
-                      ? "equip assignat al teu alumnat"
-                      : "equips assignats al teu alumnat"}
+                    {toCollectStudentDevices}{" "}
+                    {toCollectStudentDevices === 1
+                      ? "equip aprovat per recollir"
+                      : "equips aprovats per recollir"}
+                  </span>
+                )}
+                {deliveredStudentDevices > 0 && (
+                  <span>
+                    {deliveredStudentDevices}{" "}
+                    {deliveredStudentDevices === 1
+                      ? "equip a casa del teu alumnat"
+                      : "equips a casa del teu alumnat"}
                   </span>
                 )}
               </Link>

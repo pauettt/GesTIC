@@ -1,7 +1,14 @@
-import type { ChromebookStatus, IncidentStatus, Prisma } from "@prisma/client";
+import type { ChromebookStatus, IncidentStatus, Prisma, StudentDeviceRequestStatus } from "@prisma/client";
 
 /** Incidències que encara mantenen un equip fora de servei. */
 export const OPEN_INCIDENT_STATUSES: IncidentStatus[] = ["OBERTA", "EN_CURS"];
+
+/**
+ * Préstecs a l'alumnat que ocupen un equip. Aprovada vol dir que ja està apartat
+ * per a un alumne encara que no l'hagi vingut a buscar; entregada, que és a casa
+ * seva. En tots dos casos no es pot assignar a ningú més.
+ */
+export const ACTIVE_STUDENT_REQUEST_STATUSES: StudentDeviceRequestStatus[] = ["APROVADA", "ENTREGADA"];
 
 /**
  * Estat que li toca a un Chromebook segons els fets, i no segons qui l'ha tocat
@@ -18,7 +25,7 @@ export const OPEN_INCIDENT_STATUSES: IncidentStatus[] = ["OBERTA", "EN_CURS"];
  *     de ressuscitar un equip retirat.
  *  2. Amb alguna incidència oberta, l'equip no serveix, sigui de carro o de
  *     préstec.
- *  3. Si un alumne el té assignat, és a casa seva.
+ *  3. Si està assignat a un alumne —apartat o ja a casa seva—, no és lliure.
  *  4. Si no, és lliure.
  *
  * RESERVAT no surt mai d'aquí: les reserves són del carro sencer, no de cada
@@ -44,8 +51,8 @@ type StatusClient = Pick<Prisma.TransactionClient, "chromebook" | "incident" | "
 /**
  * Torna a calcular i desa l'estat d'un Chromebook. S'ha de cridar després de
  * qualsevol canvi que l'afecti: una incidència nova, un canvi d'estat o
- * l'esborrat d'una incidència, i una devolució. Accepta `db` o el `tx` d'una
- * transacció.
+ * l'esborrat d'una incidència, una devolució i una assignació anul·lada.
+ * Accepta `db` o el `tx` d'una transacció.
  */
 export async function syncChromebookStatus(client: StatusClient, chromebookId: string) {
   const chromebook = await client.chromebook.findUnique({
@@ -58,7 +65,7 @@ export async function syncChromebookStatus(client: StatusClient, chromebookId: s
     where: { chromebookId, status: { in: OPEN_INCIDENT_STATUSES } },
   });
   const activeAssignments = await client.studentDeviceRequest.count({
-    where: { chromebookId, status: "APROVADA" },
+    where: { chromebookId, status: { in: ACTIVE_STUDENT_REQUEST_STATUSES } },
   });
 
   const next = chromebookStatusFor({

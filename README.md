@@ -98,7 +98,7 @@ npx playwright install chromium
 
 ## Rols
 
-- **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, dades personals pendents de buidar, esborrat de les dades de prova i registre d'activitat. Es defineix a `ADMIN_EMAILS`.
+- **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, quines dades personals es guarden, esborrat de les dades de prova i registre d'activitat. Es defineix a `ADMIN_EMAILS`.
 - **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, formació, dubtes, tutorials i claus.
 - **Consergeria (`CONSERGERIA`)**: compte compartit del taulell; només veu el control de claus.
 - **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites, s'inscriu a formacions i fa consultes.

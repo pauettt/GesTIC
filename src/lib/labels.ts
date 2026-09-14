@@ -187,7 +187,8 @@ export const studentDeviceReasonLabels: Record<StudentDeviceReason, string> = {
 
 export const studentDeviceRequestStatusLabels: Record<StudentDeviceRequestStatus, string> = {
   PENDENT: "Pendent",
-  APROVADA: "Aprovada",
+  APROVADA: "Aprovada, per entregar",
+  ENTREGADA: "Entregada",
   REBUTJADA: "Rebutjada",
   RETORNADA: "Retornada",
   CANCELLADA: "Cancel·lada",
@@ -199,6 +200,7 @@ export const studentDeviceRequestStatusVariants: Record<
 > = {
   PENDENT: "default",
   APROVADA: "secondary",
+  ENTREGADA: "secondary",
   REBUTJADA: "destructive",
   RETORNADA: "outline",
   CANCELLADA: "outline",

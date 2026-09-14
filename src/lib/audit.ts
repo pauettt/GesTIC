@@ -8,6 +8,8 @@ export type AuditAction =
   | "user.tutor"
   | "user.access"
   | "incident.delete"
+  // Buidar les sol·licituds tancades d'alumnat. Ja no es fa des del 2026-09-14,
+  // quan es va decidir guardar-les, però les entrades antigues s'han de llegir.
   | "student-requests.purge"
   | "test-data.purge";
 

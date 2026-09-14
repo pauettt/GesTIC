@@ -1,15 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { CheckIcon, RotateCcwIcon, XIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { CheckIcon, PackageCheckIcon, RotateCcwIcon, XIcon } from "lucide-react";
 
 import {
   cancelStudentDeviceRequest,
+  markStudentDeviceDelivered,
   markStudentDeviceReturned,
   respondStudentDeviceRequest,
 } from "@/actions/student-devices";
 import { useServerAction } from "@/hooks/use-server-action";
 import { toSelectItems } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,9 +47,10 @@ const deviceLabel = (device: AvailableDevice) =>
 
 /**
  * Aprovar demana triar equip, i per això va amb diàleg i no amb un sol clic com
- * els préstecs d'inventari: aprovar i assignar són el mateix moment. Rebutjar
- * també n'obre un, perquè al tutor li arriba un correu i quedar-se sense saber
- * per què no ajuda ningú.
+ * els préstecs d'inventari: aprovar i apartar l'equip són el mateix moment.
+ * L'entrega, quan l'alumne el ve a buscar, va a part. Rebutjar també obre un
+ * diàleg, perquè al tutor li arriba un correu i quedar-se sense saber per què
+ * no ajuda ningú.
  */
 export function RespondStudentRequestButtons({
   id,
@@ -199,15 +212,111 @@ export function CancelStudentRequestButton({ id }: { id: string }) {
   );
 }
 
-export function MarkStudentDeviceReturnedButton({ id }: { id: string }) {
+type LoanStepProps = { id: string; studentName: string; deviceLabel: string };
+
+/**
+ * Entregar i tornar desen el moment exacte del clic, que després no es pot
+ * corregir, i anul·lar allibera l'equip: tots tres demanen confirmació. Un clic
+ * a la fila del costat deixaria un registre fals a l'historial de l'equip.
+ */
+function ConfirmLoanStep({
+  label,
+  icon,
+  variant,
+  title,
+  description,
+  confirmLabel,
+  isPending,
+  onConfirm,
+}: {
+  label: string;
+  icon: ReactNode;
+  variant: "outline" | "ghost";
+  title: string;
+  description: string;
+  confirmLabel: string;
+  isPending: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button size="sm" variant={variant} disabled={isPending}>
+            {icon}
+            {label}
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel·la</AlertDialogCancel>
+          <AlertDialogAction disabled={isPending} onClick={onConfirm}>
+            {confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function MarkStudentDeviceDeliveredButton({ id, studentName, deviceLabel }: LoanStepProps) {
+  const { run, isPending } = useServerAction(markStudentDeviceDelivered, {
+    successMessage: "Entrega registrada",
+  });
+
+  return (
+    <ConfirmLoanStep
+      label={isPending ? "Registrant…" : "Marca com entregat"}
+      icon={<PackageCheckIcon className="size-4" />}
+      variant="outline"
+      title={`Entregar ${deviceLabel} a ${studentName}?`}
+      description="En queden anotats el dia i l'hora d'ara mateix i qui l'entrega, i no es podran canviar després."
+      confirmLabel="Registra l'entrega"
+      isPending={isPending}
+      onConfirm={() => run({ id })}
+    />
+  );
+}
+
+export function CancelStudentAssignmentButton({ id, studentName, deviceLabel }: LoanStepProps) {
+  const { run, isPending } = useServerAction(cancelStudentDeviceRequest, {
+    successMessage: "Assignació anul·lada i equip alliberat",
+  });
+
+  return (
+    <ConfirmLoanStep
+      label="Anul·la"
+      icon={<XIcon className="size-4" />}
+      variant="ghost"
+      title={`Anul·lar l'assignació de ${deviceLabel}?`}
+      description={`Per quan ${studentName} no el vindrà a buscar o ja no li cal. L'equip torna a quedar lliure i la sol·licitud queda com a cancel·lada.`}
+      confirmLabel="Anul·la l'assignació"
+      isPending={isPending}
+      onConfirm={() => run({ id })}
+    />
+  );
+}
+
+export function MarkStudentDeviceReturnedButton({ id, studentName, deviceLabel }: LoanStepProps) {
   const { run, isPending } = useServerAction(markStudentDeviceReturned, {
     successMessage: "Devolució registrada i equip alliberat",
   });
 
   return (
-    <Button size="sm" variant="outline" disabled={isPending} onClick={() => run({ id })}>
-      <RotateCcwIcon className="size-4" />
-      {isPending ? "Registrant…" : "Marca com retornat"}
-    </Button>
+    <ConfirmLoanStep
+      label={isPending ? "Registrant…" : "Marca com retornat"}
+      icon={<RotateCcwIcon className="size-4" />}
+      variant="outline"
+      title={`${studentName} torna ${deviceLabel}?`}
+      description="En queden anotats el dia i l'hora d'ara mateix i qui el rep, i no es podran canviar després. L'equip torna a quedar lliure, llevat que tingui alguna incidència oberta."
+      confirmLabel="Registra la devolució"
+      isPending={isPending}
+      onConfirm={() => run({ id })}
+    />
   );
 }

@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { getConfigChecks, getTestDataSummary } from "@/lib/admin-data";
 import { auditActionLabels, type AuditAction } from "@/lib/audit";
 import { formatDateTime } from "@/lib/date";
-import { CLOSED_STUDENT_REQUEST_STATUSES } from "@/lib/panell-data";
 import { requireSuperAdmin } from "@/lib/permissions";
 import { formatCounts, isTestAccountEmail } from "@/lib/test-data";
 import { PurgeTestDataButton } from "@/components/admin/purge-test-data-button";
@@ -31,11 +30,9 @@ export const metadata = { title: "Administració" };
 export default async function AdministracioPage() {
   const superAdmin = await requireSuperAdmin();
 
-  const [testData, closedStudentRequests, usersWithoutAccess, auditEvents] = await Promise.all([
+  const [testData, studentRequests, usersWithoutAccess, auditEvents] = await Promise.all([
     getTestDataSummary(),
-    db.studentDeviceRequest.count({
-      where: { status: { in: [...CLOSED_STUDENT_REQUEST_STATUSES] } },
-    }),
+    db.studentDeviceRequest.count(),
     db.user.count({ where: { disabledAt: { not: null } } }),
     db.auditEvent.findMany({
       orderBy: { createdAt: "desc" },
@@ -99,21 +96,21 @@ export default async function AdministracioPage() {
         <CardHeader>
           <CardTitle>Dades personals</CardTitle>
           <CardDescription>
-            gesTIC guarda noms de menors i dades del claustre: el que ja no cal, no s&apos;ha de quedar.
+            gesTIC guarda noms de menors i dades del claustre: què s&apos;hi guarda i per què.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="min-w-0 flex-1">
-              {closedStudentRequests === 0
-                ? "No queda cap sol·licitud tancada de Chromebooks d'alumnat."
-                : `Queden ${closedStudentRequests} sol·licituds tancades de Chromebooks d'alumnat, amb noms de menors. Es buiden en acabar el curs.`}
+              {studentRequests === 0
+                ? "Encara no hi ha cap sol·licitud de Chromebook per a alumnat."
+                : `${studentRequests} ${studentRequests === 1 ? "sol·licitud" : "sol·licituds"} de Chromebook per a alumnat, amb el nom de l'alumne/a.`}{" "}
+              Es guarden sense data de caducitat, perquè cada equip pugui dir qui l&apos;ha tingut curs
+              rere curs, i només les veuen el tutor/a que les fa i la coordinació TIC.
             </p>
-            {closedStudentRequests > 0 && (
-              <ButtonLink variant="outline" size="sm" href="/chromebooks">
-                Buida-les a Chromebooks
-              </ButtonLink>
-            )}
+            <ButtonLink variant="outline" size="sm" href="/chromebooks">
+              Chromebooks
+            </ButtonLink>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="min-w-0 flex-1">

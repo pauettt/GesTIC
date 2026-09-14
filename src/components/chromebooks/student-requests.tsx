@@ -1,13 +1,16 @@
+import Link from "next/link";
 import type { Chromebook, StudentDeviceRequest, User } from "@prisma/client";
 
-import { formatDate } from "@/lib/date";
+import { formatDate, formatDateTime } from "@/lib/date";
 import {
   studentDeviceReasonLabels,
   studentDeviceRequestStatusLabels,
   studentDeviceRequestStatusVariants,
 } from "@/lib/labels";
 import {
+  CancelStudentAssignmentButton,
   CancelStudentRequestButton,
+  MarkStudentDeviceDeliveredButton,
   MarkStudentDeviceReturnedButton,
   RespondStudentRequestButtons,
   type AvailableDevice,
@@ -40,6 +43,16 @@ function StatusBadge({ request }: { request: StudentDeviceRequest }) {
     <Badge variant={studentDeviceRequestStatusVariants[request.status]}>
       {studentDeviceRequestStatusLabels[request.status]}
     </Badge>
+  );
+}
+
+/** A les llistes de la coordinació, l'equip porta a la seva fitxa amb l'historial. */
+function DeviceLink({ chromebook }: { chromebook: Chromebook | null }) {
+  if (!chromebook) return <>—</>;
+  return (
+    <Link href={`/chromebooks/alumnat/${chromebook.id}`} className="hover:underline">
+      {device(chromebook)}
+    </Link>
   );
 }
 
@@ -98,9 +111,14 @@ export function TutorStudentRequests({ requests }: { requests: StudentRequest[] 
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {device(request.chromebook)}
+                      {request.deliveredAt && (
+                        <span className="mt-0.5 block text-xs">
+                          Entregat el {formatDateTime(request.deliveredAt)}
+                        </span>
+                      )}
                       {request.returnedAt && (
                         <span className="mt-0.5 block text-xs">
-                          Retornat el {formatDate(request.returnedAt)}
+                          Retornat el {formatDateTime(request.returnedAt)}
                         </span>
                       )}
                     </TableCell>
@@ -131,8 +149,8 @@ export function PendingStudentRequests({
       <CardHeader>
         <CardTitle>Sol·licituds de Chromebook per a alumnat</CardTitle>
         <p className="text-sm text-muted-foreground">
-          En aprovar-ne una, tria quin equip del pool se li assigna. El tutor/a rep la decisió per
-          correu.
+          En aprovar-ne una, tria quin equip del pool se li aparta. El tutor/a rep la decisió per
+          correu, i l&apos;entrega es registra quan l&apos;alumne/a el vingui a buscar.
         </p>
       </CardHeader>
       <CardContent>
@@ -182,16 +200,17 @@ export function PendingStudentRequests({
   );
 }
 
-/** Equips que ara mateix són a casa d'un alumne. */
-export function ActiveStudentAssignments({ requests }: { requests: StudentRequest[] }) {
+/** Equips apartats per a un alumne que encara no l'ha vingut a buscar. */
+export function AwaitingDeliveryStudentDevices({ requests }: { requests: StudentRequest[] }) {
   if (requests.length === 0) return null;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Equips assignats a alumnat</CardTitle>
+        <CardTitle>Equips per entregar</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Chromebooks que ara mateix són a casa d&apos;un alumne/a, per a tot el curs.
+          Aprovats i apartats, a l&apos;espera que l&apos;alumne/a els vingui a buscar. En entregar-ne
+          un en queden anotats el dia i l&apos;hora.
         </p>
       </CardHeader>
       <CardContent>
@@ -203,7 +222,70 @@ export function ActiveStudentAssignments({ requests }: { requests: StudentReques
                 <TableHead>Grup</TableHead>
                 <TableHead>Tutor/a</TableHead>
                 <TableHead>Equip</TableHead>
-                <TableHead>Assignat el</TableHead>
+                <TableHead>Aprovat el</TableHead>
+                <TableHead className="w-64" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">{studentName(request)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {request.groupName ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{who(request.tutor)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <DeviceLink chromebook={request.chromebook} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {request.respondedAt ? formatDate(request.respondedAt) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-1">
+                      <MarkStudentDeviceDeliveredButton
+                        id={request.id}
+                        studentName={studentName(request)}
+                        deviceLabel={device(request.chromebook)}
+                      />
+                      <CancelStudentAssignmentButton
+                        id={request.id}
+                        studentName={studentName(request)}
+                        deviceLabel={device(request.chromebook)}
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Equips que ara mateix són a casa d'un alumne. */
+export function DeliveredStudentDevices({ requests }: { requests: StudentRequest[] }) {
+  if (requests.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Equips a casa de l&apos;alumnat</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Chromebooks que ara mateix té un alumne/a, per a tot el curs.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Alumne/a</TableHead>
+                <TableHead>Grup</TableHead>
+                <TableHead>Tutor/a</TableHead>
+                <TableHead>Equip</TableHead>
+                <TableHead>Entregat el</TableHead>
                 <TableHead className="w-52" />
               </TableRow>
             </TableHeader>
@@ -216,13 +298,17 @@ export function ActiveStudentAssignments({ requests }: { requests: StudentReques
                   </TableCell>
                   <TableCell className="text-muted-foreground">{who(request.tutor)}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {device(request.chromebook)}
+                    <DeviceLink chromebook={request.chromebook} />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {request.respondedAt ? formatDate(request.respondedAt) : "—"}
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {request.deliveredAt ? formatDateTime(request.deliveredAt) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <MarkStudentDeviceReturnedButton id={request.id} />
+                    <MarkStudentDeviceReturnedButton
+                      id={request.id}
+                      studentName={studentName(request)}
+                      deviceLabel={device(request.chromebook)}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

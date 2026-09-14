@@ -12,7 +12,7 @@ import {
 
 import { formatDate, formatDateTimeFull } from "@/lib/date";
 import { daysOverdue } from "@/lib/loans";
-import { getCourseStats, getPendingWork, getStudentDataReminder } from "@/lib/panell-data";
+import { getCourseStats, getPendingWork } from "@/lib/panell-data";
 import { incidentPriorityLabels, incidentPriorityVariants } from "@/lib/labels";
 import { requireAdmin } from "@/lib/permissions";
 import { CourseMetrics } from "@/components/panell/course-metrics";
@@ -26,11 +26,7 @@ const who = (user: { name: string | null; email: string }) => user.name ?? user.
 
 export default async function PanellPage() {
   await requireAdmin();
-  const [work, stats, studentDataReminder] = await Promise.all([
-    getPendingWork(),
-    getCourseStats(),
-    getStudentDataReminder(),
-  ]);
+  const [work, stats] = await Promise.all([getPendingWork(), getCourseStats()]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,21 +40,6 @@ export default async function PanellPage() {
           Gestiona aules i espais
         </ButtonLink>
       </div>
-
-      {studentDataReminder && (
-        <Card className="border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm">
-              Queden <strong>{studentDataReminder.closed}</strong> sol·licituds tancades de
-              Chromebooks d&apos;alumnat, amb noms de menors. Es va decidir buidar-les en acabar el
-              curs.
-            </p>
-            <ButtonLink variant="outline" size="sm" href="/chromebooks">
-              Buida-les a Chromebooks
-            </ButtonLink>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <WorkQueue
@@ -119,16 +100,27 @@ export default async function PanellPage() {
         <WorkQueue
           title="Chromebooks per a l'alumnat"
           icon={LaptopIcon}
-          empty="No hi ha sol·licituds de Chromebook pendents."
-          items={work.pendingStudentRequests.map((request) => ({
-            id: request.id,
-            href: "/chromebooks" as Route,
-            main: request.groupName
-              ? `Sol·licitud per a un alumne/a de ${request.groupName}`
-              : "Sol·licitud per a un alumne/a",
-            meta: `${who(request.tutor)} · ${formatDate(request.createdAt)}`,
-            badge: null,
-          }))}
+          empty="No hi ha sol·licituds pendents ni equips per entregar."
+          items={[
+            ...work.pendingStudentRequests.map((request) => ({
+              id: request.id,
+              href: "/chromebooks" as Route,
+              main: request.groupName
+                ? `Sol·licitud per a un alumne/a de ${request.groupName}`
+                : "Sol·licitud per a un alumne/a",
+              meta: `${who(request.tutor)} · ${formatDate(request.createdAt)}`,
+              badge: null,
+            })),
+            ...work.awaitingStudentDeliveries.map((request) => ({
+              id: request.id,
+              href: "/chromebooks" as Route,
+              main: `${request.chromebook?.assetTag ?? "Equip"} per entregar${
+                request.groupName ? ` a un alumne/a de ${request.groupName}` : ""
+              }`,
+              meta: request.respondedAt ? `Aprovat el ${formatDate(request.respondedAt)}` : "Aprovat",
+              badge: { label: "Per entregar", variant: "secondary" as const },
+            })),
+          ]}
         />
 
         <WorkQueue

@@ -56,6 +56,13 @@ canvis:
   Configuració del servidor* ha de sortir tota en verd, i el botó de correu de
   prova confirma que els avisos surten.
 
+Canvis del 2026-09-14: la migració `20260914100000_entrega_chromebooks_alumnat`
+afegeix l'estat ENTREGADA i tres columnes, sense esborrar ni canviar dades. Com
+que la base de dades és compartida (§12), s'aplica abans de desplegar per poder
+provar-ho en local, i el desplegament la troba feta. Entre una cosa i l'altra, la
+versió publicada falla a /chromebooks si algú marca un equip com a entregat:
+**desplegar el mateix dia que s'aplica**.
+
 ---
 
 ## 🧹 Per fer
@@ -76,6 +83,16 @@ El que no penja de cap compte s'ha de mirar a mà:
 
 Com que es prova sobre producció (§12), s'ha de fer **just abans d'obrir-la al
 claustre**, i a partir d'aquí ja no s'hi han de fer proves amb dades inventades.
+
+### 23. Vista de les incidències: per decidir
+El 2026-09-14 va sortir la idea d'un diagrama de Gantt o un cronograma per
+gestionar-les. Un Gantt no hi encaixa: les incidències no tenen data prevista ni
+dependències, i la majoria duren hores o pocs dies. Segons quin sigui el problema
+de debò, hi ha tres millores possibles: un tauler per estats amb els dies que fa
+que cada una és oberta, marcar les que fa dies que ningú no toca, o una data
+prevista per a les reparacions que tenen dia. Un cronograma sí que tindria sentit
+per als projectes de la coordinació al llarg del curs, com a apartat nou.
+**Abans de fer res cal decidir quin problema es vol resoldre.**
 
 ---
 
@@ -127,17 +144,38 @@ base de dades PostgreSQL al mateix ordinador. Si mai es passa al Pro, que sigui
 per les còpies de seguretat diàries de les dades reals, que el pla gratuït no
 té, i no pas per les proves.
 
-### 22. La coordinació no té on veure els préstecs tancats
-Quan es registra una devolució, la fitxa passa a RETORNADA i desapareix de la
-pantalla de la coordinació: qui la conserva és el tutor, a la seva targeta. Amb
-això no es pot respondre "qui tenia aquest equip el curs passat". No s'ha fet
-cap pantalla d'històric a propòsit, perquè xoca de ple amb les dades de menors:
-les sol·licituds tancades es buiden en acabar el curs, i guardar-ne l'historial
-seria desfer aquella decisió.
+### 22. Els préstecs de Chromebooks a l'alumnat es guarden amb el nom, sense caducitat
+Decidit el 2026-09-14: cada equip del pool ha de poder dir quins alumnes l'han
+tingut curs rere curs, i per això les sol·licituds —amb el nom i el grup de
+l'alumne— ja no s'esborren. Substitueix la decisió del 2026-09-12 de buidar-les
+en acabar el curs: el botó «Buida-les», l'avís del panell i la línia
+d'*Administració* s'han tret. Són dades de menors: només les veuen el tutor/a que
+fa la sol·licitud i la coordinació TIC, i *Administració → Dades personals* diu
+quantes n'hi ha i per què es guarden. **Convé que el centre ho tingui decidit
+per escrit.**
 
 ---
 
 ## ✅ Fet
+
+### 2026-09-14
+
+- **Entrega dels Chromebooks d'alumnat**: aprovar aparta l'equip, i entregar-lo
+  és un pas a part que desa el dia i l'hora del moment i qui l'entrega; la
+  devolució també desa qui el rep. Les dates no s'editen, i entregar, anul·lar i
+  tornar demanen confirmació. La coordinació pot anul·lar una aprovada que ningú
+  no ha vingut a buscar, i l'equip torna a quedar lliure. A /chromebooks hi ha
+  «Equips per entregar» i «Equips a casa de l'alumnat»; el panell avisa dels
+  equips per entregar, i l'inici del tutor distingeix els que ha de recollir dels
+  que ja són a casa. Les aprovades d'abans queden com a pendents d'entrega.
+- **Historial de cada Chromebook del pool** a `/chromebooks/alumnat/[id]`, només
+  per a la coordinació: alumne, grup, tutor/a i quan i qui l'ha aprovat, entregat
+  i rebut, curs per curs. S'hi arriba des de la taula del pool i des de les
+  llistes de préstecs. Migració `20260914100000_entrega_chromebooks_alumnat`.
+- **Fora el buidat de les sol·licituds tancades** (§22).
+- **La casella de tutor/a i el desplegable de permís** a *Usuaris i permisos*
+  canvien al moment del clic, sense esperar que el servidor torni a pintar la
+  pàgina.
 
 ### 2026-09-13
 

@@ -11,6 +11,7 @@ test.describe("professorat", () => {
   test.use({ storageState: authFile("professor") });
 
   test("no entra a cap pantalla de gestió", async ({ page }) => {
+    const { poolChromebooks } = readFixtures();
     for (const path of [
       "/panell",
       "/usuaris",
@@ -18,6 +19,8 @@ test.describe("professorat", () => {
       "/espais",
       "/consergeria",
       "/chromebooks/alumnat/etiquetes",
+      // La fitxa d'un equip del pool porta els noms dels alumnes que l'han tingut.
+      `/chromebooks/alumnat/${poolChromebooks["ALU-01"]}`,
     ]) {
       await page.goto(path);
       await expect(page, `${path} hauria de tornar a l'inici`).toHaveURL(`${BASE_URL}/`);

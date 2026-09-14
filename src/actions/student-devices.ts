@@ -2,10 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { syncChromebookStatus } from "@/lib/chromebook-status";
-import { CLOSED_STUDENT_REQUEST_STATUSES } from "@/lib/panell-data";
 import {
   notifyStudentDeviceDecision,
   notifyStudentDeviceRequested,
@@ -15,16 +13,22 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import {
   cancelStudentDeviceRequestSchema,
   createStudentDeviceRequestSchema,
+  markStudentDeviceDeliveredSchema,
   markStudentDeviceReturnedSchema,
   respondStudentDeviceRequestSchema,
 } from "@/lib/validations/student-devices";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
-// Sentinelles per fer tornar enrere la transacció d'aprovar. Van per missatge i
-// no per classe pròpia perquè no surten d'aquest fitxer.
+// Sentinelles per fer tornar enrere una transacció. Van per missatge i no per
+// classe pròpia perquè no surten d'aquest fitxer.
 const ALREADY_RESOLVED = "student-device/already-resolved";
 const DEVICE_TAKEN = "student-device/device-taken";
+
+/** La pantalla de Chromebooks i la fitxa d'historial de cada equip, que en penja. */
+function revalidateStudentDevices() {
+  revalidatePath("/chromebooks", "layout");
+}
 
 export async function createStudentDeviceRequest(input: unknown): Promise<ActionResult> {
   const tutor = await requireTutor();
@@ -44,7 +48,7 @@ export async function createStudentDeviceRequest(input: unknown): Promise<Action
       tutorId: tutor.id,
       studentFirstName: { equals: studentFirstName, mode: "insensitive" },
       studentLastName: { equals: studentLastName, mode: "insensitive" },
-      status: { in: ["PENDENT", "APROVADA"] },
+      status: { in: ["PENDENT", "APROVADA", "ENTREGADA"] },
     },
   });
   if (existing) {
@@ -70,10 +74,15 @@ export async function createStudentDeviceRequest(input: unknown): Promise<Action
 
   await notifyStudentDeviceRequested(created.id);
 
-  revalidatePath("/chromebooks");
+  revalidateStudentDevices();
   return { success: true };
 }
 
+/**
+ * Aprovar aparta l'equip per a l'alumne: queda ASSIGNAT i ja no es pot donar a
+ * ningú més. Que se l'endugui és un pas a part, `markStudentDeviceDelivered`,
+ * perquè entre una cosa i l'altra poden passar dies.
+ */
 export async function respondStudentDeviceRequest(input: unknown): Promise<ActionResult> {
   const admin = await requireAdmin();
   const parsed = respondStudentDeviceRequestSchema.safeParse(input);
@@ -100,7 +109,7 @@ export async function respondStudentDeviceRequest(input: unknown): Promise<Actio
       data: { status: "REBUTJADA", ...decision },
     });
     await notifyStudentDeviceDecision(data.id, false);
-    revalidatePath("/chromebooks");
+    revalidateStudentDevices();
     return { success: true };
   }
 
@@ -144,61 +153,148 @@ export async function respondStudentDeviceRequest(input: unknown): Promise<Actio
   }
 
   await notifyStudentDeviceDecision(data.id, true);
-  revalidatePath("/chromebooks");
-  return { success: true };
-}
-
-export async function cancelStudentDeviceRequest(input: unknown): Promise<ActionResult> {
-  const user = await requireUser();
-  const parsed = cancelStudentDeviceRequestSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
-
-  const request = await db.studentDeviceRequest.findUnique({ where: { id: parsed.data.id } });
-  if (!request) return { success: false, error: "La sol·licitud no existeix" };
-  // El tutor retira la seva; la coordinació també pot, per poder netejar-ne una
-  // que s'ha quedat penjada quan ja no cal.
-  if (request.tutorId !== user.id && !isAdmin(user.role)) {
-    return { success: false, error: "Aquesta sol·licitud no és teva" };
-  }
-  if (request.status !== "PENDENT") {
-    return { success: false, error: "Aquesta sol·licitud ja s'ha resolt" };
-  }
-
-  await db.studentDeviceRequest.update({
-    where: { id: parsed.data.id },
-    data: { status: "CANCELLADA" },
-  });
-
-  revalidatePath("/chromebooks");
+  revalidateStudentDevices();
   return { success: true };
 }
 
 /**
- * L'alumne ha tornat l'equip. Ho registra la coordinació, que és qui el rep a
- * la mà: el tutor pot avisar que ja el té, però qui sap que l'aparell ha
- * tornat de debò és qui el torna a tenir a l'armari.
+ * Retira una sol·licitud abans que l'equip surti del centre.
  *
- * Tanca les dues puntes alhora, com l'aprovació: la sol·licitud passa a
- * RETORNADA i l'equip torna a estar lliure. Si només es fes una de les dues,
- * quedaria un Chromebook a l'armari que l'aplicació dona per assignat.
+ * Una de pendent la pot retirar el tutor que l'ha feta o la coordinació. Una
+ * d'aprovada —l'equip apartat però encara sense entregar— només la coordinació,
+ * per quan l'alumne no el ve a buscar o ja no li cal: l'equip torna a quedar
+ * lliure. Un cop entregat ja no s'anul·la, se'n registra la devolució.
  */
-export async function markStudentDeviceReturned(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
-  const parsed = markStudentDeviceReturnedSchema.safeParse(input);
+export async function cancelStudentDeviceRequest(input: unknown): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = cancelStudentDeviceRequestSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { id } = parsed.data;
+
+  const request = await db.studentDeviceRequest.findUnique({ where: { id } });
+  if (!request) return { success: false, error: "La sol·licitud no existeix" };
+  const admin = isAdmin(user.role);
+  if (request.tutorId !== user.id && !admin) {
+    return { success: false, error: "Aquesta sol·licitud no és teva" };
+  }
+
+  if (request.status === "PENDENT") {
+    const cancelled = await db.studentDeviceRequest.updateMany({
+      where: { id, status: "PENDENT" },
+      data: { status: "CANCELLADA" },
+    });
+    if (cancelled.count === 0) {
+      return { success: false, error: "Aquesta sol·licitud ja s'ha resolt" };
+    }
+  } else if (request.status === "APROVADA") {
+    if (!admin) {
+      return {
+        success: false,
+        error: "Aquest equip ja està apartat: parla amb la coordinació TIC per anul·lar-ho",
+      };
+    }
+    try {
+      // Com l'aprovació: la sol·licitud i l'estat de l'equip, junts.
+      await db.$transaction(async (tx) => {
+        const cancelled = await tx.studentDeviceRequest.updateMany({
+          where: { id, status: "APROVADA" },
+          data: { status: "CANCELLADA" },
+        });
+        if (cancelled.count === 0) throw new Error(ALREADY_RESOLVED);
+        if (request.chromebookId) {
+          await syncChromebookStatus(tx, request.chromebookId);
+        }
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === ALREADY_RESOLVED) {
+        return { success: false, error: "Algú altre acaba de canviar aquesta sol·licitud" };
+      }
+      throw error;
+    }
+  } else if (request.status === "ENTREGADA") {
+    return {
+      success: false,
+      error: "Aquest equip ja s'ha entregat: el que cal és registrar-ne la devolució",
+    };
+  } else {
+    return { success: false, error: "Aquesta sol·licitud ja està tancada" };
+  }
+
+  revalidateStudentDevices();
+  return { success: true };
+}
+
+/**
+ * L'alumne ha vingut a buscar l'equip. Aprovar-lo només l'apartava: és ara quan
+ * surt del centre. Es desa el moment de registrar-ho i qui ho fa, i no es pot
+ * corregir després, perquè és el registre de quan va passar. L'equip ja era
+ * ASSIGNAT des de l'aprovació i no canvia.
+ */
+export async function markStudentDeviceDelivered(input: unknown): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = markStudentDeviceDeliveredSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
   const { id } = parsed.data;
 
   const request = await db.studentDeviceRequest.findUnique({ where: { id } });
   if (!request) return { success: false, error: "La sol·licitud no existeix" };
   if (request.status !== "APROVADA") {
-    return { success: false, error: "Aquest préstec no està actiu" };
+    return {
+      success: false,
+      error:
+        request.status === "ENTREGADA"
+          ? "Aquest equip ja consta com a entregat"
+          : "Aquesta sol·licitud no té cap equip per entregar",
+    };
+  }
+
+  // La condició d'estat és la que evita dues entregues del mateix préstec si
+  // dos coordinadors hi fan clic alhora: la segona no troba res a canviar.
+  const delivered = await db.studentDeviceRequest.updateMany({
+    where: { id, status: "APROVADA" },
+    data: { status: "ENTREGADA", deliveredAt: new Date(), deliveredById: admin.id },
+  });
+  if (delivered.count === 0) {
+    return { success: false, error: "Algú altre acaba de registrar aquesta entrega" };
+  }
+
+  revalidateStudentDevices();
+  return { success: true };
+}
+
+/**
+ * L'alumne ha tornat l'equip. Ho registra la coordinació, que és qui el rep a
+ * la mà: el tutor pot avisar que ja el té, però qui sap que l'aparell ha
+ * tornat de debò és qui el torna a tenir a l'armari. Com l'entrega, desa el
+ * moment i qui ho fa, sense possibilitat de canviar-ho.
+ *
+ * Tanca les dues puntes alhora, com l'aprovació: la sol·licitud passa a
+ * RETORNADA i l'equip torna a estar lliure. Si només es fes una de les dues,
+ * quedaria un Chromebook a l'armari que l'aplicació dona per assignat.
+ */
+export async function markStudentDeviceReturned(input: unknown): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = markStudentDeviceReturnedSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { id } = parsed.data;
+
+  const request = await db.studentDeviceRequest.findUnique({ where: { id } });
+  if (!request) return { success: false, error: "La sol·licitud no existeix" };
+  if (request.status !== "ENTREGADA") {
+    return {
+      success: false,
+      error:
+        request.status === "APROVADA"
+          ? "Aquest equip encara no s'ha entregat: si l'alumne/a no el vindrà a buscar, anul·la l'assignació"
+          : "Aquest préstec no està actiu",
+    };
   }
 
   try {
     await db.$transaction(async (tx) => {
       const returned = await tx.studentDeviceRequest.updateMany({
-        where: { id, status: "APROVADA" },
-        data: { status: "RETORNADA", returnedAt: new Date() },
+        where: { id, status: "ENTREGADA" },
+        data: { status: "RETORNADA", returnedAt: new Date(), returnedById: admin.id },
       });
       if (returned.count === 0) throw new Error(ALREADY_RESOLVED);
 
@@ -217,39 +313,6 @@ export async function markStudentDeviceReturned(input: unknown): Promise<ActionR
     throw error;
   }
 
-  revalidatePath("/chromebooks");
-  return { success: true };
-}
-
-/**
- * Buida les sol·licituds tancades: retornades, rebutjades i retirades. Les
- * pendents i les actives no es toquen mai, que són feina viva.
- *
- * Existeix perquè les dades que hi ha aquí són noms de menors i no s'han de
- * quedar per sempre. La decisió del centre (2026-09-12) és fer-ho al juliol,
- * quan tornen els equips, o al setembre següent, i que ho pugui fer tant
- * l'administrador com la coordinació TIC. Si no fos un botó, buidar-ho voldria
- * dir entrar a la base de dades, i llavors no ho faria ningú.
- *
- * Els equips i el seu historial no en depenen: el Chromebook segueix al pool
- * amb les seves notes i incidències. El que marxa és qui el va tenir.
- */
-export async function purgeClosedStudentDeviceRequests(): Promise<ActionResult> {
-  const user = await requireAdmin();
-
-  const purged = await db.studentDeviceRequest.deleteMany({
-    where: { status: { in: [...CLOSED_STUDENT_REQUEST_STATUSES] } },
-  });
-
-  // Només el recompte: el registre dura més que aquestes dades i no ha de
-  // guardar cap nom.
-  await recordAudit(
-    user.id,
-    "student-requests.purge",
-    `Buidades ${purged.count} sol·licituds tancades de Chromebooks d'alumnat`,
-  );
-  revalidatePath("/administracio");
-
-  revalidatePath("/chromebooks");
+  revalidateStudentDevices();
   return { success: true };
 }

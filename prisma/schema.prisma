@@ -62,6 +62,8 @@ model User {
 
   studentDeviceRequests   StudentDeviceRequest[] @relation("StudentDeviceTutor")
   respondedStudentDevices StudentDeviceRequest[] @relation("StudentDeviceResponder")
+  deliveredStudentDevices StudentDeviceRequest[] @relation("StudentDeviceDeliverer")
+  receivedStudentDevices  StudentDeviceRequest[] @relation("StudentDeviceReceiver")
   appointments            Appointment[]
   openedAppointmentSlots  AppointmentSlot[]      @relation("AppointmentSlotOpener")
 }
@@ -350,25 +352,34 @@ enum StudentDeviceReason {
   ALTRE
 }
 
-/// RETORNADA hi és des del primer dia encara que de moment no la posi ningú:
-/// afegir un valor a un enum de Postgres demana una migració a part, i el cicle
-/// sencer (demanar → decidir → tornar) ja està decidit.
+/// El cicle d'un préstec: PENDENT → APROVADA (s'hi aparta un equip) → ENTREGADA
+/// (l'alumne se l'ha endut) → RETORNADA. REBUTJADA i CANCELLADA el tanquen sense
+/// que l'equip hagi sortit del centre: CANCELLADA és la del tutor que retira una
+/// sol·licitud pendent i la de la coordinació quan anul·la una aprovada que
+/// ningú no ha vingut a buscar.
 enum StudentDeviceRequestStatus {
   PENDENT
   APROVADA
+  ENTREGADA
   REBUTJADA
   RETORNADA
   CANCELLADA
 }
 
 /// Sol·licitud d'un tutor perquè un alumne del seu grup tingui un Chromebook
-/// durant el curs. En aprovar-la s'hi assigna un equip del pool
-/// (`Chromebook.isStudentLoanable`), que passa a ASSIGNAT fins a la devolució.
+/// durant el curs, i alhora l'historial de préstecs de l'equip. En aprovar-la
+/// s'hi aparta un equip del pool (`Chromebook.isStudentLoanable`), que passa a
+/// ASSIGNAT fins a la devolució.
 ///
 /// Les dades de l'alumne són d'un menor i només les veuen el tutor que ha fet
 /// la sol·licitud i la coordinació TIC. No s'hi desa cap identificador acadèmic
 /// (expedient, document): amb el nom i el grup n'hi ha prou per saber de qui
-/// es parla, i tota la resta seria guardar dades per guardar-les.
+/// es parla, i tota la resta seria guardar dades per guardar-les. Es guarden
+/// sense data de caducitat (decidit el 2026-09-14): cada equip ha de poder dir
+/// quins alumnes l'han tingut curs rere curs.
+///
+/// L'entrega i la devolució desen el moment en què la coordinació les registra
+/// i qui ho fa, i no es poden editar: són el registre de quan va passar.
 model StudentDeviceRequest {
   id               String                     @id @default(cuid())
   tutorId          String
@@ -382,11 +393,16 @@ model StudentDeviceRequest {
   responseNote     String?                    @db.Text
   respondedById    String?
   respondedAt      DateTime?
+  deliveredById    String?
+  deliveredAt      DateTime?
+  returnedById     String?
   returnedAt       DateTime?
   createdAt        DateTime                   @default(now())
 
   tutor       User        @relation("StudentDeviceTutor", fields: [tutorId], references: [id], onDelete: Cascade)
   respondedBy User?       @relation("StudentDeviceResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+  deliveredBy User?       @relation("StudentDeviceDeliverer", fields: [deliveredById], references: [id], onDelete: SetNull)
+  returnedBy  User?       @relation("StudentDeviceReceiver", fields: [returnedById], references: [id], onDelete: SetNull)
   chromebook  Chromebook? @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
 
   @@index([tutorId])

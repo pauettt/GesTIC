@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { QrCodeIcon } from "lucide-react";
 import type { ChromebookStatus } from "@prisma/client";
 
@@ -30,7 +31,8 @@ type PoolChromebook = {
 /**
  * Els equips que es deixen a un alumne per a tot el curs. Van en una taula i no
  * en la graella de quadrats dels carros: aquella dibuixa el carro tal com és
- * per dins, i aquí el que importa és el número de sèrie i qui el té.
+ * per dins, i aquí el que importa és el número de sèrie i qui el té. Cada equip
+ * porta a la seva fitxa, amb els alumnes que l'han tingut.
  *
  * Només la coordinació TIC: és el seu inventari de préstec.
  */
@@ -52,7 +54,8 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                 <span className="font-medium text-foreground">{available}</span> de {inService}{" "}
                 lliures.
               </>
-            )}
+            )}{" "}
+            {chromebooks.length > 0 && "Obre'n un per veure qui l'ha tingut."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -86,7 +89,14 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
               <TableBody>
                 {chromebooks.map((chromebook) => (
                   <TableRow key={chromebook.id}>
-                    <TableCell className="font-medium">{chromebook.assetTag}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/chromebooks/alumnat/${chromebook.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {chromebook.assetTag}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {[chromebook.brand, chromebook.model].filter(Boolean).join(" ") || "—"}
                     </TableCell>
@@ -122,7 +132,7 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                           action={deleteChromebook}
                           input={{ id: chromebook.id }}
                           title="Eliminar aquest Chromebook?"
-                          description="Desapareixerà del pool de préstec amb el seu historial. Si només ha deixat de funcionar, dona'l de baixa. Si està assignat a un alumne, primer cal registrar-ne la devolució."
+                          description="Desapareixerà del pool de préstec. Els préstecs que ha tingut es conserven a les sol·licituds, però ja no es podran consultar des de la fitxa de l'equip. Si només ha deixat de funcionar, dona'l de baixa. Si ara el té apartat o a casa un alumne, primer cal anul·lar-ne l'assignació o registrar-ne la devolució."
                         />
                       </div>
                     </TableCell>

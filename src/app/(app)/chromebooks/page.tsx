@@ -5,10 +5,10 @@ import { LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
-import { PurgeClosedRequests } from "@/components/chromebooks/purge-closed-requests";
 import { StudentChromebookPool } from "@/components/chromebooks/student-pool";
 import {
-  ActiveStudentAssignments,
+  AwaitingDeliveryStudentDevices,
+  DeliveredStudentDevices,
   PendingStudentRequests,
   TutorStudentRequests,
 } from "@/components/chromebooks/student-requests";
@@ -30,8 +30,8 @@ export default async function ChromebooksPage() {
     studentChromebooks,
     myRequests,
     pendingRequests,
-    activeAssignments,
-    closedRequests,
+    awaitingDelivery,
+    delivered,
   ] = await Promise.all([
       db.cart.findMany({
         include: { space: true, chromebooks: true },
@@ -70,20 +70,22 @@ export default async function ChromebooksPage() {
             orderBy: { createdAt: "asc" },
           })
         : Promise.resolve([]),
+      // Els que fa més dies que esperen que els vinguin a buscar, primer.
       admin
         ? db.studentDeviceRequest.findMany({
             where: { status: "APROVADA" },
             ...requestsWithContext,
-            orderBy: { respondedAt: "desc" },
+            orderBy: { respondedAt: "asc" },
           })
         : Promise.resolve([]),
-      // Les tancades no es llisten enlloc: només se'n compta quantes queden per
-      // buidar a fi de curs.
+      // Els tancats no surten aquí: són a l'historial de cada equip.
       admin
-        ? db.studentDeviceRequest.count({
-            where: { status: { in: ["RETORNADA", "REBUTJADA", "CANCELLADA"] } },
+        ? db.studentDeviceRequest.findMany({
+            where: { status: "ENTREGADA" },
+            ...requestsWithContext,
+            orderBy: { deliveredAt: "desc" },
           })
-        : Promise.resolve(0),
+        : Promise.resolve([]),
     ]);
 
   const availableDevices = studentChromebooks.filter((cb) => cb.status === "DISPONIBLE");
@@ -148,9 +150,9 @@ export default async function ChromebooksPage() {
       {admin && (
         <>
           <PendingStudentRequests requests={pendingRequests} available={availableDevices} />
-          <ActiveStudentAssignments requests={activeAssignments} />
+          <AwaitingDeliveryStudentDevices requests={awaitingDelivery} />
+          <DeliveredStudentDevices requests={delivered} />
           <StudentChromebookPool chromebooks={studentChromebooks} />
-          <PurgeClosedRequests count={closedRequests} />
         </>
       )}
     </div>
