@@ -56,13 +56,6 @@ canvis:
   Configuració del servidor* ha de sortir tota en verd, i el botó de correu de
   prova confirma que els avisos surten.
 
-Canvis del 2026-09-14: la migració `20260914100000_entrega_chromebooks_alumnat`
-afegeix l'estat ENTREGADA i tres columnes, sense esborrar ni canviar dades. Com
-que la base de dades és compartida (§12), s'aplica abans de desplegar per poder
-provar-ho en local, i el desplegament la troba feta. Entre una cosa i l'altra, la
-versió publicada falla a /chromebooks si algú marca un equip com a entregat:
-**desplegar el mateix dia que s'aplica**.
-
 ---
 
 ## 🧹 Per fer
@@ -176,6 +169,17 @@ per escrit.**
 - **La casella de tutor/a i el desplegable de permís** a *Usuaris i permisos*
   canvien al moment del clic, sense esperar que el servidor torni a pintar la
   pàgina.
+- **Navegació més àgil**, en tres canvis:
+  - Les funcions de Vercel passen a Dublín (`regions: ["dub1"]` a `vercel.json`),
+    al costat de Supabase (`eu-west-1`). Abans corrien a Washington (`iad1`) i
+    cada consulta creuava l'Atlàntic: una petició amb una sola consulta trigava
+    300–370 ms.
+  - La sessió es llegeix un sol cop per petició (`cache` de React a
+    `permissions.ts`): el layout i la pàgina en feien dues consultes.
+  - El navegador reaprofita una secció ja visitada durant 30 s
+    (`staleTimes.dynamic`). Els canvis propis es veuen al moment, perquè totes
+    les accions criden `revalidatePath`; els d'altres persones poden trigar fins
+    a 30 s sense recarregar.
 
 ### 2026-09-13
 

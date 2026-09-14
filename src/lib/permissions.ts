@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { auth } from "@/lib/auth";
 import {
@@ -15,11 +16,19 @@ import {
 export { COORDINATOR_ROLES, canAccessKeys, isAdmin, isConcierge, isSuperAdmin };
 
 /**
+ * La sessió d'aquesta petició. El layout i la pàgina es pinten alhora i tots dos
+ * la demanen, i com que es desa a la base de dades cada navegació en feia dues
+ * consultes. `cache` de React la comparteix dins d'una mateixa petició i prou:
+ * la següent la torna a llegir, i treure l'accés a algú continua valent al moment.
+ */
+const getSession = cache(() => auth());
+
+/**
  * Sessió vàlida, sense mirar el rol. Només per al layout, que ha de pintar la
  * barra lateral tant per a consergeria com per a la resta.
  */
 export async function requireSession() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     redirect("/login");
   }
