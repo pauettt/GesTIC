@@ -235,6 +235,14 @@ perquè cada consulta queda apuntada. Condicions:
   motiu si no estan disponibles o l'avís que tenen una incidència oberta, i un
   enllaç per reportar-ne un problema. No veu qui ha obert la incidència ni què hi
   diu.
+- **Botons del QR amb spinner**: mentre s'envia l'avaria, el botó tocat gira i
+  diu «Enviant…», i la resta queden aturats.
+- **Carros de qualsevol dispositiu**: la secció es diu *Carros*, i cada equip té
+  el seu tipus (Chromebook, portàtil, iPad, tauleta o un altre). El carro diu què
+  porta («28 Chromebooks · 2 iPads»), la graella i el QR mostren el tipus, i la
+  importació el llegeix d'una columna «Tipus» o el pren per a tot el full. El
+  préstec a l'alumnat continua sent de Chromebooks. Migració
+  `20260915140000_tipus_de_dispositiu`.
 
 ### 2026-09-14
 

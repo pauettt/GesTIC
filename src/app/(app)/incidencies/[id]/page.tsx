@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { FileIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { deviceTypeLabels } from "@/lib/devices";
 import { formatDate, formatDateTime } from "@/lib/date";
 import { COORDINATOR_ROLES, isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
 import { deleteIncident } from "@/actions/incidents";
@@ -59,7 +60,7 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
   const targetLabel = incident.inventoryItem
     ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
     : incident.chromebook
-      ? `Chromebook ${incident.chromebook.assetTag}${incident.chromebook.cart ? ` (carro ${incident.chromebook.cart.name})` : ""}`
+      ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag}${incident.chromebook.cart ? ` (carro ${incident.chromebook.cart.name})` : ""}`
       : incident.cart
         ? `Carro ${incident.cart.name}`
         : (incident.space?.name ?? incidentTargetTypeLabels[incident.targetType]);

@@ -248,6 +248,16 @@ model LoanRequest {
 // RESERVAT: no el fa servir cap codi, perquè les reserves són del carro sencer i
 // no de cada equip. Es manté perquè treure un valor d'un enum de Postgres
 // demana recrear el tipus amb una migració, i no fa cap mal.
+/// Què és cada equip d'un carro o del préstec. El model es diu Chromebook perquè al
+/// principi només n'hi havia; ara un carro pot portar portàtils, iPads o tauletes.
+enum DeviceType {
+  CHROMEBOOK
+  PORTATIL
+  IPAD
+  TAULETA
+  ALTRE
+}
+
 enum ChromebookStatus {
   DISPONIBLE
   RESERVAT
@@ -285,6 +295,7 @@ model Chromebook {
   spaceId           String?
   assetTag          String           @unique
   serialNumber      String?          @unique
+  deviceType        DeviceType       @default(CHROMEBOOK)
   brand             String?
   model             String?
   status            ChromebookStatus @default(DISPONIBLE)

@@ -1,4 +1,4 @@
-import type { ChromebookStatus } from "@prisma/client";
+import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
 import type { CartOption } from "@/components/chromebooks/chromebook-dialog";
 import { AddChromebookSquare, ChromebookSquare } from "@/components/chromebooks/chromebook-square";
@@ -17,6 +17,7 @@ type Chromebook = {
   brand: string | null;
   model: string | null;
   status: ChromebookStatus;
+  deviceType: DeviceType;
   unavailableReason: string | null;
   notes: Note[];
 };

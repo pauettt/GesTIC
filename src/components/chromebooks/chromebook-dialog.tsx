@@ -7,6 +7,7 @@ import { PlusIcon } from "lucide-react";
 
 import { upsertChromebook } from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
+import { DEVICE_TYPES, deviceTypeLabels } from "@/lib/devices";
 import { toSelectItems } from "@/lib/utils";
 import {
   upsertChromebookSchema,
@@ -25,6 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type CartOption = { id: string; name: string };
+
+function emptyDevice(cartId: string): UpsertChromebookInput {
+  return { cartId, deviceType: "CHROMEBOOK", assetTag: "", serialNumber: "", brand: "", model: "" };
+}
 
 export function ChromebookDialog({
   cartId,
@@ -47,20 +52,14 @@ export function ChromebookDialog({
     formState: { errors },
   } = useForm<UpsertChromebookInput>({
     resolver: zodResolver(upsertChromebookSchema),
-    defaultValues: chromebook ?? {
-      cartId,
-      assetTag: "",
-      serialNumber: "",
-      brand: "",
-      model: "",
-    },
+    defaultValues: chromebook ?? emptyDevice(cartId),
   });
 
   const { run, isPending } = useServerAction(upsertChromebook, {
-    successMessage: chromebook ? "Chromebook actualitzat" : "Chromebook afegit",
+    successMessage: chromebook ? "Dispositiu actualitzat" : "Dispositiu afegit",
     onSuccess: () => {
       setOpen(false);
-      if (!chromebook) reset({ cartId, assetTag: "", serialNumber: "", brand: "", model: "" });
+      if (!chromebook) reset(emptyDevice(cartId));
     },
   });
 
@@ -73,22 +72,46 @@ export function ChromebookDialog({
           ) : (
             <Button size="sm">
               <PlusIcon className="size-4" />
-              Nou Chromebook
+              Nou dispositiu
             </Button>
           )
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{chromebook ? "Edita el Chromebook" : "Nou Chromebook"}</DialogTitle>
+          <DialogTitle>{chromebook ? "Edita el dispositiu" : "Nou dispositiu"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => run(values))}>
           <FieldGroup>
-            <Field data-invalid={Boolean(errors.assetTag)}>
-              <FieldLabel htmlFor="assetTag">Identificador</FieldLabel>
-              <Input id="assetTag" placeholder="Ex: CB-014" {...register("assetTag")} />
-              <FieldError errors={errors.assetTag ? [errors.assetTag] : undefined} />
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field data-invalid={Boolean(errors.deviceType)}>
+                <FieldLabel htmlFor="deviceType">Tipus</FieldLabel>
+                <Controller
+                  control={control}
+                  name="deviceType"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange} items={deviceTypeLabels}>
+                      <SelectTrigger id="deviceType" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEVICE_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {deviceTypeLabels[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={errors.deviceType ? [errors.deviceType] : undefined} />
+              </Field>
+              <Field data-invalid={Boolean(errors.assetTag)}>
+                <FieldLabel htmlFor="assetTag">Identificador</FieldLabel>
+                <Input id="assetTag" placeholder="Ex: C1-14" {...register("assetTag")} />
+                <FieldError errors={errors.assetTag ? [errors.assetTag] : undefined} />
+              </Field>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="brand">Marca</FieldLabel>
@@ -96,7 +119,7 @@ export function ChromebookDialog({
               </Field>
               <Field>
                 <FieldLabel htmlFor="model">Model</FieldLabel>
-                <Input id="model" placeholder="Ex: Chromebook Spin 511" {...register("model")} />
+                <Input id="model" placeholder="Ex: Spin 511" {...register("model")} />
               </Field>
             </div>
             <Field>

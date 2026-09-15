@@ -82,7 +82,7 @@ export function KeyDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="key-cart">Carro de Chromebooks</FieldLabel>
+              <FieldLabel htmlFor="key-cart">Carro</FieldLabel>
               <Controller
                 control={control}
                 name="cartId"

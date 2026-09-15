@@ -6,6 +6,7 @@ import { LaptopIcon, QrCodeIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
+import { deviceSummary } from "@/lib/devices";
 import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { deleteCart } from "@/actions/chromebooks";
@@ -66,6 +67,7 @@ export default async function CartDetailPage({
   // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
   const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA").length;
   const available = cart.chromebooks.filter((chromebook) => chromebook.status === "DISPONIBLE").length;
+  const summary = deviceSummary(cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA"));
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -86,6 +88,7 @@ export default async function CartDetailPage({
               <h1 className="text-2xl font-semibold">{cart.name}</h1>
               <p className="text-muted-foreground">
                 {cart.space?.name ?? "Sense ubicació fixa"}
+                {summary ? ` · ${summary}` : ""}
                 {cart.serialNumber ? ` · Núm. sèrie: ${cart.serialNumber}` : ""}
               </p>
               <div className="flex flex-wrap gap-3">
@@ -127,7 +130,7 @@ export default async function CartDetailPage({
                 action={deleteCart}
                 input={{ id: cart.id }}
                 title="Eliminar aquest carro?"
-                description="Només es pot esborrar un carro buit: si hi queden Chromebooks, mou-los abans a un altre carro. Les reserves del carro s'eliminaran, i les claus que hi estiguin lligades quedaran sense carro."
+                description="Només es pot esborrar un carro buit: si hi queden dispositius, mou-los abans a un altre carro. Les reserves del carro s'eliminaran, i les claus que hi estiguin lligades quedaran sense carro."
               />
             </div>
           )}
@@ -138,7 +141,7 @@ export default async function CartDetailPage({
         <h2 className="mb-3 text-lg font-semibold">Horari d&apos;ocupació</h2>
         <p className="mb-3 text-sm text-muted-foreground">
           <span className={cn("font-medium", available < inService ? "text-red-700" : "text-foreground")}>
-            {available} de {inService} Chromebooks disponibles.
+            {available} de {inService} dispositius disponibles.
           </span>{" "}
           Clica una sessió lliure per reservar-la a l&apos;instant.
         </p>
@@ -155,17 +158,18 @@ export default async function CartDetailPage({
         <>
           <Separator />
           <div>
-            <h2 className="mb-1 text-lg font-semibold">Chromebooks del carro</h2>
+            <h2 className="mb-1 text-lg font-semibold">Dispositius del carro</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un Chromebook per saber si hi ha res a tenir en compte abans de fer-lo servir, o per
+              Clica un dispositiu per saber si hi ha res a tenir en compte abans de fer-lo servir, o per
               reportar-ne un problema.
             </p>
             <ChromebookStatusGrid
               chromebooks={cart.chromebooks
                 .filter((chromebook) => chromebook.status !== "BAIXA")
-                .map(({ id: chromebookId, assetTag, status, unavailableReason }) => ({
+                .map(({ id: chromebookId, assetTag, deviceType, status, unavailableReason }) => ({
                   id: chromebookId,
                   assetTag,
+                  deviceType,
                   status,
                   unavailableReason,
                 }))}
@@ -179,7 +183,7 @@ export default async function CartDetailPage({
           <Separator />
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Chromebooks del carro</h2>
+              <h2 className="text-lg font-semibold">Dispositius del carro</h2>
               <Link
                 href={`/chromebooks/${cart.id}/etiquetes`}
                 className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
@@ -201,7 +205,7 @@ export default async function CartDetailPage({
               </span>
             </div>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un Chromebook per veure&apos;n els detalls, marcar-lo com a no disponible, editar-lo,
+              Clica un dispositiu per veure&apos;n els detalls, marcar-lo com a no disponible, editar-lo,
               moure&apos;l a un altre carro o donar-lo de baixa.
             </p>
             <ChromebookManager cartId={cart.id} carts={carts} chromebooks={cart.chromebooks} />

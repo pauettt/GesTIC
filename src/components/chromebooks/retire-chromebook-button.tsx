@@ -18,7 +18,7 @@ export function RetireChromebookButton({
   retired: boolean;
 }) {
   const { run, isPending } = useServerAction(setChromebookRetired, {
-    successMessage: retired ? "Chromebook reactivat" : "Chromebook donat de baixa",
+    successMessage: retired ? "Dispositiu reactivat" : "Dispositiu donat de baixa",
   });
 
   return (

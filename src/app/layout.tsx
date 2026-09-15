@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   // Cada pàgina posa el seu títol i queda "Inventari TIC · gesTIC" a la
   // pestanya: amb diverses obertes alhora, es distingeixen d'un cop d'ull.
   title: { default: "gesTIC", template: "%s · gesTIC" },
-  description: "Coordinació TIC del centre: incidències, inventari, Chromebooks i tutorials.",
+  description: "Coordinació TIC del centre: incidències, inventari, carros i tutorials.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

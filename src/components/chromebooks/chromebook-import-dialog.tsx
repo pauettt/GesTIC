@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react";
 import { toast } from "sonner";
+import type { DeviceType } from "@prisma/client";
 
 import { importChromebooks } from "@/actions/chromebook-import";
 import {
@@ -17,6 +18,7 @@ import {
   type RowsWithoutCart,
 } from "@/lib/chromebook-import";
 import { parseCsv } from "@/lib/csv";
+import { DEVICE_TYPES, deviceTypeLabels } from "@/lib/devices";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,7 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [withoutCart, setWithoutCart] = useState<RowsWithoutCart>("pool");
+  const [defaultDeviceType, setDefaultDeviceType] = useState<DeviceType>("CHROMEBOOK");
   const [error, setError] = useState<string | null>(null);
   const [isImporting, startImport] = useTransition();
 
@@ -69,6 +72,7 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
     setSheet(null);
     setError(null);
     setWithoutCart("pool");
+    setDefaultDeviceType("CHROMEBOOK");
     setOpen(next);
   }
 
@@ -95,7 +99,11 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
   }
 
   const plan = sheet
-    ? planChromebookImport(sheet.rows, { headerRow: sheet.headerRow, mapping: sheet.mapping, withoutCart }, existing)
+    ? planChromebookImport(
+        sheet.rows,
+        { headerRow: sheet.headerRow, mapping: sheet.mapping, withoutCart, defaultDeviceType },
+        existing,
+      )
     : null;
   const headers = sheet?.rows[sheet.headerRow] ?? [];
   const columnItems: Record<string, string> = {
@@ -123,13 +131,14 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
           headerRow: sheet.headerRow,
           mapping: sheet.mapping,
           withoutCart,
+          defaultDeviceType,
         });
         if (!result.success) {
           toast.error(result.error);
           return;
         }
         const created = [
-          count(result.chromebooks, "Chromebook", "Chromebooks"),
+          count(result.chromebooks, "dispositiu", "dispositius"),
           result.carts > 0 && count(result.carts, "carro nou", "carros nous"),
           result.spaces > 0 && count(result.spaces, "aula nova", "aules noves"),
         ].filter(Boolean);
@@ -154,9 +163,9 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
       />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Importa carros i Chromebooks</DialogTitle>
+          <DialogTitle>Importa carros i dispositius</DialogTitle>
           <DialogDescription>
-            Des d&apos;un full amb una fila per Chromebook. A Google Sheets: Fitxer → Baixa → Valors separats per
+            Des d&apos;un full amb una fila per dispositiu (Chromebook, portàtil, iPad…). A Google Sheets: Fitxer → Baixa → Valors separats per
             comes (.csv). Les aules i els carros que encara no existeixin es creen.
           </DialogDescription>
         </DialogHeader>
@@ -218,10 +227,29 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
                   Tria com a mínim la columna del carro o la del número de sèrie.
                 </p>
               )}
+              <div className="flex items-center justify-between gap-3 border-t pt-3 text-sm sm:max-w-[calc(50%-0.75rem)]">
+                <span className="text-muted-foreground">Tipus quan el full no ho diu</span>
+                <Select
+                  value={defaultDeviceType}
+                  onValueChange={(value) => setDefaultDeviceType((value ?? "CHROMEBOOK") as DeviceType)}
+                  items={deviceTypeLabels}
+                >
+                  <SelectTrigger className="w-56" aria-label="Tipus quan el full no ho diu">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEVICE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {deviceTypeLabels[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </section>
 
             <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Stat label="Chromebooks per importar" value={toImport} />
+              <Stat label="Dispositius per importar" value={toImport} />
               <Stat label="Carros nous" value={newCarts} />
               <Stat label="Aules noves" value={plan.newSpaces.length} />
               <Stat label="Files que no s'importen" value={issues.length} muted={issues.length === 0} />
@@ -267,7 +295,7 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
                     <TableRow>
                       <TableHead>Carro</TableHead>
                       <TableHead>Aula</TableHead>
-                      <TableHead className="text-right">Chromebooks nous</TableHead>
+                      <TableHead className="text-right">Dispositius nous</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -315,7 +343,7 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
                 Tria un altre fitxer
               </Button>
               <Button type="button" onClick={submit} disabled={isImporting || !identifiable || toImport === 0}>
-                {isImporting ? "Important…" : `Importa ${count(toImport, "Chromebook", "Chromebooks")}`}
+                {isImporting ? "Important…" : `Importa ${count(toImport, "dispositiu", "dispositius")}`}
               </Button>
             </div>
           </div>

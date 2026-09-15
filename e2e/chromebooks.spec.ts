@@ -156,17 +156,17 @@ test("la coordinació marca un Chromebook com a no disponible i el professorat h
   const professor = await pageAs(browser, "professor");
 
   await professor.goto(`/chromebooks/${cartId}`);
-  await expect(professor.getByText("4 de 4 Chromebooks disponibles.")).toBeVisible();
+  await expect(professor.getByText("4 de 4 dispositius disponibles.")).toBeVisible();
 
   await admin.goto(`/chromebooks/${cartId}`);
   await admin.getByRole("button", { name: "E2E-03" }).click();
   await admin.getByRole("radio", { name: "No disponible", exact: true }).click();
   await admin.getByPlaceholder(/Per què no està disponible/).fill("Falta el carregador");
   await admin.getByRole("button", { name: "Marca com a no disponible" }).click();
-  await expect(admin.getByText("Chromebook marcat com a no disponible", { exact: true })).toBeVisible();
+  await expect(admin.getByText("Dispositiu marcat com a no disponible", { exact: true })).toBeVisible();
 
   await professor.reload();
-  await expect(professor.getByText("3 de 4 Chromebooks disponibles.")).toBeVisible();
+  await expect(professor.getByText("3 de 4 dispositius disponibles.")).toBeVisible();
   await professor.getByRole("button", { name: /^E2E-03/ }).click();
   await expect(professor.getByText("No es pot fer servir: Falta el carregador")).toBeVisible();
 
@@ -176,10 +176,10 @@ test("la coordinació marca un Chromebook com a no disponible i el professorat h
   await expect(admin.getByText("Motiu: Falta el carregador")).toBeVisible();
   await expect(admin.getByText("No disponible: Falta el carregador")).toBeVisible();
   await admin.getByRole("radio", { name: "Disponible", exact: true }).click();
-  await expect(admin.getByText("Chromebook disponible", { exact: true })).toBeVisible();
+  await expect(admin.getByText("Dispositiu disponible", { exact: true })).toBeVisible();
 
   await professor.reload();
-  await expect(professor.getByText("4 de 4 Chromebooks disponibles.")).toBeVisible();
+  await expect(professor.getByText("4 de 4 dispositius disponibles.")).toBeVisible();
 });
 
 test("un equip donat de baixa ja no accepta incidències", async ({ browser }) => {
@@ -189,10 +189,10 @@ test("un equip donat de baixa ja no accepta incidències", async ({ browser }) =
   await admin.goto(`/chromebooks/${cartId}`);
   await admin.getByRole("button", { name: "E2E-04" }).click();
   await admin.getByRole("button", { name: "Dona de baixa" }).click();
-  await expect(admin.getByText("Chromebook donat de baixa")).toBeVisible();
+  await expect(admin.getByText("Dispositiu donat de baixa")).toBeVisible();
 
   const professor = await pageAs(browser, "professor");
   await professor.goto(`/q/chromebook/${cartChromebooks["E2E-04"]}`);
-  await expect(professor.getByText("Aquest Chromebook està donat de baixa")).toBeVisible();
+  await expect(professor.getByText("Aquest dispositiu està donat de baixa")).toBeVisible();
   await expect(professor.getByRole("button", { name: "Pantalla" })).toHaveCount(0);
 });

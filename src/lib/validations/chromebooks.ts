@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isBlobUrl } from "@/lib/blob";
+import { DEVICE_TYPES } from "@/lib/devices";
 import { isDateKey } from "@/lib/validations/common";
 
 export const upsertCartSchema = z.object({
@@ -23,6 +24,7 @@ export const upsertChromebookSchema = z.object({
   // En una edició, canviar-lo és moure l'equip a un altre carro.
   cartId: z.string().min(1, "Tria el carro"),
   assetTag: z.string().trim().min(1, "Indica un identificador").max(100),
+  deviceType: z.enum(DEVICE_TYPES),
   serialNumber: z.string().trim().max(150).optional().or(z.literal("")),
   brand: z.string().trim().max(100).optional().or(z.literal("")),
   model: z.string().trim().max(100).optional().or(z.literal("")),

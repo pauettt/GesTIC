@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PlusIcon, UserIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { deviceTypeLabels } from "@/lib/devices";
 import { formatDate, schoolYearOf, schoolYearRange, schoolYearsBetween } from "@/lib/date";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import {
@@ -141,7 +142,7 @@ export default async function IncidenciesPage({
     return incident.inventoryItem
       ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
       : incident.chromebook
-        ? `Chromebook ${incident.chromebook.assetTag} (carro ${incident.chromebook.cart?.name ?? "—"})`
+        ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag} (carro ${incident.chromebook.cart?.name ?? "—"})`
         : incident.cart
           ? `Carro ${incident.cart.name}`
           : "aquest objecte";
@@ -151,7 +152,7 @@ export default async function IncidenciesPage({
     const base = incident.inventoryItem
       ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
       : incident.chromebook
-        ? `Chromebook ${incident.chromebook.assetTag}`
+        ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag}`
         : incident.cart
           ? `Carro ${incident.cart.name}`
           : (incident.space?.name ?? incidentTargetTypeLabels[incident.targetType]);

@@ -7,7 +7,7 @@ const EMPTY: ExistingInventory = { spaces: [], cartNames: [], assetTags: [], ser
 
 function plan(rows: string[][], existing = EMPTY, withoutCart: "pool" | "skip" = "pool") {
   const { headerRow, mapping } = detectColumns(rows);
-  return planChromebookImport(rows, { headerRow, mapping, withoutCart }, existing);
+  return planChromebookImport(rows, { headerRow, mapping, withoutCart, defaultDeviceType: "CHROMEBOOK" }, existing);
 }
 
 describe("detectColumns", () => {
@@ -79,7 +79,15 @@ describe("planChromebookImport", () => {
 
     expect(result.withoutCart).toBe(2);
     expect(result.chromebooks).toEqual([
-      { row: 2, assetTag: "ALU-08", serialNumber: "SN-P1", brand: "asus", model: null, cartName: null },
+      {
+        row: 2,
+        assetTag: "ALU-08",
+        serialNumber: "SN-P1",
+        brand: "asus",
+        model: null,
+        deviceType: "CHROMEBOOK",
+        cartName: null,
+      },
     ]);
     expect(result.errors).toEqual([
       { row: 3, message: "Sense carro ni número de sèrie: no pot anar al préstec a l'alumnat" },
@@ -98,6 +106,21 @@ describe("planChromebookImport", () => {
       ["2", "asus", "SN-B", "Conselleria,", "", "", ""],
     ]);
     expect(result.carts).toEqual([{ name: "Conselleria", spaceName: null, chromebooks: 2, exists: false }]);
+  });
+
+  it("el tipus surt de la columna si n'hi ha, i si no, del que es tria per a tot el full", () => {
+    const rows = [
+      [...HEADER, "Tipus"],
+      ["1", "apple", "SN-I", "5", "", "", "", "iPad 9"],
+      ["2", "asus", "SN-C", "5", "", "", "", ""],
+    ];
+    const { headerRow, mapping } = detectColumns(rows);
+    const result = planChromebookImport(
+      rows,
+      { headerRow, mapping, withoutCart: "pool", defaultDeviceType: "PORTATIL" },
+      EMPTY,
+    );
+    expect(result.chromebooks.map((c) => c.deviceType)).toEqual(["IPAD", "PORTATIL"]);
   });
 
   it("un número de sèrie repetit al full és un error, i el primer sí que s'importa", () => {

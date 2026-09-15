@@ -64,7 +64,7 @@ export async function deleteCart(input: unknown): Promise<ActionResult> {
   if (chromebooks > 0) {
     return {
       success: false,
-      error: `Aquest carro encara té ${chromebooks} Chromebook${chromebooks === 1 ? "" : "s"}, comptant els donats de baixa. Mou-los a un altre carro o esborra'ls abans d'esborrar-lo.`,
+      error: `Aquest carro encara té ${chromebooks} ${chromebooks === 1 ? "dispositiu" : "dispositius"}, comptant els donats de baixa. Mou-los a un altre carro o esborra'ls abans d'esborrar-lo.`,
     };
   }
 
@@ -79,9 +79,10 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { id, cartId, assetTag, serialNumber, brand, model } = parsed.data;
+  const { id, cartId, assetTag, deviceType, serialNumber, brand, model } = parsed.data;
   const payload = {
     assetTag,
+    deviceType,
     serialNumber: serialNumber || null,
     brand: brand || null,
     model: model || null,
@@ -99,9 +100,9 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
       // Els equips del pool de préstec a l'alumnat no es toquen des d'aquí:
       // aquest formulari és el del carro i els hi acabaria ficant.
       const existing = await db.chromebook.findUnique({ where: { id } });
-      if (!existing) return { success: false, error: "El Chromebook no existeix" };
+      if (!existing) return { success: false, error: "El dispositiu no existeix" };
       if (existing.isStudentLoanable) {
-        return { success: false, error: "Aquest Chromebook és del pool de préstec a l'alumnat" };
+        return { success: false, error: "Aquest equip és del préstec a l'alumnat" };
       }
       previousCartId = existing.cartId;
       await db.chromebook.update({ where: { id }, data: payload });
@@ -109,7 +110,7 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
       await db.chromebook.create({ data: payload });
     }
   } catch {
-    return { success: false, error: "Ja existeix un Chromebook amb aquest identificador o número de sèrie" };
+    return { success: false, error: "Ja existeix un dispositiu amb aquest identificador o número de sèrie" };
   }
 
   revalidatePath(`/chromebooks/${cartId}`);
@@ -144,18 +145,18 @@ export async function upsertStudentChromebook(input: unknown): Promise<ActionRes
   try {
     if (id) {
       const existing = await db.chromebook.findUnique({ where: { id } });
-      if (!existing) return { success: false, error: "El Chromebook no existeix" };
+      if (!existing) return { success: false, error: "El dispositiu no existeix" };
       // La simètrica de la d'abans: des d'aquí no es pot treure d'un carro un
       // equip d'aula i convertir-lo en equip de préstec sense adonar-se'n.
       if (!existing.isStudentLoanable) {
-        return { success: false, error: "Aquest Chromebook és d'un carro d'aula" };
+        return { success: false, error: "Aquest equip és d'un carro d'aula" };
       }
       await db.chromebook.update({ where: { id }, data: payload });
     } else {
       await db.chromebook.create({ data: { ...payload, isStudentLoanable: true } });
     }
   } catch {
-    return { success: false, error: "Ja existeix un Chromebook amb aquest identificador o número de sèrie" };
+    return { success: false, error: "Ja existeix un dispositiu amb aquest identificador o número de sèrie" };
   }
 
   revalidatePath("/chromebooks");
@@ -176,7 +177,7 @@ export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
 
   const existing = await db.chromebook.findUnique({ where: { id: parsed.data.id } });
-  if (!existing) return { success: false, error: "El Chromebook no existeix" };
+  if (!existing) return { success: false, error: "El dispositiu no existeix" };
   // Un equip assignat és a casa d'un alumne: esborrar-lo deixaria el préstec
   // penjant i ningú sabria quin aparell s'ha de reclamar. Es mira la
   // sol·licitud i no l'estat, perquè amb una incidència oberta l'equip surt com
@@ -184,7 +185,7 @@ export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   if (await isAssignedToStudent(existing.id)) {
     return {
       success: false,
-      error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+      error: "Aquest equip està assignat a un alumne: primer cal registrar-ne la devolució",
     };
   }
 
@@ -208,13 +209,13 @@ export async function setChromebookRetired(input: unknown): Promise<ActionResult
   const { id, retired } = parsed.data;
 
   const chromebook = await db.chromebook.findUnique({ where: { id } });
-  if (!chromebook) return { success: false, error: "El Chromebook no existeix" };
+  if (!chromebook) return { success: false, error: "El dispositiu no existeix" };
 
   if (retired) {
     if (await isAssignedToStudent(id)) {
       return {
         success: false,
-        error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+        error: "Aquest equip està assignat a un alumne: primer cal registrar-ne la devolució",
       };
     }
     await db.chromebook.update({ where: { id }, data: { status: "BAIXA", unavailableReason: null } });
@@ -246,16 +247,16 @@ export async function setChromebookAvailability(input: unknown): Promise<ActionR
   const reason = (parsed.data.reason ?? "").trim();
 
   const chromebook = await db.chromebook.findUnique({ where: { id } });
-  if (!chromebook) return { success: false, error: "El Chromebook no existeix" };
+  if (!chromebook) return { success: false, error: "El dispositiu no existeix" };
 
   if (!available) {
     if (chromebook.status === "BAIXA") {
-      return { success: false, error: "Aquest Chromebook està donat de baixa" };
+      return { success: false, error: "Aquest dispositiu està donat de baixa" };
     }
     if (await isAssignedToStudent(id)) {
       return {
         success: false,
-        error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+        error: "Aquest equip està assignat a un alumne: primer cal registrar-ne la devolució",
       };
     }
     await db.$transaction([
@@ -288,7 +289,7 @@ export async function addChromebookNote(input: unknown): Promise<ActionResult> {
   const { chromebookId, body } = parsed.data;
 
   const chromebook = await db.chromebook.findUnique({ where: { id: chromebookId } });
-  if (!chromebook) return { success: false, error: "El Chromebook no existeix" };
+  if (!chromebook) return { success: false, error: "El dispositiu no existeix" };
 
   await db.chromebookNote.create({ data: { chromebookId, authorId: user.id, body } });
 

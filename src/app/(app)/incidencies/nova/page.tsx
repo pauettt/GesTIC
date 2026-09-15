@@ -30,7 +30,7 @@ export default async function NovaIncidenciaPage() {
     db.chromebook.findMany({
       where: { isStudentLoanable: true, status: { not: "BAIXA" } },
       orderBy: { assetTag: "asc" },
-      select: { id: true, assetTag: true },
+      select: { id: true, assetTag: true, deviceType: true },
     }),
   ]);
 
@@ -52,7 +52,7 @@ export default async function NovaIncidenciaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Incidència en un Chromebook</CardTitle>
+          <CardTitle>Incidència en un carro o un dispositiu</CardTitle>
           <CardDescription>
             Per als carros i els seus Chromebooks, i per als equips de préstec a l&apos;alumnat. No
             cal saber en quina aula és el carro ara mateix.

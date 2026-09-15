@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createIncident } from "@/actions/incidents";
 import { useServerAction } from "@/hooks/use-server-action";
 import { toSelectItems } from "@/lib/utils";
+import { deviceTypeLabels } from "@/lib/devices";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validations/incident";
 import { Button } from "@/components/ui/button";
 import { CategoryField } from "@/components/incidents/category-field";
@@ -16,10 +17,15 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { IncidentPhotosField } from "@/components/incidents/incident-photos-field";
-import type { IncidentTargetType } from "@prisma/client";
+import type { DeviceType, IncidentTargetType } from "@prisma/client";
 
 type InventoryItem = { id: string; brand: string; model: string; spaceId: string | null };
-type Cart = { id: string; name: string; spaceId: string | null; chromebooks: { id: string; assetTag: string }[] };
+type Cart = {
+  id: string;
+  name: string;
+  spaceId: string | null;
+  chromebooks: { id: string; assetTag: string; deviceType: DeviceType }[];
+};
 type Space = { id: string; name: string };
 
 type ObjectOption = {
@@ -91,7 +97,7 @@ export function RoomIncidentForm({
         cart.chromebooks.forEach((chromebook) => {
           options.push({
             value: `chromebook:${chromebook.id}`,
-            label: `Chromebook ${chromebook.assetTag} (carro ${cart.name})`,
+            label: `${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag} (carro ${cart.name})`,
             targetType: "CHROMEBOOK",
             chromebookId: chromebook.id,
             cartId: cart.id,

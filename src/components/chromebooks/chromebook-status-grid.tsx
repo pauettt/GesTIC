@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { LaptopIcon } from "lucide-react";
-import type { ChromebookStatus } from "@prisma/client";
+import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
+import { deviceTypeLabels } from "@/lib/devices";
 import { chromebookStatusLabels, chromebookStatusSquareClasses, chromebookStatusVariants } from "@/lib/labels";
 import { cn } from "@/lib/utils";
+import { DeviceIcon } from "@/components/chromebooks/device-icon";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type GridChromebook = {
   id: string;
   assetTag: string;
+  deviceType: DeviceType;
   status: ChromebookStatus;
   unavailableReason: string | null;
 };
@@ -54,7 +56,7 @@ export function ChromebookStatusGrid({ chromebooks }: { chromebooks: GridChromeb
                 render={
                   <button
                     type="button"
-                    aria-label={`${chromebook.assetTag}: ${chromebookStatusLabels[chromebook.status]}`}
+                    aria-label={`${chromebook.assetTag} (${deviceTypeLabels[chromebook.deviceType]}): ${chromebookStatusLabels[chromebook.status]}`}
                     className={cn(
                       "flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border-2 p-1 text-center transition-colors",
                       chromebookStatusSquareClasses[chromebook.status],
@@ -62,13 +64,15 @@ export function ChromebookStatusGrid({ chromebooks }: { chromebooks: GridChromeb
                   />
                 }
               >
-                <LaptopIcon className="size-5" />
+                <DeviceIcon type={chromebook.deviceType} className="size-5" />
                 <span className="line-clamp-1 text-[11px] font-semibold">{chromebook.assetTag}</span>
               </PopoverTrigger>
               <PopoverContent className="w-64">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold">{chromebook.assetTag}</p>
+                    <p className="font-semibold">
+                      {deviceTypeLabels[chromebook.deviceType]} {chromebook.assetTag}
+                    </p>
                     <Badge variant={chromebookStatusVariants[chromebook.status]}>
                       {chromebookStatusLabels[chromebook.status]}
                     </Badge>

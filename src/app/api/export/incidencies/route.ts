@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { deviceTypeLabels } from "@/lib/devices";
 import { auth } from "@/lib/auth";
 import {
   googleServiceLabels,
@@ -31,7 +32,7 @@ export async function GET() {
       incident.inventoryItem
         ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
         : incident.chromebook
-          ? `Chromebook ${incident.chromebook.assetTag}`
+          ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag}`
           : incident.cart
             ? `Carro ${incident.cart.name}`
             : incident.googleService

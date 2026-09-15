@@ -69,7 +69,7 @@ export function CartDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{cart ? "Edita el carro" : "Nou carro de Chromebooks"}</DialogTitle>
+          <DialogTitle>{cart ? "Edita el carro" : "Nou carro"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => run(values))}>
           <FieldGroup>

@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/permissions";
-import { quickReportChromebookIncident } from "@/actions/incidents";
-import { chromebookStatusLabels, chromebookStatusVariants, incidentCategoryIcons, incidentCategoryLabels } from "@/lib/labels";
+import { deviceTypeLabels } from "@/lib/devices";
+import { chromebookStatusLabels, chromebookStatusVariants } from "@/lib/labels";
+import { QuickReportButtons } from "@/components/chromebooks/quick-report-buttons";
 import { CleanUrlParam } from "@/components/shared/clean-url-param";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,8 @@ export default async function QuickChromebookReportPage({
     <main className="flex min-h-screen flex-1 items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Chromebook {chromebook.assetTag}</CardTitle>
+          <CardTitle className="text-xl">{deviceTypeLabels[chromebook.deviceType]} {chromebook.assetTag}
+          </CardTitle>
           <CardDescription>
             {/* Els equips del pool no són de cap carro: dir-ne "sense carro" faria
                 pensar que s'ha perdut. I l'estat que hi ha a sota diu "Assignat a
@@ -75,36 +77,15 @@ export default async function QuickChromebookReportPage({
 
           {retired ? (
             <p className="text-center text-sm text-muted-foreground">
-              Aquest Chromebook està donat de baixa i ja no s&apos;hauria de fer servir. Si
+              Aquest dispositiu està donat de baixa i ja no s&apos;hauria de fer servir. Si
               l&apos;has trobat en un carro o a l&apos;aula, avisa la coordinació TIC.
             </p>
           ) : (
             <>
               <p className="text-center text-sm text-muted-foreground">
-                Quin problema té aquest Chromebook?
+                Quin problema té aquest dispositiu?
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {CATEGORIES.map((category) => {
-                  const Icon = incidentCategoryIcons[category];
-                  return (
-                    <form
-                      key={category}
-                      action={quickReportChromebookIncident.bind(null, {
-                        chromebookId: chromebook.id,
-                        category,
-                      })}
-                    >
-                      <button
-                        type="submit"
-                        className="flex w-full flex-col items-center gap-2 rounded-lg border bg-background p-4 text-center text-sm font-medium transition-colors hover:border-primary/50 hover:bg-muted"
-                      >
-                        <Icon className="size-6 text-primary" />
-                        {incidentCategoryLabels[category]}
-                      </button>
-                    </form>
-                  );
-                })}
-              </div>
+              <QuickReportButtons chromebookId={chromebook.id} categories={CATEGORIES} />
               <Link
                 href="/incidencies/nova"
                 className="mt-2 text-center text-xs text-muted-foreground hover:underline"

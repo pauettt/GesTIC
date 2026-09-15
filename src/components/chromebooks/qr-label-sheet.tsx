@@ -74,7 +74,7 @@ export async function QrLabelSheet({
           </div>
         ))}
         {labels.length === 0 && (
-          <p className="text-muted-foreground">No hi ha cap Chromebook per etiquetar.</p>
+          <p className="text-muted-foreground">No hi ha cap dispositiu per etiquetar.</p>
         )}
       </div>
     </div>

@@ -26,7 +26,7 @@ test("la coordinació importa carros i Chromebooks d'un full, i se'n creen les a
 
   await expect(dialog.getByRole("cell", { name: "Carro 7 (B.201)" })).toBeVisible();
   await expect(dialog.getByText("Ja hi ha un Chromebook amb el número de sèrie SN-ALU-01")).toBeVisible();
-  await dialog.getByRole("button", { name: "Importa 3 Chromebooks" }).click();
+  await dialog.getByRole("button", { name: "Importa 3 dispositius" }).click();
   await expect(dialog).toHaveCount(0);
 
   await expect(page.getByText("Carro 7 (B.201)").first()).toBeVisible();

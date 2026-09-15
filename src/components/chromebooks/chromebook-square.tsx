@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HistoryIcon, LaptopIcon, PlusIcon } from "lucide-react";
-import type { ChromebookStatus } from "@prisma/client";
+import { HistoryIcon, PlusIcon } from "lucide-react";
+import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
 import {
   addChromebookNote,
@@ -13,6 +13,7 @@ import {
 } from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
 import { formatDateTime } from "@/lib/date";
+import { deviceTypeLabels } from "@/lib/devices";
 import {
   chromebookStatusLabels,
   chromebookStatusSquareClasses,
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChromebookDialog, type CartOption } from "@/components/chromebooks/chromebook-dialog";
+import { DeviceIcon } from "@/components/chromebooks/device-icon";
 import { RetireChromebookButton } from "@/components/chromebooks/retire-chromebook-button";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +44,7 @@ type Chromebook = {
   brand: string | null;
   model: string | null;
   status: ChromebookStatus;
+  deviceType: DeviceType;
   unavailableReason: string | null;
   notes: Note[];
 };
@@ -63,7 +66,7 @@ function ChromebookAvailability({ chromebook }: { chromebook: Chromebook }) {
   const unavailable = chromebook.status === "NO_DISPONIBLE";
 
   const { run, isPending } = useServerAction(setChromebookAvailability, {
-    successMessage: unavailable ? "Chromebook disponible" : "Chromebook marcat com a no disponible",
+    successMessage: unavailable ? "Dispositiu disponible" : "Dispositiu marcat com a no disponible",
     onSuccess: () => {
       setAskingReason(false);
       setReason("");
@@ -203,7 +206,7 @@ export function ChromebookSquare({
           />
         }
       >
-        <LaptopIcon className="size-5" />
+        <DeviceIcon type={chromebook.deviceType} className="size-5" />
         <span className="line-clamp-1 text-[11px] font-semibold">{chromebook.assetTag}</span>
       </PopoverTrigger>
       <PopoverContent className="w-72">
@@ -215,7 +218,9 @@ export function ChromebookSquare({
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            {[chromebook.brand, chromebook.model].filter(Boolean).join(" ") || "Sense marca/model"}
+            {[deviceTypeLabels[chromebook.deviceType], [chromebook.brand, chromebook.model].filter(Boolean).join(" ")]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {chromebook.serialNumber && (
             <p className="text-xs text-muted-foreground">Núm. sèrie: {chromebook.serialNumber}</p>
@@ -239,6 +244,7 @@ export function ChromebookSquare({
               chromebook={{
                 id: chromebook.id,
                 cartId,
+                deviceType: chromebook.deviceType,
                 assetTag: chromebook.assetTag,
                 serialNumber: chromebook.serialNumber ?? "",
                 brand: chromebook.brand ?? "",
@@ -251,7 +257,7 @@ export function ChromebookSquare({
             <ConfirmDeleteButton
               action={deleteChromebook}
               input={{ id: chromebook.id }}
-              title="Eliminar aquest Chromebook?"
+              title="Eliminar aquest dispositiu?"
               description="Es perden també les seves notes, i les incidències queden sense equip. Si només ha deixat de funcionar, dona'l de baixa: així se'n conserva l'historial."
             />
           </div>

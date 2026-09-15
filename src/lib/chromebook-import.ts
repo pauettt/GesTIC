@@ -1,3 +1,6 @@
+import type { DeviceType } from "@prisma/client";
+
+import { parseDeviceType } from "@/lib/devices";
 import { spaceName } from "@/lib/spaces";
 
 /**
@@ -12,6 +15,7 @@ export const CHROMEBOOK_FIELDS = [
   "cart",
   "position",
   "assetTag",
+  "deviceType",
   "serialNumber",
   "brand",
   "model",
@@ -27,6 +31,7 @@ export const CHROMEBOOK_FIELD_LABELS: Record<ChromebookField, string> = {
   cart: "Carro",
   position: "Número dins del carro",
   assetTag: "Etiqueta",
+  deviceType: "Tipus de dispositiu",
   serialNumber: "Número de sèrie",
   brand: "Marca",
   model: "Model",
@@ -39,6 +44,7 @@ const ALIASES: Record<ChromebookField, string[]> = {
   cart: ["carro", "carreto", "n carro", "n carreto", "num carro", "numero carro", "carrito", "n carrito"],
   position: ["f", "n", "num", "numero", "posicio", "posicion", "n dins del carro", "numero dins del carro"],
   assetTag: ["etiqueta", "identificador", "codi", "codigo", "asset tag"],
+  deviceType: ["tipus", "tipo", "dispositiu", "dispositivo", "tipus de dispositiu", "tipo de dispositivo"],
   serialNumber: ["ns", "n s", "sn", "s n", "serie", "n serie", "num serie", "numero de serie", "serial", "serial number"],
   brand: ["marca", "fabricant", "fabricante"],
   model: ["model", "modelo"],
@@ -94,6 +100,7 @@ export type PlannedChromebook = {
   serialNumber: string | null;
   brand: string | null;
   model: string | null;
+  deviceType: DeviceType;
   /** `null`: va al pool de préstec a l'alumnat. */
   cartName: string | null;
 };
@@ -118,7 +125,13 @@ const isWholeNumber = (text: string) => /^\d+$/.test(text);
 
 export function planChromebookImport(
   rows: string[][],
-  options: { headerRow: number; mapping: ColumnMapping; withoutCart: RowsWithoutCart },
+  options: {
+    headerRow: number;
+    mapping: ColumnMapping;
+    withoutCart: RowsWithoutCart;
+    /** El tipus dels equips que el full no diu què són. */
+    defaultDeviceType: DeviceType;
+  },
   existing: ExistingInventory,
 ): ChromebookImportPlan {
   const { headerRow, mapping } = options;
@@ -157,6 +170,7 @@ export function planChromebookImport(
     serialNumber: string;
     brand: string;
     model: string;
+    deviceType: DeviceType;
     space: string | null;
     spaceShort: string | null;
   };
@@ -175,6 +189,7 @@ export function planChromebookImport(
       serialNumber: cell(values, "serialNumber"),
       brand: cell(values, "brand"),
       model: cell(values, "model"),
+      deviceType: parseDeviceType(cell(values, "deviceType")) ?? options.defaultDeviceType,
       space: resolveSpace(number, roomName),
       spaceShort: number || roomName || null,
     });
@@ -282,6 +297,7 @@ export function planChromebookImport(
       serialNumber: item.serialNumber || null,
       brand: item.brand || null,
       model: item.model || null,
+      deviceType: item.deviceType,
       cartName,
     });
   }

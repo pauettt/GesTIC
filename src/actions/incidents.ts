@@ -6,6 +6,7 @@ import { del } from "@vercel/blob";
 
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { deviceTypeLabels } from "@/lib/devices";
 import { OPEN_INCIDENT_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { sendIncidentResolvedEmail } from "@/lib/email";
 import { notifyIncidentComment, notifyIncidentReported } from "@/lib/notifications";
@@ -59,11 +60,11 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
     title = `Carro ${cart.name}${spaceSuffix}`;
   } else if (data.targetType === "CHROMEBOOK" && data.chromebookId) {
     const chromebook = await db.chromebook.findUnique({ where: { id: data.chromebookId } });
-    if (!chromebook) return { success: false, error: "Aquest Chromebook ja no existeix" };
+    if (!chromebook) return { success: false, error: "Aquest dispositiu ja no existeix" };
     if (chromebook.status === "BAIXA") {
-      return { success: false, error: "Aquest Chromebook està donat de baixa" };
+      return { success: false, error: "Aquest dispositiu està donat de baixa" };
     }
-    title = `Chromebook ${chromebook.assetTag}${spaceSuffix}`;
+    title = `${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag}${spaceSuffix}`;
   } else if (data.targetType === "GOOGLE_WORKSPACE" && data.googleService) {
     title = `Entorn Google — ${googleServiceLabels[data.googleService]}`;
   }
@@ -114,7 +115,7 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
 
   const chromebook = await db.chromebook.findUnique({ where: { id: chromebookId } });
   if (!chromebook) {
-    throw new Error("Aquest Chromebook no existeix");
+    throw new Error("Aquest dispositiu no existeix");
   }
   // La pàgina del QR ja ho diu i no ensenya els botons: això és per si algú hi
   // arriba igualment.
@@ -160,8 +161,8 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
   const incident = await db.incident.create({
     data: {
       reporterId: user.id,
-      title: `${categoryLabel} — Chromebook ${chromebook.assetTag}`,
-      description: `Incidència reportada des del codi QR del Chromebook ${chromebook.assetTag}: ${categoryLabel}.`,
+      title: `${categoryLabel} — ${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag}`,
+      description: `Incidència reportada des del codi QR (${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag}): ${categoryLabel}.`,
       category,
       priority: incidentCategoryDefaultPriority[category],
       targetType: "CHROMEBOOK",

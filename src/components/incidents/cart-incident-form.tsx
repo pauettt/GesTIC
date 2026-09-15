@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createIncident } from "@/actions/incidents";
 import { useServerAction } from "@/hooks/use-server-action";
 import { toSelectItems } from "@/lib/utils";
+import { deviceTypeLabels } from "@/lib/devices";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validations/incident";
 import { Button } from "@/components/ui/button";
 import { CategoryField } from "@/components/incidents/category-field";
@@ -16,8 +17,9 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { IncidentPhotosField } from "@/components/incidents/incident-photos-field";
+import type { DeviceType } from "@prisma/client";
 
-type ChromebookOption = { id: string; assetTag: string };
+type ChromebookOption = { id: string; assetTag: string; deviceType: DeviceType };
 type Cart = { id: string; name: string; chromebooks: ChromebookOption[] };
 
 type ObjectOption =
@@ -33,7 +35,7 @@ const STUDENT_POOL = "__prestec-alumnat__";
 
 const chromebookOption = (chromebook: ChromebookOption): ObjectOption => ({
   value: `chromebook:${chromebook.id}`,
-  label: `Chromebook ${chromebook.assetTag}`,
+  label: `${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag}`,
   targetType: "CHROMEBOOK",
   chromebookId: chromebook.id,
 });
@@ -132,7 +134,7 @@ export function CartIncidentForm({
         {cartId && (
           <Field data-invalid={Boolean(errors.chromebookId)}>
             <FieldLabel htmlFor="cart-objectId">
-              {isStudentPool ? "2. Quin Chromebook?" : "2. El carro sencer o un Chromebook concret?"}
+              {isStudentPool ? "2. Quin Chromebook?" : "2. El carro sencer o un dispositiu concret?"}
             </FieldLabel>
             <Select
               value={objectValue}

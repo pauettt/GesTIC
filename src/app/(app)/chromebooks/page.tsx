@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { deviceSummary } from "@/lib/devices";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
@@ -15,7 +16,7 @@ import {
 } from "@/components/chromebooks/student-requests";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata = { title: "Chromebooks" };
+export const metadata = { title: "Carros" };
 
 export default async function ChromebooksPage() {
   const user = await requireUser();
@@ -100,9 +101,9 @@ export default async function ChromebooksPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Chromebooks</h1>
+          <h1 className="text-2xl font-semibold">Carros</h1>
           <p className="text-muted-foreground">
-            Carros de Chromebooks del centre i el seu estat.
+            Carros de Chromebooks, portàtils i iPads del centre, i el seu estat.
           </p>
         </div>
         {admin && (
@@ -128,6 +129,7 @@ export default async function ChromebooksPage() {
           // Els donats de baixa segueixen al carro amb el seu historial, però ja
           // no compten com a equips que s'hi puguin fer servir.
           const inService = cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length;
+          const summary = deviceSummary(cart.chromebooks.filter((cb) => cb.status !== "BAIXA"));
           return (
             <Link key={cart.id} href={`/chromebooks/${cart.id}`}>
               <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/50 hover:bg-muted/40">
@@ -150,7 +152,8 @@ export default async function ChromebooksPage() {
                     {cart.space?.name ?? "Sense ubicació fixa"}
                   </p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-0.5">
+                  {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
                   <p className="text-sm">
                     <span className="font-medium">{available}</span> / {inService}{" "}
                     disponibles
@@ -161,7 +164,7 @@ export default async function ChromebooksPage() {
           );
         })}
         {carts.length === 0 && (
-          <p className="text-muted-foreground">Encara no hi ha cap carro de Chromebooks.</p>
+          <p className="text-muted-foreground">Encara no hi ha cap carro.</p>
         )}
       </div>
 

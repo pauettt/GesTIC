@@ -46,8 +46,8 @@ export const reservationStatusLabels: Record<ReservationStatus, string> = {
 
 export const incidentTargetTypeLabels: Record<IncidentTargetType, string> = {
   INVENTORY_ITEM: "Equip d'inventari",
-  CHROMEBOOK: "Chromebook",
-  CART: "Carro de Chromebooks",
+  CHROMEBOOK: "Dispositiu",
+  CART: "Carro",
   GOOGLE_WORKSPACE: "Entorn Google",
   GENERAL: "Altre / espai general",
 };

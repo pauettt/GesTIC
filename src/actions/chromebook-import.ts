@@ -23,7 +23,7 @@ export async function importChromebooks(input: unknown): Promise<ImportChromeboo
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { rows, headerRow, mapping, withoutCart } = parsed.data;
+  const { rows, headerRow, mapping, withoutCart, defaultDeviceType } = parsed.data;
 
   const [spaces, carts, chromebooks] = await Promise.all([
     db.space.findMany({ select: { id: true, name: true, number: true } }),
@@ -32,7 +32,7 @@ export async function importChromebooks(input: unknown): Promise<ImportChromeboo
   ]);
   const plan = planChromebookImport(
     rows,
-    { headerRow, mapping, withoutCart },
+    { headerRow, mapping, withoutCart, defaultDeviceType },
     {
       spaces,
       cartNames: carts.map((cart) => cart.name),
@@ -64,6 +64,7 @@ export async function importChromebooks(input: unknown): Promise<ImportChromeboo
         await tx.chromebook.createMany({
           data: plan.chromebooks.map((chromebook) => ({
             assetTag: chromebook.assetTag,
+            deviceType: chromebook.deviceType,
             serialNumber: chromebook.serialNumber,
             brand: chromebook.brand,
             model: chromebook.model,

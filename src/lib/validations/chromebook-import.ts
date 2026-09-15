@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CHROMEBOOK_FIELDS, type ChromebookField } from "@/lib/chromebook-import";
+import { DEVICE_TYPES } from "@/lib/devices";
 
 const column = z.number().int().min(0).max(200).optional();
 
@@ -14,5 +15,6 @@ export const importChromebooksSchema = z.object({
     Object.fromEntries(CHROMEBOOK_FIELDS.map((field) => [field, column])) as Record<ChromebookField, typeof column>,
   ),
   withoutCart: z.enum(["pool", "skip"]),
+  defaultDeviceType: z.enum(DEVICE_TYPES),
 });
 export type ImportChromebooksInput = z.infer<typeof importChromebooksSchema>;

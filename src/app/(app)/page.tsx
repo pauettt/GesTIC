@@ -40,8 +40,8 @@ const MODULE_CARDS: Array<{
   },
   {
     href: "/chromebooks",
-    title: "Chromebooks",
-    description: "Reserva carros de Chromebooks i consulta'n l'estat.",
+    title: "Carros",
+    description: "Reserva carros de Chromebooks, portàtils o iPads i consulta'n l'estat.",
     icon: LaptopIcon,
   },
   {

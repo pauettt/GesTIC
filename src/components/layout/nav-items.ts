@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Inici", icon: HomeIcon },
   { href: "/incidencies", label: "Incidències TIC", icon: TicketIcon },
   { href: "/inventari", label: "Inventari TIC", icon: PackageIcon },
-  { href: "/chromebooks", label: "Chromebooks", icon: LaptopIcon },
+  { href: "/chromebooks", label: "Carros", icon: LaptopIcon },
   { href: "/espais", label: "Aules i espais", icon: MapPinIcon, adminOnly: true },
   { href: "/cites", label: "Cites", icon: CalendarCheckIcon },
   { href: "/dubtes", label: "Dubtes freqüents", icon: HelpCircleIcon },
