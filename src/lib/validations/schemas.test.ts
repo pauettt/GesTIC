@@ -7,6 +7,7 @@ import {
   createStudentDeviceRequestSchema,
   respondStudentDeviceRequestSchema,
 } from "@/lib/validations/student-devices";
+import { upsertTutorialVideoSchema } from "@/lib/validations/tutorials";
 
 const BLOB = "https://abc123.public.blob.vercel-storage.com";
 
@@ -92,5 +93,13 @@ describe("altres formularis", () => {
     expect(request("2026-09-14", "2026-09-18")).toBe(true);
     expect(request("2026-09-18", "2026-09-14")).toBe(false);
     expect(request("2026-09-14", "2026-02-31")).toBe(false);
+  });
+
+  it("un tutorial ha de ser un vídeo de YouTube", () => {
+    const video = (url: string) =>
+      upsertTutorialVideoSchema.safeParse({ categoryId: "c1", url, title: "Crear una classe" }).success;
+    expect(video("https://youtu.be/jNQXAC9IVRw")).toBe(true);
+    expect(video("https://vimeo.com/123456789")).toBe(false);
+    expect(video("javascript:alert(1)")).toBe(false);
   });
 });

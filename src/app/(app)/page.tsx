@@ -1,7 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
 import {
-  BookOpenIcon,
   CalendarCheckIcon,
   HandCoinsIcon,
   HelpCircleIcon,
@@ -9,6 +8,7 @@ import {
   MessageCircleQuestionIcon,
   PackageIcon,
   PlusIcon,
+  SquarePlayIcon,
   TicketIcon,
 } from "lucide-react";
 
@@ -65,8 +65,8 @@ const MODULE_CARDS: Array<{
   {
     href: "/tutorials",
     title: "Tutorials",
-    description: "Instruccions pas a pas per a eines i equips del centre.",
-    icon: BookOpenIcon,
+    description: "Vídeos curts per fer servir les eines i els equips del centre.",
+    icon: SquarePlayIcon,
   },
 ];
 

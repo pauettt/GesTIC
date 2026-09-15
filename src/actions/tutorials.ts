@@ -5,23 +5,17 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/permissions";
 import {
-  deleteTutorialArticleSchema,
   deleteTutorialCategorySchema,
+  deleteTutorialVideoSchema,
   reorderTutorialCategorySchema,
-  upsertTutorialArticleSchema,
   upsertTutorialCategorySchema,
+  upsertTutorialVideoSchema,
+  youtubeUrlSchema,
 } from "@/lib/validations/tutorials";
+import { lookupYoutubeVideo, parseYoutubeId } from "@/lib/youtube";
 
 export type ActionResult = { success: true } | { success: false; error: string };
-
-function slugify(title: string) {
-  return title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+export type LookupResult = { success: true; title: string } | { success: false; error: string };
 
 export async function upsertTutorialCategory(input: unknown): Promise<ActionResult> {
   await requireAdmin();
@@ -93,51 +87,76 @@ export async function deleteTutorialCategory(input: unknown): Promise<ActionResu
   return { success: true };
 }
 
-export async function upsertTutorialArticle(input: unknown): Promise<ActionResult> {
+/**
+ * Títol d'un vídeo, per omplir el formulari mentre s'afegeix. Només per a la
+ * coordinació: si no, gesTIC faria de pont cap a YouTube per a qualsevol.
+ */
+export async function lookupTutorialVideo(input: unknown): Promise<LookupResult> {
   await requireAdmin();
-  const parsed = upsertTutorialArticleSchema.safeParse(input);
+  const parsed = youtubeUrlSchema.safeParse(input);
+  const youtubeId = parsed.success ? parseYoutubeId(parsed.data) : null;
+  if (!youtubeId) return { success: false, error: "Enganxa l'enllaç d'un vídeo de YouTube" };
+
+  const lookup = await lookupYoutubeVideo(youtubeId);
+  return lookup.ok ? { success: true, title: lookup.title } : { success: false, error: lookup.error };
+}
+
+export async function upsertTutorialVideo(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = upsertTutorialVideoSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const data = parsed.data;
+  const { id, categoryId, url, title, description } = parsed.data;
+  const youtubeId = parseYoutubeId(url);
+  if (!youtubeId) return { success: false, error: "Enganxa l'enllaç d'un vídeo de YouTube" };
 
-  if (data.id) {
-    await db.tutorialArticle.update({
-      where: { id: data.id },
-      data: {
-        categoryId: data.categoryId,
-        title: data.title,
-        contentMarkdown: data.contentMarkdown,
-      },
-    });
-  } else {
-    const baseSlug = slugify(data.title) || "tutorial";
-    let slug = baseSlug;
-    let suffix = 1;
-    while (await db.tutorialArticle.findUnique({ where: { slug } })) {
-      suffix += 1;
-      slug = `${baseSlug}-${suffix}`;
+  const current = id
+    ? await db.tutorialVideo.findUnique({ where: { id }, select: { youtubeId: true } })
+    : null;
+  if (id && !current) return { success: false, error: "Aquest vídeo ja no és als tutorials" };
+
+  // Cada enllaç nou es comprova a YouTube aquí i no només al formulari: un vídeo
+  // privat o esborrat no ha d'arribar a la llista.
+  if (current?.youtubeId !== youtubeId) {
+    const lookup = await lookupYoutubeVideo(youtubeId);
+    if (!lookup.ok) return { success: false, error: lookup.error };
+  }
+
+  const data = { categoryId, youtubeId, title, description: description || null };
+  try {
+    if (id) {
+      await db.tutorialVideo.update({ where: { id }, data });
+    } else {
+      await db.tutorialVideo.create({ data });
     }
-    await db.tutorialArticle.create({
-      data: {
-        categoryId: data.categoryId,
-        title: data.title,
-        contentMarkdown: data.contentMarkdown,
-        slug,
-      },
-    });
+  } catch (error) {
+    // P2002: el vídeo ja hi és, potser en una altra categoria.
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      const existing = await db.tutorialVideo.findUnique({
+        where: { youtubeId },
+        select: { category: { select: { name: true } } },
+      });
+      return {
+        success: false,
+        error: existing
+          ? `Aquest vídeo ja és als tutorials, a «${existing.category.name}»`
+          : "Aquest vídeo ja és als tutorials",
+      };
+    }
+    throw error;
   }
 
   revalidatePath("/tutorials");
   return { success: true };
 }
 
-export async function deleteTutorialArticle(input: unknown): Promise<ActionResult> {
+export async function deleteTutorialVideo(input: unknown): Promise<ActionResult> {
   await requireAdmin();
-  const parsed = deleteTutorialArticleSchema.safeParse(input);
+  const parsed = deleteTutorialVideoSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
 
-  await db.tutorialArticle.delete({ where: { id: parsed.data.id } });
+  await db.tutorialVideo.deleteMany({ where: { id: parsed.data.id } });
   revalidatePath("/tutorials");
   return { success: true };
 }

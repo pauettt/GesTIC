@@ -8,6 +8,7 @@ import {
   DEV_ACCOUNT_INCIDENT_TITLE,
   FOREIGN_APPOINTMENT_PURPOSE,
   PRIVATE_INCIDENT_TITLE,
+  TUTORIAL_VIDEOS,
   USERS,
   type Fixtures,
   type UserKey,
@@ -157,6 +158,13 @@ export async function seed(connectionString: string): Promise<{
         openedById: userIds.admin,
       },
     });
+
+    for (const [order, video] of TUTORIAL_VIDEOS.entries()) {
+      const tutorialCategory = await db.tutorialCategory.create({ data: { name: video.category, order } });
+      await db.tutorialVideo.create({
+        data: { categoryId: tutorialCategory.id, youtubeId: video.youtubeId, title: video.title },
+      });
+    }
 
     const privateIncident = await db.incident.create({
       data: {

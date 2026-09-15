@@ -153,21 +153,11 @@ async function main() {
     });
   }
 
-  const categoria = await db.tutorialCategory.upsert({
+  // Sense vídeos d'exemple: un identificador inventat deixaria una miniatura trencada.
+  await db.tutorialCategory.upsert({
     where: { name: "Primers passos" },
     update: {},
     create: { name: "Primers passos", order: 1 },
-  });
-  await db.tutorialArticle.upsert({
-    where: { slug: "com-reportar-una-incidencia" },
-    update: {},
-    create: {
-      categoryId: categoria.id,
-      title: "Com reportar una incidència TIC",
-      slug: "com-reportar-una-incidencia",
-      contentMarkdown:
-        "# Com reportar una incidència\n\n1. Ves a **Incidències TIC**.\n2. Clica a *Nova incidència*.\n3. Selecciona el tipus d'equip afectat i descriu el problema.\n4. Adjunta una foto si és possible.\n\nEl coordinador TIC rebrà la incidència i en farà seguiment.",
-    },
   });
 
   console.log("Seed completat correctament.");

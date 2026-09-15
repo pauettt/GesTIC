@@ -25,6 +25,15 @@ export const PRIVATE_INCIDENT_TITLE = "Incidència privada de la Professora Dos"
 /** Incidència d'un compte del dev login: l'esborrat de dades de prova se l'ha d'endur. */
 export const DEV_ACCOUNT_INCIDENT_TITLE = "Incidència d'un compte de prova";
 
+/**
+ * Vídeos dels tutorials, cadascun a la seva categoria. Els identificadors tenen
+ * la forma dels de YouTube però no existeixen: les proves no surten a internet.
+ */
+export const TUTORIAL_VIDEOS = [
+  { youtubeId: "e2eClassr01", title: "Crear una classe a Classroom", category: "Classroom" },
+  { youtubeId: "e2eChromeb1", title: "Iniciar sessió al Chromebook", category: "Chromebooks" },
+] as const;
+
 /** Identificadors que crea cada execució i que les proves necessiten. */
 export type Fixtures = {
   cartId: string;

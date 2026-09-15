@@ -2,8 +2,8 @@
 
 **Aquesta és l'única llista de pendents.** El que va sortint i **no** es resol
 sobre la marxa s'apunta aquí; quan una cosa es tanca, passa a "Fet" amb la data.
-Els plans llargs poden tenir document propi (com [PLA-TUTORIALS.md](PLA-TUTORIALS.md)),
-però el que queda per fer surt també aquí.
+Els plans llargs poden tenir document propi, però el que queda per fer surt
+també aquí.
 
 Última revisió completa: **2026-09-12**, amb una auditoria de tot el codi —
 esquema contra la base de dades, totes les accions, rutes i pàgines— després de
@@ -15,10 +15,8 @@ el que en quedava obert i era codi.
 ## 🎯 Per on seguir
 
 Només en queda una, i no és programar: **omplir els Dubtes freqüents i els
-Tutorials**, que després del buidat del 2026-09-15 són buits. És contingut: el
-pla —les cinc categories, el format d'article, el camp `sourceUrl` i el script
-d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md), acordat el 2026-09-12,
-i encara no se n'ha començat cap tasca.
+Tutorials**, que després del buidat del 2026-09-15 són buits. Els tutorials són
+vídeos de YouTube per categories (§24): n'hi ha prou d'enganxar-ne l'enllaç.
 
 La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
 decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
@@ -133,6 +131,22 @@ fa la sol·licitud i la coordinació TIC, i *Administració → Dades personals*
 quantes n'hi ha i per què es guarden. **Convé que el centre ho tingui decidit
 per escrit.**
 
+### 24. Tutorials: només vídeos de YouTube
+Decidit el 2026-09-15. Substitueix el pla d'articles curts amb enllaç oficial
+del 2026-09-12 (l'antic PLA-TUTORIALS.md): els tutorials són vídeos de YouTube
+agrupats per categories, i la coordinació n'enganxa l'enllaç. De cada vídeo només
+es guarda l'identificador, i el títol s'agafa de YouTube en afegir-lo.
+- Es miren dins de gesTIC, amb el reproductor sense cookies de YouTube, que no es
+  carrega fins que algú prem play. Les miniatures passen pel nostre domini.
+- Un vídeo privat o esborrat no es pot afegir. Si el propietari en desactiva la
+  inserció, el reproductor ho diu i queda l'enllaç «Obre a YouTube».
+- Continua descartat el bot d'IA que respongués a partir del material de la
+  Conselleria: aquell material va de gestió acadèmica i no de les avaries i
+  l'entorn Google que arriben per gesTIC, no es deixa indexar, i resumir un
+  procediment oficial el deixa caducar.
+- Els Dubtes freqüents continuen sent text, i ja no es fusionen amb els
+  tutorials: són formats diferents.
+
 ---
 
 ## ✅ Fet
@@ -144,6 +158,12 @@ per escrit.**
   sol compte, `coordtic@iesjmthomas.eu`. Es conserven les 10 categories
   d'inventari. Queda apuntat al registre d'activitat. Abans se'n va fer una
   còpia en JSON, sense sessions ni tokens, fora del repositori.
+- **Tutorials en vídeo** (§24): la secció passa d'articles a una quadrícula de
+  vídeos de YouTube per categories, amb cerca que no distingeix accents, filtre
+  per categoria i reproductor dins de gesTIC. L'enllaç `/tutorials?v=…` obre un
+  vídeo directament i el botó Enrere el tanca. La migració
+  `20260915100000_tutorials_en_video` treu `TutorialArticle`, que era buida, i
+  crea `TutorialVideo`. Fora `react-markdown`, que només feien servir els articles.
 
 ### 2026-09-14
 

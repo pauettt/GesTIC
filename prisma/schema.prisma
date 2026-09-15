@@ -576,17 +576,20 @@ model TutorialCategory {
   name  String @unique
   order Int    @default(0)
 
-  articles TutorialArticle[]
+  videos TutorialVideo[]
 }
 
-model TutorialArticle {
-  id              String   @id @default(cuid())
-  categoryId      String
-  title           String
-  slug            String   @unique
-  contentMarkdown String   @db.Text
-  updatedAt       DateTime @updatedAt
-  createdAt       DateTime @default(now())
+/// Vídeo de YouTube de la secció Tutorials. Només se'n guarda l'identificador:
+/// l'enllaç, la miniatura i el reproductor se'n deriven (`src/lib/youtube.ts`).
+/// Un vídeo és a una sola categoria i no s'hi pot afegir dues vegades.
+model TutorialVideo {
+  id          String   @id @default(cuid())
+  categoryId  String
+  youtubeId   String   @unique
+  title       String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   category TutorialCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 

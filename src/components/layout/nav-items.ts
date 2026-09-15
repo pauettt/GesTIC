@@ -1,7 +1,6 @@
 import type { Role } from "@prisma/client";
 import type { Route } from "next";
 import {
-  BookOpenIcon,
   CalendarCheckIcon,
   HelpCircleIcon,
   HomeIcon,
@@ -12,6 +11,7 @@ import {
   MessageCircleQuestionIcon,
   PackageIcon,
   ShieldCheckIcon,
+  SquarePlayIcon,
   TicketIcon,
   UsersIcon,
 } from "lucide-react";
@@ -37,7 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/cites", label: "Cites", icon: CalendarCheckIcon },
   { href: "/dubtes", label: "Dubtes freqüents", icon: HelpCircleIcon },
   { href: "/consultes", label: "Consultes", icon: MessageCircleQuestionIcon },
-  { href: "/tutorials", label: "Tutorials", icon: BookOpenIcon },
+  { href: "/tutorials", label: "Tutorials", icon: SquarePlayIcon },
   {
     href: "/consergeria",
     label: "Claus",

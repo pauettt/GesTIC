@@ -19,7 +19,12 @@ const nextConfig: NextConfig = {
     staleTimes: { dynamic: 30 },
   },
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "**.public.blob.vercel-storage.com" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "**.public.blob.vercel-storage.com" },
+      // Miniatures dels tutorials. Passen per l'optimitzador de Next i se serveixen
+      // des del nostre domini: obrir la llista no fa cap petició a YouTube.
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
+    ],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
