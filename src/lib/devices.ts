@@ -1,4 +1,4 @@
-import type { DeviceType } from "@prisma/client";
+import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
 /** L'ordre en què es llisten els tipus, als formularis i als recomptes. */
 export const DEVICE_TYPES = ["CHROMEBOOK", "PORTATIL", "IPAD", "TAULETA", "ALTRE"] as const satisfies readonly DeviceType[];
@@ -48,4 +48,24 @@ export function parseDeviceType(text: string): DeviceType | null {
   if (/portatil|laptop|notebook|macbook/.test(value)) return "PORTATIL";
   if (/tauleta|tableta|tablet/.test(value)) return "TAULETA";
   return "ALTRE";
+}
+
+/**
+ * El que ha de saber qui vol fer servir un dispositiu, segons l'estat. Només
+ * l'estat i el motiu de la coordinació: qui ha obert una incidència i què hi diu
+ * és cosa seva i de la coordinació.
+ */
+export function deviceStatusNote(device: { status: ChromebookStatus; unavailableReason: string | null }) {
+  switch (device.status) {
+    case "EN_INCIDENCIA":
+      return "Té una incidència oberta i la coordinació TIC n'està al cas.";
+    case "NO_DISPONIBLE":
+      return device.unavailableReason ? `No es pot fer servir: ${device.unavailableReason}` : "No es pot fer servir.";
+    case "ASSIGNAT":
+      return "El té un alumne en préstec.";
+    case "BAIXA":
+      return "Està donat de baixa.";
+    default:
+      return "Funciona. Si hi trobes cap problema, reporta'l.";
+  }
 }

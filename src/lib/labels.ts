@@ -90,6 +90,16 @@ export const incidentCategoryIcons: Record<IncidentCategory, LucideIcon> = {
   ALTRE: CircleHelpIcon,
 };
 
+/** Els problemes que es reporten d'un toc des dels QR, en l'ordre dels botons. */
+export const QUICK_REPORT_CATEGORIES: IncidentCategory[] = [
+  "PANTALLA",
+  "TECLAT",
+  "TOUCHPAD",
+  "WIFI_INTERNET",
+  "NO_S_ENCEN",
+  "ALTRE",
+];
+
 // Categories que bloquegen completament l'ús del Chromebook: prioritat alta per defecte.
 export const incidentCategoryDefaultPriority: Record<IncidentCategory, IncidentPriority> = {
   PANTALLA: "MITJANA",

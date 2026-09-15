@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deviceCount, deviceSummary, parseDeviceType } from "@/lib/devices";
+import { deviceCount, deviceStatusNote, deviceSummary, parseDeviceType } from "@/lib/devices";
 
 describe("recompte de dispositius", () => {
   it("diu què porta un carro, en singular o plural", () => {
@@ -31,5 +31,15 @@ describe("parseDeviceType", () => {
   it("una cel·la buida no diu res, i una altra cosa és un altre dispositiu", () => {
     expect(parseDeviceType("  ")).toBeNull();
     expect(parseDeviceType("Càmera de documents")).toBe("ALTRE");
+  });
+});
+
+describe("deviceStatusNote", () => {
+  it("diu què passa amb l'equip i, si la coordinació l'ha tret de servei, per què", () => {
+    expect(deviceStatusNote({ status: "EN_INCIDENCIA", unavailableReason: null })).toContain("incidència oberta");
+    expect(deviceStatusNote({ status: "NO_DISPONIBLE", unavailableReason: "Falta el carregador" })).toBe(
+      "No es pot fer servir: Falta el carregador",
+    );
+    expect(deviceStatusNote({ status: "DISPONIBLE", unavailableReason: null })).toContain("Funciona");
   });
 });

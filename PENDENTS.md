@@ -243,6 +243,11 @@ perquè cada consulta queda apuntada. Condicions:
   importació el llegeix d'una columna «Tipus» o el pren per a tot el full. El
   préstec a l'alumnat continua sent de Chromebooks. Migració
   `20260915140000_tipus_de_dispositiu`.
+- **Un QR per carro**: porta a una pàgina per al mòbil (`/q/carro/[id]`) amb
+  tots els dispositius i el seu estat; es toca el que no funciona i es tria el
+  problema. La pàgina d'etiquetes imprimeix per defecte aquest QR, i les
+  etiquetes per dispositiu continuen disponibles i funcionant. Cada dispositiu
+  només ha de portar visible el seu número.
 
 ### 2026-09-14
 

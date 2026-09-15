@@ -43,8 +43,8 @@ export async function QrLabelSheet({
           </Link>
           <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="text-muted-foreground">
-            Enganxa cada etiqueta a la part de sota del Chromebook corresponent. En escanejar-la,
-            el professorat podrà reportar una incidència d&apos;aquest Chromebook en un sol toc.
+            Enganxa cada etiqueta a la part de sota del dispositiu corresponent. En escanejar-la,
+            el professorat podrà reportar una incidència d&apos;aquest dispositiu en un sol toc.
           </p>
         </div>
         <PrintButton />
@@ -55,7 +55,7 @@ export async function QrLabelSheet({
           <p className="font-medium text-destructive">No imprimeixis encara</p>
           <p className="text-muted-foreground">
             Els QR apunten a <code>{baseUrl}</code> perquè no hi ha cap domini fixat. Un cop
-            enganxats als Chromebooks no es poden canviar: configura <code>APP_URL</code> amb
+            enganxats als dispositius no es poden canviar: configura <code>APP_URL</code> amb
             l&apos;adreça definitiva del centre abans d&apos;imprimir.
           </p>
         </div>

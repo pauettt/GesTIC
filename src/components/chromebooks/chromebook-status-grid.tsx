@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
-import { deviceTypeLabels } from "@/lib/devices";
+import { deviceStatusNote, deviceTypeLabels } from "@/lib/devices";
 import { chromebookStatusLabels, chromebookStatusSquareClasses, chromebookStatusVariants } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { DeviceIcon } from "@/components/chromebooks/device-icon";
@@ -17,19 +17,6 @@ export type GridChromebook = {
   status: ChromebookStatus;
   unavailableReason: string | null;
 };
-
-function statusNote(chromebook: GridChromebook) {
-  switch (chromebook.status) {
-    case "EN_INCIDENCIA":
-      return "Té una incidència oberta i la coordinació TIC n'està al cas.";
-    case "NO_DISPONIBLE":
-      return chromebook.unavailableReason
-        ? `No es pot fer servir: ${chromebook.unavailableReason}`
-        : "No es pot fer servir.";
-    default:
-      return "Funciona. Si hi trobes cap problema, reporta'l.";
-  }
-}
 
 /**
  * Els Chromebooks del carro tal com els veu el professorat: l'estat de cadascun,
@@ -77,7 +64,7 @@ export function ChromebookStatusGrid({ chromebooks }: { chromebooks: GridChromeb
                       {chromebookStatusLabels[chromebook.status]}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{statusNote(chromebook)}</p>
+                  <p className="text-sm text-muted-foreground">{deviceStatusNote(chromebook)}</p>
                   <Link
                     href={`/q/chromebook/${chromebook.id}`}
                     className="text-sm font-medium text-primary hover:underline"

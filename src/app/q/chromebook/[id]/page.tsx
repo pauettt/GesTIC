@@ -1,24 +1,15 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/permissions";
 import { deviceTypeLabels } from "@/lib/devices";
-import { chromebookStatusLabels, chromebookStatusVariants } from "@/lib/labels";
+import { QUICK_REPORT_CATEGORIES, chromebookStatusLabels, chromebookStatusVariants } from "@/lib/labels";
 import { QuickReportButtons } from "@/components/chromebooks/quick-report-buttons";
 import { CleanUrlParam } from "@/components/shared/clean-url-param";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { IncidentCategory } from "@prisma/client";
-
-const CATEGORIES: IncidentCategory[] = [
-  "PANTALLA",
-  "TECLAT",
-  "TOUCHPAD",
-  "WIFI_INTERNET",
-  "NO_S_ENCEN",
-  "ALTRE",
-];
 
 export default async function QuickChromebookReportPage({
   params,
@@ -85,13 +76,21 @@ export default async function QuickChromebookReportPage({
               <p className="text-center text-sm text-muted-foreground">
                 Quin problema té aquest dispositiu?
               </p>
-              <QuickReportButtons chromebookId={chromebook.id} categories={CATEGORIES} />
+              <QuickReportButtons chromebookId={chromebook.id} categories={QUICK_REPORT_CATEGORIES} />
               <Link
                 href="/incidencies/nova"
                 className="mt-2 text-center text-xs text-muted-foreground hover:underline"
               >
                 El problema no és cap d&apos;aquests? Reporta&apos;l amb més detall
               </Link>
+              {chromebook.cart && (
+                <Link
+                  href={`/q/carro/${chromebook.cart.id}` as Route}
+                  className="text-center text-xs text-muted-foreground hover:underline"
+                >
+                  Veure tots els dispositius de {chromebook.cart.name}
+                </Link>
+              )}
             </>
           )}
         </CardContent>

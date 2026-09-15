@@ -189,7 +189,7 @@ export default async function CartDetailPage({
                 className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
               >
                 <QrCodeIcon className="size-4" />
-                Imprimeix etiquetes QR
+                Imprimeix el QR del carro
               </Link>
             </div>
             <div className="mb-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
