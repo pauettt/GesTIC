@@ -1,8 +1,7 @@
-import Image from "next/image";
-
 import { signInWithGoogle } from "@/actions/auth";
 import { devLogin } from "@/actions/dev-login";
 import { isDevLoginEnabled } from "@/lib/dev-login-enabled";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -10,10 +9,11 @@ import { Separator } from "@/components/ui/separator";
 export const metadata = { title: "Inicia sessió" };
 
 // Auth.js torna aquí amb `?error=` quan l'inici de sessió falla. Sense cap avís
-// la pantalla es veia idèntica i semblava que calia entrar dues vegades. El cas
-// habitual és `Configuration`: les cookies de l'OAuth caduquen als 15 minuts, i
-// qui s'entreté a la pantalla de Google (contrasenya, clau d'accés) en torna
-// sense poder completar l'entrada. El detall de l'error queda als logs.
+// la pantalla es veia idèntica i semblava que calia entrar dues vegades. La causa
+// només queda als logs (`[auth][error]`), i el missatge genèric no l'ha
+// d'endevinar: abans deia que s'havia passat massa estona a Google, i el
+// 2026-09-15 els logs deien `invalid_grant: Invalid code verifier`, dues entrades
+// solapades al mateix navegador (vegeu `GoogleSignInButton`).
 function loginErrorMessage(error: string | string[] | undefined) {
   if (typeof error !== "string") return null;
   if (error === "AccessDenied") {
@@ -27,7 +27,7 @@ function loginErrorMessage(error: string | string[] | undefined) {
   if (error === "AccountLinked") {
     return "Aquest compte de Google està associat a l'usuari d'una altra persona. Avisa la coordinació TIC.";
   }
-  return "No s'ha pogut completar l'inici de sessió, potser perquè ha passat massa estona a la pantalla de Google. Torna-ho a provar.";
+  return "No s'ha pogut completar l'inici de sessió. Torna-ho a provar.";
 }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
@@ -59,16 +59,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               name="callbackUrl"
               value={typeof callbackUrl === "string" ? callbackUrl : "/"}
             />
-            <Button type="submit" className="w-full" size="lg">
-              <Image
-                src="/google.svg"
-                alt=""
-                width={18}
-                height={18}
-                className="mr-2"
-              />
-              Inicia sessió amb Google
-            </Button>
+            <GoogleSignInButton />
           </form>
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Només comptes del domini institucional del centre.

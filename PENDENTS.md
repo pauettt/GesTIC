@@ -179,12 +179,48 @@ perquè cada consulta queda apuntada. Condicions:
 - Les còpies de la base de dades només porten text xifrat, i les proves e2e fan
   servir una clau pròpia, mai la real.
 
+### 28. L'alumnat es tanca des de la consola de Google, no des de gesTIC
+Detectat i decidit el 2026-09-15. L'alumnat i el professorat comparteixen el
+domini `iesjmthomas.eu`, i gesTIC només comprova que el compte sigui d'aquest
+domini i del Workspace (`src/lib/google-sign-in.ts`): el primer cop que algú hi
+entra, Auth.js en crea l'usuari com a `PROFESSOR`. Google no diu a l'aplicació
+de quina unitat organitzativa és el compte, així que posar gesTIC en un
+subdomini del centre tampoc no ho arreglaria.
+
+El tall es fa a la consola d'administració (*Seguretat → Control d'accés i de
+dades → Controls de l'API → Gestiona l'accés d'aplicacions de tercers*): gesTIC
+(ID de client `905922810748-beohq0ebf7mgahs1pf91qnnevsth96u7.apps.googleusercontent.com`)
+hi és **Bloquejada** per a les unitats *Alumnat*, *Families*, *professorat
+màster*, *Professors conservatori* i *paperera*. Provat el mateix dia: els
+comptes d'aquestes unitats ja no hi entren.
+
+Riscos assumits:
+- Un alumne que no sigui dins d'*Alumnat* (una matrícula nova encara penjada de
+  l'arrel, per exemple) hi entraria com a professor. Si mai es crea una unitat
+  d'alumnat fora d'*Alumnat*, cal bloquejar-hi gesTIC.
+- Depèn d'una configuració que no és al codi: si algú la treu de la consola,
+  gesTIC torna a quedar oberta a l'alumnat sense que res ho avisi.
+
+**A revisar** si passa qualsevol de les dues coses: la segona capa seria que
+gesTIC no creï usuaris sols i només hi entri qui el superadministrador hagi
+donat d'alta. Cal construir-ho (ara `/usuaris` no permet donar d'alta ningú) i
+té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
+
 ---
 
 ## ✅ Fet
 
 ### 2026-09-15
 
+- **Alumnat fora de gesTIC** (§28): l'aplicació queda bloquejada a la consola de
+  Google per a les unitats d'alumnat, famílies, professorat del màster,
+  conservatori i paperera. Provat amb un compte d'alumne.
+- **Entrar amb Google a la primera**: la pantalla d'inici deia que s'havia passat
+  massa estona a Google, però els logs deien `invalid_grant: Invalid code
+  verifier`, dues entrades solapades al mateix navegador (probablement un doble
+  toc mentre el servidor es despertava). El botó queda aturat amb «Obrint
+  Google…» des del primer toc (prova `e2e/login.spec.ts`), i el missatge d'error
+  ja no n'endevina la causa.
 - **Dades de prova buidades** (antic §10), per ensenyar l'aplicació al claustre:
   totes les taules de dades a zero, les 6 fotos del blob store esborrades i un
   sol compte, `coordtic@iesjmthomas.eu`. Es conserven les 10 categories
