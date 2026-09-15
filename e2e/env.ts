@@ -11,6 +11,9 @@ export const BASE_URL = `http://localhost:${E2E_PORT}`;
 export const E2E_DATABASE_URL =
   process.env.E2E_DATABASE_URL ?? `postgresql://${userInfo().username}@localhost:5432/gestic_e2e`;
 
+/** Clau de xifrat de les contrasenyes a les proves. No protegeix res: les dades són inventades. */
+export const E2E_VAULT_KEY = Buffer.alloc(32, 7).toString("base64");
+
 /** Sessions i identificadors que genera cada execució (fora del repositori). */
 export const AUTH_DIR = path.join(process.cwd(), "e2e", ".auth");
 

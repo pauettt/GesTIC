@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toCsv } from "@/lib/csv";
+import { parseCsv, toCsv } from "@/lib/csv";
 
 describe("toCsv", () => {
   it("neutralitza les cel·les que un full de càlcul executaria com a fórmula", () => {
@@ -23,5 +23,32 @@ describe("toCsv", () => {
 
   it("separa les files amb salts de línia", () => {
     expect(toCsv([["a", "b"], ["c", "d"]])).toBe("a,b\nc,d");
+  });
+});
+
+describe("parseCsv", () => {
+  it("llegeix cel·les entre cometes amb comes, cometes i salts de línia", () => {
+    expect(parseCsv('nom,nota\n"Router, hall","diu ""hola""\nsegona línia"')).toEqual([
+      ["nom", "nota"],
+      ["Router, hall", 'diu "hola"\nsegona línia'],
+    ]);
+  });
+
+  it("accepta finals de línia de Windows, la marca BOM i cel·les buides", () => {
+    expect(parseCsv("\uFEFFa,,c\r\n,,\r\n")).toEqual([
+      ["a", "", "c"],
+      ["", "", ""],
+    ]);
+  });
+
+  it("detecta el punt i coma de l'Excel en català o castellà", () => {
+    expect(parseCsv("Nom;Usuari;Contrasenya\nImpressora;admin;1,2,3")).toEqual([
+      ["Nom", "Usuari", "Contrasenya"],
+      ["Impressora", "admin", "1,2,3"],
+    ]);
+  });
+
+  it("no retalla res: els espais poden ser part d'una contrasenya", () => {
+    expect(parseCsv(" a , b ")).toEqual([[" a ", " b "]]);
   });
 });

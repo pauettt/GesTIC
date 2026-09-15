@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { isDevLoginEnabled } from "@/lib/dev-login-enabled";
 import { isEmailConfigured } from "@/lib/email";
 import { TEST_ACCOUNT_DOMAIN, type CountItem } from "@/lib/test-data";
+import { parseVaultKey } from "@/lib/vault";
 
 export type ConfigCheck = { label: string; ok: boolean; detail: string };
 
@@ -23,6 +24,7 @@ export function getConfigChecks(): ConfigCheck[] {
   const blob = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
   const cron = Boolean(process.env.CRON_SECRET);
   const devLogin = isDevLoginEnabled();
+  const vault = parseVaultKey(process.env.VAULT_ENCRYPTION_KEY) !== null;
 
   return [
     {
@@ -60,6 +62,13 @@ export function getConfigChecks(): ConfigCheck[] {
       detail: cron
         ? "Recordatoris de préstecs vençuts i ping diari a la base de dades"
         : "Sense CRON_SECRET: ni recordatoris ni el ping que evita que Supabase es pausi",
+    },
+    {
+      label: "Clau de les contrasenyes",
+      ok: vault,
+      detail: vault
+        ? "Configurada: les contrasenyes es desen xifrades"
+        : "Sense VAULT_ENCRYPTION_KEY (o no són 32 bytes): no es pot desar ni mostrar cap contrasenya",
     },
     {
       label: "Dev login",

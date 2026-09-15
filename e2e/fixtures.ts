@@ -4,7 +4,9 @@ import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 
 import { addDays, madridDateKey, startOfWeek, zonedDateTime } from "../src/lib/date";
+import { encryptSecret } from "../src/lib/vault";
 import {
+  CREDENTIALS,
   DEV_ACCOUNT_INCIDENT_TITLE,
   FOREIGN_APPOINTMENT_PURPOSE,
   PRIVATE_INCIDENT_TITLE,
@@ -13,6 +15,7 @@ import {
   type Fixtures,
   type UserKey,
 } from "./data";
+import { E2E_VAULT_KEY } from "./env";
 
 // Hores de SCHOOL_PERIODS (src/lib/schedule.ts). Van copiades i no importades
 // perquè aquell fitxer fa servir l'àlies `@/`, que el carregador de Playwright no
@@ -163,6 +166,20 @@ export async function seed(connectionString: string): Promise<{
       const tutorialCategory = await db.tutorialCategory.create({ data: { name: video.category, order } });
       await db.tutorialVideo.create({
         data: { categoryId: tutorialCategory.id, youtubeId: video.youtubeId, title: video.title },
+      });
+    }
+
+    const vaultKey = Buffer.from(E2E_VAULT_KEY, "base64");
+    for (const [order, credential] of Object.values(CREDENTIALS).entries()) {
+      const credentialCategory = await db.credentialCategory.create({ data: { name: credential.category, order } });
+      await db.credential.create({
+        data: {
+          categoryId: credentialCategory.id,
+          name: credential.name,
+          username: credential.username,
+          passwordEncrypted: encryptSecret(credential.password, vaultKey),
+          superAdminOnly: credential.superAdminOnly,
+        },
       });
     }
 

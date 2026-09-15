@@ -7,6 +7,7 @@ import {
   KeyRoundIcon,
   LaptopIcon,
   LayoutDashboardIcon,
+  LockKeyholeIcon,
   MapPinIcon,
   MessageCircleQuestionIcon,
   PackageIcon,
@@ -45,6 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["CONSERGERIA", "ADMIN", "SUPER_ADMIN"],
   },
   { href: "/panell", label: "Panell coordinador", icon: LayoutDashboardIcon, adminOnly: true },
+  { href: "/contrasenyes", label: "Contrasenyes", icon: LockKeyholeIcon, adminOnly: true },
   { href: "/usuaris", label: "Usuaris i permisos", icon: UsersIcon, superAdminOnly: true },
   { href: "/administracio", label: "Administració", icon: ShieldCheckIcon, superAdminOnly: true },
 ];

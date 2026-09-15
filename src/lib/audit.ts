@@ -11,7 +11,12 @@ export type AuditAction =
   // Buidar les sol·licituds tancades d'alumnat. Ja no es fa des del 2026-09-14,
   // quan es va decidir guardar-les, però les entrades antigues s'han de llegir.
   | "student-requests.purge"
-  | "test-data.purge";
+  | "test-data.purge"
+  // Cada vegada que algú mostra, copia o obre per editar una contrasenya: qui,
+  // quina i per a què. Mai la contrasenya.
+  | "credential.reveal"
+  | "credential.change"
+  | "credential.import";
 
 export const auditActionLabels: Record<AuditAction, string> = {
   "user.role": "Permisos",
@@ -20,6 +25,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   "incident.delete": "Incidència esborrada",
   "student-requests.purge": "Dades de l'alumnat",
   "test-data.purge": "Dades de prova",
+  "credential.reveal": "Contrasenya consultada",
+  "credential.change": "Contrasenyes",
+  "credential.import": "Importació de contrasenyes",
 };
 
 /**

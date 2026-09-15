@@ -1,6 +1,6 @@
 # gesTIC
 
-Plataforma de coordinació TIC del centre: incidències, inventari i préstecs, carros de Chromebooks i préstec d'equips a l'alumnat, cites amb la coordinació, dubtes freqüents, tutorials i control de claus de consergeria.
+Plataforma de coordinació TIC del centre: incidències, inventari i préstecs, carros de Chromebooks i préstec d'equips a l'alumnat, cites amb la coordinació, dubtes freqüents, tutorials, contrasenyes del centre i control de claus de consergeria.
 
 Què falta, què s'ha fet i per què és a [PENDENTS.md](PENDENTS.md).
 
@@ -63,8 +63,8 @@ Cada canvi d'esquema va amb una migració a `prisma/migrations/`. En desplegar a
 
 ## Proves
 
-- **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
-- **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs i cites. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
+- **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos, xifrat de les contrasenyes i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
+- **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs, cites, tutorials i contrasenyes. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
 
 Per preparar-les el primer cop cal PostgreSQL a l'ordinador (per exemple, `brew install postgresql@16`):
 
@@ -95,11 +95,12 @@ npx playwright install chromium
 2. Configura les variables de `.env.example` a **Project Settings → Environment Variables**, totes excepte `ENABLE_DEV_LOGIN`.
 3. Afegeix el domini definitiu a les URI de redirecció autoritzades de Google Cloud, i posa'l a `APP_URL` **abans d'imprimir cap etiqueta QR**.
 4. `vercel.json` ja programa els dos crons (`/api/cron/loan-reminders` i `/api/cron/keep-alive`); sense `CRON_SECRET` no s'executen.
+5. Afegeix `VAULT_ENCRYPTION_KEY` **amb el mateix valor que el `.env` local**, perquè comparteixen base de dades. Guarda-la també fora del servidor: sense ella, les contrasenyes desades no es poden recuperar.
 
 ## Rols
 
-- **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, quines dades personals es guarden, esborrat de les dades de prova i registre d'activitat. Es defineix a `ADMIN_EMAILS`.
-- **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, dubtes, tutorials i claus.
+- **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, quines dades personals es guarden, esborrat de les dades de prova i registre d'activitat. És qui gestiona les categories de contrasenyes, les importa i veu les marcades com a només seves. Es defineix a `ADMIN_EMAILS`.
+- **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, dubtes, tutorials, claus i contrasenyes (menys les reservades al superadministrador).
 - **Consergeria (`CONSERGERIA`)**: compte compartit del taulell; només veu el control de claus.
 - **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites i fa consultes.
 

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { BASE_URL, E2E_DATABASE_URL, E2E_PORT, assertLocalDatabase } from "./e2e/env";
+import { BASE_URL, E2E_DATABASE_URL, E2E_PORT, E2E_VAULT_KEY, assertLocalDatabase } from "./e2e/env";
 
 // Abans de res: les proves buiden la base de dades on s'executen. Si l'adreça no
 // és local i de proves, no s'arrenca ni el servidor.
@@ -51,6 +51,9 @@ export default defineConfig({
       BLOB_READ_WRITE_TOKEN: "",
       APP_URL: "",
       ENABLE_DEV_LOGIN: "",
+      // La de les proves, mai la del .env: amb la real, les dades de prova es
+      // xifrarien amb la clau que protegeix les contrasenyes del centre.
+      VAULT_ENCRYPTION_KEY: E2E_VAULT_KEY,
       AUTH_TRUST_HOST: "true",
     },
   },

@@ -14,9 +14,15 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Només en queda una, i no és programar: **omplir els Dubtes freqüents i els
-Tutorials**, que després del buidat del 2026-09-15 són buits. Els tutorials són
-vídeos de YouTube per categories (§24): n'hi ha prou d'enganxar-ne l'enllaç.
+Queden tres coses:
+
+1. **Posar `VAULT_ENCRYPTION_KEY` a Vercel** abans de desplegar les
+   contrasenyes, amb el mateix valor que el `.env` local (§27).
+2. **Importar els carros i els Chromebooks** (§26) i, després, la **Xarxa**
+   (§25).
+3. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
+   2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
+   (§24): n'hi ha prou d'enganxar-ne l'enllaç.
 
 La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
 decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
@@ -37,6 +43,7 @@ README).
 | ✅ | `BLOB_READ_WRITE_TOKEN` | ✅ | ✅ |
 | ✅ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ✅ |
 | ✅ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ✅ |
+| ⚠️ | `VAULT_ENCRYPTION_KEY`, **la mateixa** que el `.env` local (§27) | ✅ | ❌ falta |
 | ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
 | ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | buides: en local s'entra pel dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
@@ -64,6 +71,21 @@ que cada una és oberta, marcar les que fa dies que ningú no toca, o una data
 prevista per a les reparacions que tenen dia. Un cronograma sí que tindria sentit
 per als projectes de la coordinació al llarg del curs, com a apartat nou.
 **Abans de fer res cal decidir quin problema es vol resoldre.**
+
+### 25. Xarxa: el mapa d'IP ha de sortir de l'inventari
+Decidit el 2026-09-15. El full de control d'IP (planta, aula, IP, connexió, nom
+del PC) no s'importa com una llista a part: les IP són de material informàtic
+actiu i s'han d'anar omplint a mesura que es fa inventari. Caldrà un camp IP a
+l'inventari (ordinadors, impressores, routers, servidors...) i una secció
+«Xarxa», per a superadministració i coordinació, que en surti sola: cerca per
+IP, aula o equip, filtre per planta i les IP lliures a la vista.
+
+### 26. Importar els carros i els Chromebooks del full
+El full té una fila per Chromebook: número dins del carro (columna f), marca,
+número de sèrie, carretó i aula (número i nom). L'etiqueta a gesTIC serà
+`C<carro>-<nn>` (C1-01, C1-02...). La columna d'incidències no s'importa. **Abans
+de fer-ho cal saber què hi ha a les columnes ocultes G, H i I.** Amb les aules
+del full es poden crear també les *Aules i espais*.
 
 ---
 
@@ -147,6 +169,20 @@ es guarda l'identificador, i el títol s'agafa de YouTube en afegir-lo.
 - Els Dubtes freqüents continuen sent text, i ja no es fusionen amb els
   tutorials: són formats diferents.
 
+### 27. Contrasenyes a gesTIC, xifrades al servidor
+Decidit el 2026-09-15, en lloc del full de Google on eren. Un gestor de
+contrasenyes dedicat (Bitwarden, 1Password) és més segur, perquè xifra al
+dispositiu i ni el seu servidor les pot llegir. Aquí la clau és al servidor: qui
+aconseguís alhora Vercel i la base de dades, o el compte de Google d'algú de la
+coordinació, les podria veure. S'accepta perquè és molt millor que el full i
+perquè cada consulta queda apuntada. Condicions:
+- Els comptes de coordinació han de tenir la verificació en dos passos.
+- `VAULT_ENCRYPTION_KEY` s'ha de guardar també fora del servidor. Si es perd, les
+  contrasenyes no es poden recuperar; si es canvia, les desades deixen de
+  poder-se llegir.
+- Les còpies de la base de dades només porten text xifrat, i les proves e2e fan
+  servir una clau pròpia, mai la real.
+
 ---
 
 ## ✅ Fet
@@ -164,6 +200,14 @@ es guarda l'identificador, i el títol s'agafa de YouTube en afegir-lo.
   vídeo directament i el botó Enrere el tanca. La migració
   `20260915100000_tutorials_en_video` treu `TutorialArticle`, que era buida, i
   crea `TutorialVideo`. Fora `react-markdown`, que només feien servir els articles.
+- **Contrasenyes** (§27): secció nova per a superadministració i coordinació,
+  per categories, amb cerca i targetes que copien l'usuari i la contrasenya. Es
+  desen xifrades (AES-256-GCM) i no viatgen mai amb la pàgina: es demanen en
+  mostrar-les, copiar-les o editar-les, i cada consulta queda al registre
+  d'activitat, amb un límit de 100 per hora. Les marcades «Només
+  superadministrador» no existeixen per a la coordinació. El superadministrador
+  gestiona les categories i importa el full exportat en CSV, amb vista prèvia i
+  sense duplicar el que ja hi és. Migració `20260915110000_contrasenyes`.
 
 ### 2026-09-14
 

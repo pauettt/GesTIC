@@ -18,6 +18,7 @@ test.describe("professorat", () => {
       "/administracio",
       "/espais",
       "/consergeria",
+      "/contrasenyes",
       "/chromebooks/alumnat/etiquetes",
       // La fitxa d'un equip del pool porta els noms dels alumnes que l'han tingut.
       `/chromebooks/alumnat/${poolChromebooks["ALU-01"]}`,

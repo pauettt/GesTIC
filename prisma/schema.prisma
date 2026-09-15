@@ -597,6 +597,42 @@ model TutorialVideo {
 }
 
 // ---------------------------------------------------------------------------
+// Contrasenyes del centre (només coordinació TIC)
+// ---------------------------------------------------------------------------
+
+model CredentialCategory {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  credentials Credential[]
+}
+
+/// Accés a un compte, una impressora, un ordinador o qualsevol servei del centre.
+/// La contrasenya i les observacions es desen xifrades amb `VAULT_ENCRYPTION_KEY`
+/// (`src/lib/vault.ts`): a la base de dades, i a les còpies que se'n facin, només
+/// hi ha text xifrat, i sense aquella clau no es poden recuperar.
+///
+/// `superAdminOnly` l'amaga del tot a la coordinació TIC (`src/lib/credentials.ts`).
+/// Les categories no s'esborren si encara tenen contrasenyes.
+model Credential {
+  id                String   @id @default(cuid())
+  categoryId        String
+  name              String
+  username          String?
+  url               String?
+  passwordEncrypted String   @db.Text
+  notesEncrypted    String?  @db.Text
+  superAdminOnly    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category CredentialCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
 // Consergeria: claus del centre
 // ---------------------------------------------------------------------------
 

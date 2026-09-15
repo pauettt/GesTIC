@@ -34,6 +34,24 @@ export const TUTORIAL_VIDEOS = [
   { youtubeId: "e2eChromeb1", title: "Iniciar sessió al Chromebook", category: "Chromebooks" },
 ] as const;
 
+/** Contrasenyes de prova: una per a tota la coordinació i una només per al superadministrador. */
+export const CREDENTIALS = {
+  shared: {
+    category: "Impressores",
+    name: "Impressora de consergeria E2E",
+    username: "admin-e2e",
+    password: "Prova-compartida-1",
+    superAdminOnly: false,
+  },
+  restricted: {
+    category: "Comptes",
+    name: "Consola de Google E2E",
+    username: "super-e2e",
+    password: "Prova-restringida-2",
+    superAdminOnly: true,
+  },
+} as const;
+
 /** Identificadors que crea cada execució i que les proves necessiten. */
 export type Fixtures = {
   cartId: string;
