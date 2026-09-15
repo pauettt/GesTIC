@@ -32,3 +32,20 @@ test("el professorat escaneja el QR del carro, tria el dispositiu i en reporta l
   await expect(admin.getByAltText("QR E2E-02")).toBeVisible();
   await resolveIncident(admin, incidentUrl);
 });
+
+test("amb una sessió caducada al mòbil, el QR del carro porta a entrar i després al carro", async ({
+  browser,
+  baseURL,
+}) => {
+  const { cartId } = readFixtures();
+  // Una cookie de sessió que ja no és a la base de dades, com la del mòbil
+  // d'algú que havia entrat abans que la sessió caduqués o s'esborrés.
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  await context.addCookies([{ name: "authjs.session-token", value: "caducada", url: baseURL! }]);
+  const page = await context.newPage();
+
+  await page.goto(`/q/carro/${cartId}`);
+  await expect(page).toHaveURL(new RegExp(`/login\\?callbackUrl=%2Fq%2Fcarro%2F${cartId}$`));
+  await expect(page.locator('input[name="callbackUrl"]')).toHaveValue(`/q/carro/${cartId}`);
+  await context.close();
+});

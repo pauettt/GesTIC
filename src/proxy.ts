@@ -1,23 +1,29 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { REQUESTED_PATH_HEADER, loginPath } from "@/lib/login-redirect";
 import { SESSION_COOKIE_NAMES } from "@/lib/session-cookie";
 
 // Comprovació optimista: només mira si existeix la cookie de sessió.
 // La validació real (usuari vàlid + rol) es fa sempre a cada layout/Server Action,
 // tal com recomana Next.js 16 perquè Proxy no cobreix les Server Actions.
 export function proxy(request: NextRequest) {
+  const requestedPath = request.nextUrl.pathname + request.nextUrl.search;
   const hasSessionCookie = SESSION_COOKIE_NAMES.some((name) =>
     request.cookies.has(name),
   );
 
   if (!hasSessionCookie) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL(loginPath(requestedPath), request.url));
   }
 
-  return NextResponse.next();
+  // Tenir la cookie no vol dir tenir sessió: pot ser d'una sessió caducada o
+  // esborrada. Llavors és la pàgina qui envia a l'inici de sessió, i sense
+  // aquesta capçalera no sabria on tornar: qui escanejava el QR d'un carro amb
+  // una sessió vella al mòbil acabava a l'inici en comptes de al carro.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(REQUESTED_PATH_HEADER, requestedPath);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

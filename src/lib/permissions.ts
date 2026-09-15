@@ -1,7 +1,9 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth";
+import { REQUESTED_PATH_HEADER, loginPath } from "@/lib/login-redirect";
 import {
   COORDINATOR_ROLES,
   canAccessKeys,
@@ -30,7 +32,9 @@ const getSession = cache(() => auth());
 export async function requireSession() {
   const session = await getSession();
   if (!session?.user) {
-    redirect("/login");
+    // Amb una cookie de sessió caducada o esborrada el Proxy deixa passar, i és
+    // aquí on es veu que no hi ha sessió: un cop dins, cal tornar on s'anava.
+    redirect(loginPath((await headers()).get(REQUESTED_PATH_HEADER)));
   }
   return session.user;
 }
