@@ -71,7 +71,7 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
-    const space = await db.space.create({ data: { name: "Aula E2E" } });
+    const space = await db.space.create({ data: { name: "Aula E2E", roomName: "Aula E2E" } });
     const cart = await db.cart.create({ data: { name: "Carro E2E", spaceId: space.id } });
 
     await db.incident.create({

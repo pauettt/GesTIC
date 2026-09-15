@@ -5,6 +5,7 @@ import { LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
+import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
 import { StudentChromebookPool } from "@/components/chromebooks/student-pool";
 import {
   AwaitingDeliveryStudentDevices,
@@ -32,6 +33,7 @@ export default async function ChromebooksPage() {
     pendingRequests,
     awaitingDelivery,
     delivered,
+    existingChromebooks,
   ] = await Promise.all([
       db.cart.findMany({
         include: { space: true, chromebooks: true },
@@ -86,6 +88,10 @@ export default async function ChromebooksPage() {
             orderBy: { deliveredAt: "desc" },
           })
         : Promise.resolve([]),
+      // Per a la vista prèvia de la importació: què ja hi és i no s'ha de repetir.
+      admin
+        ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
+        : Promise.resolve([]),
     ]);
 
   const availableDevices = studentChromebooks.filter((cb) => cb.status === "DISPONIBLE");
@@ -99,7 +105,21 @@ export default async function ChromebooksPage() {
             Carros de Chromebooks del centre i el seu estat.
           </p>
         </div>
-        {admin && <CartDialog spaces={spaces} />}
+        {admin && (
+          <div className="flex flex-wrap gap-2">
+            <ChromebookImportDialog
+              existing={{
+                spaces: spaces.map(({ name, number }) => ({ name, number })),
+                cartNames: carts.map((cart) => cart.name),
+                assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
+                serialNumbers: existingChromebooks.flatMap((chromebook) =>
+                  chromebook.serialNumber ? [chromebook.serialNumber] : [],
+                ),
+              }}
+            />
+            <CartDialog spaces={spaces} />
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

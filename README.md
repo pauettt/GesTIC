@@ -64,7 +64,7 @@ Cada canvi d'esquema va amb una migració a `prisma/migrations/`. En desplegar a
 ## Proves
 
 - **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos, xifrat de les contrasenyes i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
-- **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs, cites, tutorials i contrasenyes. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
+- **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs, cites, tutorials, contrasenyes i importació de Chromebooks. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
 
 Per preparar-les el primer cop cal PostgreSQL a l'ordinador (per exemple, `brew install postgresql@16`):
 

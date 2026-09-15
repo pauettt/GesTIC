@@ -57,7 +57,8 @@ export default async function EspaisPage() {
                   <SpaceDialog
                     space={{
                       id: space.id,
-                      name: space.name,
+                      number: space.number ?? "",
+                      roomName: space.roomName ?? "",
                       building: space.building ?? "",
                       floor: space.floor ?? "",
                     }}

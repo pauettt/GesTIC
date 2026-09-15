@@ -12,12 +12,15 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+
+const EMPTY: UpsertSpaceInput = { number: "", roomName: "", building: "", floor: "" };
 
 export function SpaceDialog({
   space,
@@ -34,19 +37,22 @@ export function SpaceDialog({
     formState: { errors },
   } = useForm<UpsertSpaceInput>({
     resolver: zodResolver(upsertSpaceSchema),
-    defaultValues: space ?? { name: "", building: "", floor: "" },
+    defaultValues: space ?? EMPTY,
   });
 
   const { run, isPending } = useServerAction(upsertSpace, {
     successMessage: space ? "Espai actualitzat" : "Espai creat",
-    onSuccess: () => {
-      setOpen(false);
-      reset();
-    },
+    onSuccess: () => setOpen(false),
   });
 
+  function handleOpenChange(next: boolean) {
+    // Cada cop que s'obre, amb les dades d'ara: si ja s'havia editat, la pàgina porta les noves.
+    if (next) reset(space ?? EMPTY);
+    setOpen(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           trigger ? (
@@ -62,14 +68,25 @@ export function SpaceDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{space ? "Edita l'espai" : "Nou espai"}</DialogTitle>
+          <DialogDescription>
+            El número és el que identifica l&apos;aula. Un espai sense número, com consergeria, en té prou amb
+            el nom.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => run(values))}>
           <FieldGroup>
-            <Field data-invalid={Boolean(errors.name)}>
-              <FieldLabel htmlFor="space-name">Nom</FieldLabel>
-              <Input id="space-name" placeholder="Ex: Aula 2.03" {...register("name")} />
-              <FieldError errors={errors.name ? [errors.name] : undefined} />
-            </Field>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
+              <Field data-invalid={Boolean(errors.number)}>
+                <FieldLabel htmlFor="space-number">Número</FieldLabel>
+                <Input id="space-number" placeholder="A.004" {...register("number")} />
+                <FieldError errors={errors.number ? [errors.number] : undefined} />
+              </Field>
+              <Field data-invalid={Boolean(errors.roomName)}>
+                <FieldLabel htmlFor="space-room-name">Nom</FieldLabel>
+                <Input id="space-room-name" placeholder="Rosalia" {...register("roomName")} />
+                <FieldError errors={errors.roomName ? [errors.roomName] : undefined} />
+              </Field>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="building">Edifici</FieldLabel>

@@ -10,17 +10,27 @@ async function main() {
   const aula203 = await db.space.upsert({
     where: { name: "Aula 2.03" },
     update: {},
-    create: { name: "Aula 2.03", building: "Edifici principal", floor: "2a planta" },
+    create: { name: "Aula 2.03", roomName: "Aula 2.03", building: "Edifici principal", floor: "2a planta" },
   });
   const salaProfes = await db.space.upsert({
     where: { name: "Sala de professorat" },
     update: {},
-    create: { name: "Sala de professorat", building: "Edifici principal", floor: "Planta baixa" },
+    create: {
+      name: "Sala de professorat",
+      roomName: "Sala de professorat",
+      building: "Edifici principal",
+      floor: "Planta baixa",
+    },
   });
   const aulaInformatica = await db.space.upsert({
     where: { name: "Aula d'informàtica" },
     update: {},
-    create: { name: "Aula d'informàtica", building: "Edifici principal", floor: "1a planta" },
+    create: {
+      name: "Aula d'informàtica",
+      roomName: "Aula d'informàtica",
+      building: "Edifici principal",
+      floor: "1a planta",
+    },
   });
 
   const categoryNames = [

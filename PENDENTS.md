@@ -16,13 +16,16 @@ el que en quedava obert i era codi.
 
 Queden tres coses:
 
-1. **Posar `VAULT_ENCRYPTION_KEY` a Vercel** abans de desplegar les
-   contrasenyes, amb el mateix valor que el `.env` local (§27).
-2. **Importar els carros i els Chromebooks** (§26) i, després, la **Xarxa**
-   (§25).
-3. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
+1. **Importar els carros i els Chromebooks**: *Chromebooks → Importa*, amb el
+   full exportat en CSV. Les aules es creen soles amb el número i el nom.
+2. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
+3. **Programar la Xarxa** (§25) a partir de l'inventari.
+
+Per entrar en local cal el login de Google: `AUTH_GOOGLE_ID` i
+`AUTH_GOOGLE_SECRET` al `.env`, i `http://localhost:3000/api/auth/callback/google`
+a les URI de redirecció del client OAuth.
 
 La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
 decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
@@ -43,7 +46,7 @@ README).
 | ✅ | `BLOB_READ_WRITE_TOKEN` | ✅ | ✅ |
 | ✅ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ✅ |
 | ✅ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ✅ |
-| ⚠️ | `VAULT_ENCRYPTION_KEY`, **la mateixa** que el `.env` local (§27) | ✅ | ❌ falta |
+| ✅ | `VAULT_ENCRYPTION_KEY`, **la mateixa** que el `.env` local (§27) | ✅ | ✅ (Secret) |
 | ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
 | ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | buides: en local s'entra pel dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
@@ -79,13 +82,6 @@ actiu i s'han d'anar omplint a mesura que es fa inventari. Caldrà un camp IP a
 l'inventari (ordinadors, impressores, routers, servidors...) i una secció
 «Xarxa», per a superadministració i coordinació, que en surti sola: cerca per
 IP, aula o equip, filtre per planta i les IP lliures a la vista.
-
-### 26. Importar els carros i els Chromebooks del full
-El full té una fila per Chromebook: número dins del carro (columna f), marca,
-número de sèrie, carretó i aula (número i nom). L'etiqueta a gesTIC serà
-`C<carro>-<nn>` (C1-01, C1-02...). La columna d'incidències no s'importa. **Abans
-de fer-ho cal saber què hi ha a les columnes ocultes G, H i I.** Amb les aules
-del full es poden crear també les *Aules i espais*.
 
 ---
 
@@ -208,6 +204,18 @@ perquè cada consulta queda apuntada. Condicions:
   superadministrador» no existeixen per a la coordinació. El superadministrador
   gestiona les categories i importa el full exportat en CSV, amb vista prèvia i
   sense duplicar el que ja hi és. Migració `20260915110000_contrasenyes`.
+- **Aules amb número i nom**: el número (A.004) és l'identificador oficial,
+  únic, i el nom (Rosalia) és com l'anomena el centre. Es mostren junts a tot
+  arreu, «A.004 · Rosalia», i les llistes queden ordenades per número. Migració
+  `20260915120000_aules_amb_numero`.
+- **Importació de carros i Chromebooks** (antic §26): a *Chromebooks → Importa*,
+  des d'un CSV amb una fila per equip. Les columnes es reconeixen pel títol i es
+  poden reassignar; la vista prèvia diu quantes aules, carros i equips es
+  crearan, i quines files no s'importen i per què. Els carros es diuen «Carro 1
+  (A.002)», amb l'aula on tenen més equips, i les etiquetes surten del número dins
+  del carro (C1-01). Els equips sense carro poden anar al préstec a l'alumnat
+  (ALU-nn, amb número de sèrie obligatori) o quedar fora. El servidor ho torna a
+  calcular i ho desa tot o res.
 
 ### 2026-09-14
 

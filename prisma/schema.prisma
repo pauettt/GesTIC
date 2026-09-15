@@ -131,7 +131,13 @@ model VerificationToken {
 
 model Space {
   id       String  @id @default(cuid())
+  /// El que es mostra a tot arreu: «A.004 · Rosalia», «Consergeria». No s'escriu a
+  /// mà: es compon del número i el nom en desar-lo (`spaceName`, `src/lib/spaces.ts`).
   name     String
+  /// Número oficial de l'aula (A.004): el que la identifica, també a les IP.
+  number   String? @unique
+  /// Com l'anomena el centre (Rosalia). Un espai sense número en té prou amb el nom.
+  roomName String?
   building String?
   floor    String?
 
