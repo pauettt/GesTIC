@@ -168,7 +168,8 @@ export function planChromebookImport(
     parsed.push({
       // Tal com surt al full de càlcul: la primera fila és l'1.
       row: headerRow + offset + 2,
-      cart: cell(values, "cart"),
+      // «Conselleria,» és el mateix carro que «Conselleria»: una coma de més al full no n'ha de crear un altre.
+      cart: cell(values, "cart").replace(/[\s,;.:]+$/u, ""),
       position: cell(values, "position"),
       assetTag: cell(values, "assetTag"),
       serialNumber: cell(values, "serialNumber"),

@@ -17,6 +17,7 @@ type Chromebook = {
   brand: string | null;
   model: string | null;
   status: ChromebookStatus;
+  unavailableReason: string | null;
   notes: Note[];
 };
 

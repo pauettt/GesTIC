@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { HandCoinsIcon } from "lucide-react";
+import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { inventorySearchFilter } from "@/lib/inventory-search";
@@ -58,7 +58,8 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
   const { category: categoryFilter, prestable } = await searchParams;
   const onlyLoanable = prestable === "1";
 
-  const [items, spaces, categories, pendingLoanRequests, activeLoanRequests] = await Promise.all([
+  const [items, spaces, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount] =
+    await Promise.all([
     db.inventoryItem.findMany({
       where: {
         ...(typeof categoryFilter === "string" ? { categoryId: categoryFilter } : {}),
@@ -84,6 +85,8 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
       // Els que venien abans primer: així els endarrerits queden a dalt.
       orderBy: { endDate: "asc" },
     }),
+    db.chromebook.count({ where: { status: { not: "BAIXA" } } }),
+    db.cart.count(),
   ]);
 
   function filterHref(next: { category?: string; prestable?: boolean }): Route {
@@ -106,6 +109,19 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
         </div>
         <InventoryItemDialog spaces={spaces} categories={categories} />
       </div>
+
+      {/* Els Chromebooks tenen la seva secció: sense l'avís semblaria que no són a l'inventari. */}
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        <LaptopIcon className="size-4 shrink-0" />
+        <span>
+          Els Chromebooks no surten aquí: tenen la seva secció, amb {chromebookCount}{" "}
+          {chromebookCount === 1 ? "equip" : "equips"} entre {cartCount === 1 ? "el carro" : `els ${cartCount} carros`} i
+          el préstec a l&apos;alumnat.
+        </span>
+        <Link href="/chromebooks" className="font-medium text-foreground hover:underline">
+          Ves a Chromebooks →
+        </Link>
+      </p>
 
       <InventorySearch placeholder="Cerca per marca, model, núm. de sèrie o aula…" />
 

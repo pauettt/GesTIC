@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
 import { defaultWeekStart } from "@/lib/schedule";
+import { cn } from "@/lib/utils";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
@@ -60,6 +61,10 @@ export default async function CartDetailPage({
   ]);
 
   if (!cart) notFound();
+
+  // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
+  const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA").length;
+  const available = cart.chromebooks.filter((chromebook) => chromebook.status === "DISPONIBLE").length;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -131,6 +136,9 @@ export default async function CartDetailPage({
       <div>
         <h2 className="mb-3 text-lg font-semibold">Horari d&apos;ocupació</h2>
         <p className="mb-3 text-sm text-muted-foreground">
+          <span className={cn("font-medium", available < inService ? "text-red-700" : "text-foreground")}>
+            {available} de {inService} Chromebooks disponibles.
+          </span>{" "}
           Clica una sessió lliure per reservar-la a l&apos;instant.
         </p>
         <WeeklySchedule
@@ -161,15 +169,16 @@ export default async function CartDetailPage({
                 <span className="size-3 rounded-sm border-2 border-green-400 bg-green-100" /> Disponible
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> En incidència
+                <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> En incidència o no
+                disponible
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="size-3 rounded-sm border-2 border-slate-300 bg-slate-100" /> Donat de baixa
               </span>
             </div>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un Chromebook per veure&apos;n els detalls, editar-lo, moure&apos;l a un altre carro
-              o donar-lo de baixa.
+              Clica un Chromebook per veure&apos;n els detalls, marcar-lo com a no disponible, editar-lo,
+              moure&apos;l a un altre carro o donar-lo de baixa.
             </p>
             <ChromebookManager cartId={cart.id} carts={carts} chromebooks={cart.chromebooks} />
           </div>

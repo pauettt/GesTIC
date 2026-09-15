@@ -132,6 +132,38 @@ test("anul·lar un equip que ningú no ha vingut a buscar l'allibera, i la fitxa
   await expect(pol.getByText("Cancel·lada")).toBeVisible();
 });
 
+test("la coordinació marca un Chromebook com a no disponible i el professorat ho veu abans de reservar", async ({
+  browser,
+}) => {
+  const { cartId } = readFixtures();
+  const admin = await pageAs(browser, "admin");
+  const professor = await pageAs(browser, "professor");
+
+  await professor.goto(`/chromebooks/${cartId}`);
+  await expect(professor.getByText("4 de 4 Chromebooks disponibles.")).toBeVisible();
+
+  await admin.goto(`/chromebooks/${cartId}`);
+  await admin.getByRole("button", { name: "E2E-03" }).click();
+  await admin.getByRole("radio", { name: "No disponible", exact: true }).click();
+  await admin.getByPlaceholder(/Per què no està disponible/).fill("Falta el carregador");
+  await admin.getByRole("button", { name: "Marca com a no disponible" }).click();
+  await expect(admin.getByText("Chromebook marcat com a no disponible", { exact: true })).toBeVisible();
+
+  await professor.reload();
+  await expect(professor.getByText("3 de 4 Chromebooks disponibles.")).toBeVisible();
+
+  // Queda escrit per què, i tornar-lo a posar disponible és un clic.
+  await admin.reload();
+  await admin.getByRole("button", { name: "E2E-03" }).click();
+  await expect(admin.getByText("Motiu: Falta el carregador")).toBeVisible();
+  await expect(admin.getByText("No disponible: Falta el carregador")).toBeVisible();
+  await admin.getByRole("radio", { name: "Disponible", exact: true }).click();
+  await expect(admin.getByText("Chromebook disponible", { exact: true })).toBeVisible();
+
+  await professor.reload();
+  await expect(professor.getByText("4 de 4 Chromebooks disponibles.")).toBeVisible();
+});
+
 test("un equip donat de baixa ja no accepta incidències", async ({ browser }) => {
   const { cartId, cartChromebooks } = readFixtures();
 

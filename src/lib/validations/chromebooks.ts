@@ -50,6 +50,17 @@ export const setChromebookRetiredSchema = z.object({
   retired: z.boolean(),
 });
 
+export const setChromebookAvailabilitySchema = z
+  .object({
+    id: z.string().min(1),
+    available: z.boolean(),
+    reason: z.string().trim().max(200, "Com a molt 200 caràcters").optional().or(z.literal("")),
+  })
+  .refine((value) => value.available || (value.reason ?? "").length >= 3, {
+    message: "Explica per què no està disponible",
+    path: ["reason"],
+  });
+
 export const addChromebookNoteSchema = z.object({
   chromebookId: z.string(),
   body: z.string().trim().min(1, "Escriu una nota").max(1000),

@@ -5,10 +5,19 @@ import Link from "next/link";
 import { HistoryIcon, LaptopIcon, PlusIcon } from "lucide-react";
 import type { ChromebookStatus } from "@prisma/client";
 
-import { addChromebookNote, deleteChromebook, deleteChromebookNote } from "@/actions/chromebooks";
+import {
+  addChromebookNote,
+  deleteChromebook,
+  deleteChromebookNote,
+  setChromebookAvailability,
+} from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
 import { formatDateTime } from "@/lib/date";
-import { chromebookStatusLabels, chromebookStatusSquareClasses } from "@/lib/labels";
+import {
+  chromebookStatusLabels,
+  chromebookStatusSquareClasses,
+  chromebookStatusVariants,
+} from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,8 +42,111 @@ type Chromebook = {
   brand: string | null;
   model: string | null;
   status: ChromebookStatus;
+  unavailableReason: string | null;
   notes: Note[];
 };
+
+/** Per què no es pot canviar a mà: aquests estats surten dels fets. */
+const DERIVED_STATUS_HINTS: Partial<Record<ChromebookStatus, string>> = {
+  EN_INCIDENCIA: "Torna a estar disponible quan es resolguin les incidències obertes.",
+  ASSIGNAT: "El té un alumne: torna a estar disponible quan se'n registri la devolució.",
+  BAIXA: "Per tornar-lo a fer servir, torna'l a activar.",
+};
+
+/**
+ * Disponible o no disponible, a mà. En marcar-lo com a no disponible es demana
+ * el motiu, que queda a les notes; tornar-lo a posar disponible és un clic.
+ */
+function ChromebookAvailability({ chromebook }: { chromebook: Chromebook }) {
+  const [askingReason, setAskingReason] = useState(false);
+  const [reason, setReason] = useState("");
+  const unavailable = chromebook.status === "NO_DISPONIBLE";
+
+  const { run, isPending } = useServerAction(setChromebookAvailability, {
+    successMessage: unavailable ? "Chromebook disponible" : "Chromebook marcat com a no disponible",
+    onSuccess: () => {
+      setAskingReason(false);
+      setReason("");
+    },
+  });
+
+  const hint = DERIVED_STATUS_HINTS[chromebook.status];
+  if (hint) return <p className="text-xs text-muted-foreground">{hint}</p>;
+
+  const showsUnavailable = unavailable || askingReason;
+  const option = "rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-60";
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="radiogroup" aria-label="Disponibilitat">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!showsUnavailable}
+          disabled={isPending}
+          onClick={() => {
+            setAskingReason(false);
+            if (unavailable) run({ id: chromebook.id, available: true });
+          }}
+          className={cn(
+            option,
+            !showsUnavailable ? "bg-background text-green-700 shadow-xs" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Disponible
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={showsUnavailable}
+          disabled={isPending}
+          onClick={() => {
+            setReason(chromebook.unavailableReason ?? "");
+            setAskingReason(true);
+          }}
+          className={cn(
+            option,
+            showsUnavailable ? "bg-background text-red-700 shadow-xs" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          No disponible
+        </button>
+      </div>
+
+      {unavailable && !askingReason && chromebook.unavailableReason && (
+        <p className="rounded-md bg-red-50 px-2 py-1.5 text-xs text-red-800">Motiu: {chromebook.unavailableReason}</p>
+      )}
+
+      {askingReason && (
+        <form
+          className="flex flex-col gap-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            run({ id: chromebook.id, available: false, reason });
+          }}
+        >
+          <Textarea
+            autoFocus
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Per què no està disponible? (falta el carregador, la bateria no aguanta…)"
+            maxLength={200}
+            rows={2}
+            className="text-xs"
+          />
+          <div className="flex justify-end gap-1.5">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setAskingReason(false)}>
+              Cancel·la
+            </Button>
+            <Button type="submit" size="xs" variant="destructive" disabled={isPending || reason.trim().length < 3}>
+              {unavailable ? "Desa el motiu" : "Marca com a no disponible"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
 
 function ChromebookNoteForm({ chromebookId }: { chromebookId: string }) {
   const [body, setBody] = useState("");
@@ -98,7 +210,9 @@ export function ChromebookSquare({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <p className="font-semibold">{chromebook.assetTag}</p>
-            <Badge variant="outline">{chromebookStatusLabels[chromebook.status]}</Badge>
+            <Badge variant={chromebookStatusVariants[chromebook.status]}>
+              {chromebookStatusLabels[chromebook.status]}
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
             {[chromebook.brand, chromebook.model].filter(Boolean).join(" ") || "Sense marca/model"}
@@ -106,6 +220,7 @@ export function ChromebookSquare({
           {chromebook.serialNumber && (
             <p className="text-xs text-muted-foreground">Núm. sèrie: {chromebook.serialNumber}</p>
           )}
+          <ChromebookAvailability chromebook={chromebook} />
           <Link
             href={`/incidencies?chromebookId=${chromebook.id}`}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"

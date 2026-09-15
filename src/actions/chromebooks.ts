@@ -14,6 +14,7 @@ import {
   deleteCartSchema,
   deleteChromebookNoteSchema,
   deleteChromebookSchema,
+  setChromebookAvailabilitySchema,
   setChromebookRetiredSchema,
   upsertCartSchema,
   upsertChromebookSchema,
@@ -216,7 +217,7 @@ export async function setChromebookRetired(input: unknown): Promise<ActionResult
         error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
       };
     }
-    await db.chromebook.update({ where: { id }, data: { status: "BAIXA" } });
+    await db.chromebook.update({ where: { id }, data: { status: "BAIXA", unavailableReason: null } });
   } else if (chromebook.status === "BAIXA") {
     await db.$transaction(async (tx) => {
       await tx.chromebook.update({ where: { id }, data: { status: "DISPONIBLE" } });
@@ -225,6 +226,56 @@ export async function setChromebookRetired(input: unknown): Promise<ActionResult
   }
 
   revalidatePath(chromebook.cartId ? `/chromebooks/${chromebook.cartId}` : "/chromebooks");
+  return { success: true };
+}
+
+/**
+ * Marca un Chromebook com a no disponible, amb el motiu, o el torna a posar en
+ * servei. És per a qualsevol raó que no passi per una incidència (falta el
+ * carregador, la bateria no aguanta...): surt en vermell, no compta com a
+ * disponible i només ho torna a ser quan la coordinació ho canvia. Cada canvi
+ * queda a les notes de l'equip, amb qui l'ha fet i quan.
+ */
+export async function setChromebookAvailability(input: unknown): Promise<ActionResult> {
+  const user = await requireAdmin();
+  const parsed = setChromebookAvailabilitySchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+  const { id, available } = parsed.data;
+  const reason = (parsed.data.reason ?? "").trim();
+
+  const chromebook = await db.chromebook.findUnique({ where: { id } });
+  if (!chromebook) return { success: false, error: "El Chromebook no existeix" };
+
+  if (!available) {
+    if (chromebook.status === "BAIXA") {
+      return { success: false, error: "Aquest Chromebook està donat de baixa" };
+    }
+    if (await isAssignedToStudent(id)) {
+      return {
+        success: false,
+        error: "Aquest Chromebook està assignat a un alumne: primer cal registrar-ne la devolució",
+      };
+    }
+    await db.$transaction([
+      db.chromebook.update({ where: { id }, data: { status: "NO_DISPONIBLE", unavailableReason: reason } }),
+      db.chromebookNote.create({ data: { chromebookId: id, authorId: user.id, body: `No disponible: ${reason}` } }),
+    ]);
+  } else if (chromebook.status === "NO_DISPONIBLE") {
+    // Com en reactivar una baixa: l'estat es recalcula, i si mentrestant s'hi ha
+    // obert una incidència, torna com a EN_INCIDENCIA.
+    await db.$transaction(async (tx) => {
+      await tx.chromebook.update({ where: { id }, data: { status: "DISPONIBLE", unavailableReason: null } });
+      await syncChromebookStatus(tx, id);
+      await tx.chromebookNote.create({
+        data: { chromebookId: id, authorId: user.id, body: "Torna a estar disponible" },
+      });
+    });
+  }
+
+  if (chromebook.cartId) revalidatePath(`/chromebooks/${chromebook.cartId}`);
+  revalidatePath("/chromebooks");
   return { success: true };
 }
 

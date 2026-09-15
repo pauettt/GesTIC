@@ -91,6 +91,15 @@ describe("planChromebookImport", () => {
     expect(result).toMatchObject({ withoutCart: 1, chromebooks: [], errors: [] });
   });
 
+  it("una coma o un punt de més al final del carro no en crea un altre", () => {
+    const result = plan([
+      HEADER,
+      ["1", "asus", "SN-A", "Conselleria", "", "", ""],
+      ["2", "asus", "SN-B", "Conselleria,", "", "", ""],
+    ]);
+    expect(result.carts).toEqual([{ name: "Conselleria", spaceName: null, chromebooks: 2, exists: false }]);
+  });
+
   it("un número de sèrie repetit al full és un error, i el primer sí que s'importa", () => {
     const result = plan([HEADER, ["1", "asus", "SN-A", "1", "", "", ""], ["2", "asus", "sn-a", "1", "", "", ""]]);
     expect(result.chromebooks.map((c) => c.assetTag)).toEqual(["C1-01"]);

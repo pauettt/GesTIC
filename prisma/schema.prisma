@@ -253,6 +253,9 @@ enum ChromebookStatus {
   RESERVAT
   ASSIGNAT
   EN_INCIDENCIA
+  // Marcat a mà per la coordinació, amb el motiu a `unavailableReason`: fora de
+  // servei per qualsevol raó que no sigui una incidència. Només el treu qui el posa.
+  NO_DISPONIBLE
   BAIXA
 }
 
@@ -285,6 +288,8 @@ model Chromebook {
   brand             String?
   model             String?
   status            ChromebookStatus @default(DISPONIBLE)
+  // Per què s'ha marcat com a no disponible. Buit en qualsevol altre estat.
+  unavailableReason String?
   // Equip del pool de préstec individual a l'alumnat. No és el mateix que tenir
   // `cartId` buit: això vol dir "ara mateix fora del carro" (taller, magatzem)
   // i l'equip hi ha de tornar. Els del pool no són de cap carro mai, perquè si

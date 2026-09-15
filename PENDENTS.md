@@ -216,6 +216,16 @@ perquè cada consulta queda apuntada. Condicions:
   del carro (C1-01). Els equips sense carro poden anar al préstec a l'alumnat
   (ALU-nn, amb número de sèrie obligatori) o quedar fora. El servidor ho torna a
   calcular i ho desa tot o res.
+- **Chromebooks no disponibles**: a la fitxa de cada equip, la coordinació el pot
+  marcar com a no disponible amb el motiu (falta el carregador, la bateria...),
+  sense passar per una incidència. Surt en vermell, resta del recompte del carro i
+  només torna a estar disponible quan ho canvia la coordinació; cada canvi queda a
+  les notes. La pàgina del carro diu a tothom quants n'hi ha de disponibles abans
+  de reservar. Migració `20260915130000_chromebooks_no_disponibles`.
+- **Inventari i Chromebooks, separats**: l'inventari avisa que els Chromebooks
+  tenen la seva secció, amb el recompte i l'enllaç.
+- **Importació**: una coma o un punt de més al final del nom del carro ja no en
+  crea un altre.
 
 ### 2026-09-14
 

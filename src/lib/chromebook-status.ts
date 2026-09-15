@@ -23,10 +23,12 @@ export const ACTIVE_STUDENT_REQUEST_STATUSES: StudentDeviceRequestStatus[] = ["A
  * L'ordre és el de què pesa més:
  *  1. BAIXA només la treu qui la posa, a mà. Cap incidència ni devolució no ha
  *     de ressuscitar un equip retirat.
- *  2. Amb alguna incidència oberta, l'equip no serveix, sigui de carro o de
+ *  2. NO_DISPONIBLE tampoc: la coordinació l'ha tret de servei per un motiu seu,
+ *     i tancar una incidència no el torna a donar per bo.
+ *  3. Amb alguna incidència oberta, l'equip no serveix, sigui de carro o de
  *     préstec.
- *  3. Si està assignat a un alumne —apartat o ja a casa seva—, no és lliure.
- *  4. Si no, és lliure.
+ *  4. Si està assignat a un alumne —apartat o ja a casa seva—, no és lliure.
+ *  5. Si no, és lliure.
  *
  * RESERVAT no surt mai d'aquí: les reserves són del carro sencer, no de cada
  * equip.
@@ -41,6 +43,7 @@ export function chromebookStatusFor({
   isAssigned: boolean;
 }): ChromebookStatus {
   if (current === "BAIXA") return "BAIXA";
+  if (current === "NO_DISPONIBLE") return "NO_DISPONIBLE";
   if (hasOpenIncident) return "EN_INCIDENCIA";
   if (isAssigned) return "ASSIGNAT";
   return "DISPONIBLE";

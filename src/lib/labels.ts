@@ -34,6 +34,7 @@ export const chromebookStatusLabels: Record<ChromebookStatus, string> = {
   RESERVAT: "Reservat",
   ASSIGNAT: "Assignat a alumnat",
   EN_INCIDENCIA: "En incidència",
+  NO_DISPONIBLE: "No disponible",
   BAIXA: "Donat de baixa",
 };
 
@@ -142,6 +143,7 @@ export const chromebookStatusVariants: Record<ChromebookStatus, BadgeVariant> = 
   // del pool de préstec.
   ASSIGNAT: "default",
   EN_INCIDENCIA: "destructive",
+  NO_DISPONIBLE: "destructive",
   BAIXA: "outline",
 };
 
@@ -151,6 +153,8 @@ export const chromebookStatusSquareClasses: Record<ChromebookStatus, string> = {
   RESERVAT: "border-blue-400 bg-blue-100 text-blue-800 hover:bg-blue-200",
   ASSIGNAT: "border-amber-400 bg-amber-100 text-amber-800 hover:bg-amber-200",
   EN_INCIDENCIA: "border-red-400 bg-red-100 text-red-800 hover:bg-red-200",
+  // El mateix vermell: per a qui reserva, tots dos volen dir que aquell equip no hi és.
+  NO_DISPONIBLE: "border-red-400 bg-red-100 text-red-800 hover:bg-red-200",
   BAIXA: "border-slate-300 bg-slate-100 text-slate-500 opacity-70 hover:opacity-100",
 };
 

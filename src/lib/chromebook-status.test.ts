@@ -8,6 +8,16 @@ describe("chromebookStatusFor", () => {
     expect(chromebookStatusFor({ current: "BAIXA", hasOpenIncident: false, isAssigned: false })).toBe("BAIXA");
   });
 
+  it("un equip marcat com a no disponible ho continua sent fins que la coordinació ho canvia", () => {
+    expect(chromebookStatusFor({ current: "NO_DISPONIBLE", hasOpenIncident: false, isAssigned: false })).toBe(
+      "NO_DISPONIBLE",
+    );
+    // Tancar una incidència que s'hi hagi obert mentrestant no el torna a donar per bo.
+    expect(chromebookStatusFor({ current: "NO_DISPONIBLE", hasOpenIncident: true, isAssigned: false })).toBe(
+      "NO_DISPONIBLE",
+    );
+  });
+
   it("amb una incidència oberta l'equip és fora de servei, encara que el tingui un alumne", () => {
     expect(chromebookStatusFor({ current: "DISPONIBLE", hasOpenIncident: true, isAssigned: false })).toBe(
       "EN_INCIDENCIA",
