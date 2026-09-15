@@ -18,6 +18,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
+// El SelectTrigger porta un fons propi en mode fosc (`dark:bg-input/30`) que
+// trepitjava el de l'etiqueta: «Mitjana» quedava amb text fosc sobre fons fosc.
+// Cada variant hi torna a posar el seu color i, com que va al final, guanya.
+const darkBackgrounds: Record<BadgeVariant, string> = {
+  default: "dark:bg-primary dark:hover:bg-primary/80",
+  secondary: "dark:bg-secondary dark:hover:bg-secondary/80",
+  destructive: "dark:bg-destructive/20 dark:hover:bg-destructive/30",
+  outline: "",
+};
+
 // El disparador del desplegable és la mateixa etiqueta de color: a la llista
 // d'incidències el coordinador pot canviar estat i prioritat sense entrar a
 // cada fitxa. Les classes pròpies guanyen a les del SelectTrigger perquè `cn`
@@ -49,6 +59,7 @@ function BadgeSelect({
         className={cn(
           badgeVariants({ variant }),
           "h-5 gap-1 rounded-4xl px-2 py-0.5 text-xs focus-visible:ring-3",
+          darkBackgrounds[variant],
         )}
       >
         <SelectValue />
