@@ -14,14 +14,11 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Només queden dues coses, i cap de les dues no és programar:
-
-1. **Netejar les dades de prova** just abans d'obrir-la al claustre (punt 10).
-   És un botó a *Administració*, que diu què s'esborrarà abans de fer-ho.
-2. **Omplir els Dubtes freqüents i els Tutorials**. És contingut: el pla —les
-   cinc categories, el format d'article, el camp `sourceUrl` i el script
-   d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md), acordat el
-   2026-09-12, i encara no se n'ha començat cap tasca.
+Només en queda una, i no és programar: **omplir els Dubtes freqüents i els
+Tutorials**, que després del buidat del 2026-09-15 són buits. És contingut: el
+pla —les cinc categories, el format d'article, el camp `sourceUrl` i el script
+d'importació— és a [PLA-TUTORIALS.md](PLA-TUTORIALS.md), acordat el 2026-09-12,
+i encara no se n'ha començat cap tasca.
 
 La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
 decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
@@ -60,23 +57,6 @@ canvis:
 
 ## 🧹 Per fer
 
-### 10. Netejar les dades de prova abans d'obrir-la al claustre
-A *Administració → Dades de prova* hi ha el recompte i el botó. S'enduu els
-comptes del dev login (adreces `@local.test`, que cap compte real no pot tenir)
-i tot el que en penja: incidències amb les seves fotos, comentaris, préstecs,
-reserves, préstecs de claus, cites, consultes i notes. Abans de
-fer res ensenya què esborrarà, i queda al registre d'activitat. S'ha de fer amb
-el compte del centre: amb un de prova no deixa.
-
-El que no penja de cap compte s'ha de mirar a mà:
-- els tres conserges d'exemple (Sergio, Marta, Joan): *Usuaris i permisos →
-  Conserges*, donar-los de baixa;
-- les claus C-01 i A-203: *Claus → Gestiona les claus*;
-- equips, aules o carros creats provant, si n'hi ha.
-
-Com que es prova sobre producció (§12), s'ha de fer **just abans d'obrir-la al
-claustre**, i a partir d'aquí ja no s'hi han de fer proves amb dades inventades.
-
 ### 23. Vista de les incidències: per decidir
 El 2026-09-14 va sortir la idea d'un diagrama de Gantt o un cronograma per
 gestionar-les. Un Gantt no hi encaixa: les incidències no tenen data prevista ni
@@ -110,6 +90,12 @@ blobs privats i firmar les URL a cada pàgina, que no és un canvi petit.
 ### 12. Producció i desenvolupament comparteixen base de dades
 El `.env` local i Vercel apunten al mateix projecte de Supabase, així que tot el
 que es prova en local va a parar a la base de dades real.
+
+**Des del 2026-09-15 les dades de producció són reals**: s'hi van buidar totes
+les de prova per ensenyar l'aplicació al claustre. A partir d'aquí no s'hi fan
+proves amb dades inventades, i el `.env` local té `ENABLE_DEV_LOGIN="false"`:
+amb els botons de prova, cada entrada en local tornava a crear comptes
+`@local.test` a producció.
 
 **Decidit el 2026-09-13: de moment es prova sobre producció.** El compte de
 Supabase és al pla gratuït, que no deixa tenir més de dos projectes actius, i
@@ -150,6 +136,14 @@ per escrit.**
 ---
 
 ## ✅ Fet
+
+### 2026-09-15
+
+- **Dades de prova buidades** (antic §10), per ensenyar l'aplicació al claustre:
+  totes les taules de dades a zero, les 6 fotos del blob store esborrades i un
+  sol compte, `coordtic@iesjmthomas.eu`. Es conserven les 10 categories
+  d'inventari. Queda apuntat al registre d'activitat. Abans se'n va fer una
+  còpia en JSON, sense sessions ni tokens, fora del repositori.
 
 ### 2026-09-14
 
