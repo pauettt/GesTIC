@@ -2,20 +2,58 @@ import { LaptopIcon, PackageIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/permissions";
-import { deleteSpace } from "@/actions/spaces";
+import {
+  deleteBuilding,
+  deleteFloor,
+  deleteSpace,
+  reorderBuilding,
+  reorderFloor,
+  upsertBuilding,
+  upsertFloor,
+} from "@/actions/spaces";
+import { CategoryManagerDialog } from "@/components/shared/category-manager-dialog";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { SpaceDialog } from "@/components/spaces/space-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata = { title: "Aules i espais" };
 
+type ListItem = { id: string; name: string; order: number; _count: { spaces: number } };
+
+function toManaged(items: ListItem[]) {
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    order: item.order,
+    usageCount: item._count.spaces,
+  }));
+}
+
+function toOptions(items: ListItem[]) {
+  return items.map((item) => ({ id: item.id, name: item.name }));
+}
+
 export default async function EspaisPage() {
   await requireAdmin();
 
-  const spaces = await db.space.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { inventoryItems: true, carts: true } } },
-  });
+  const listQuery = {
+    orderBy: [{ order: "asc" as const }, { name: "asc" as const }],
+    include: { _count: { select: { spaces: true } } },
+  };
+  const [spaces, buildings, floors] = await Promise.all([
+    db.space.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        building: { select: { name: true } },
+        floor: { select: { name: true } },
+        _count: { select: { inventoryItems: true, carts: true } },
+      },
+    }),
+    db.building.findMany(listQuery),
+    db.floor.findMany(listQuery),
+  ]);
+  const buildingOptions = toOptions(buildings);
+  const floorOptions = toOptions(floors);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -27,7 +65,47 @@ export default async function EspaisPage() {
             Chromebooks.
           </p>
         </div>
-        <SpaceDialog />
+        <div className="flex flex-wrap items-center gap-2">
+          <CategoryManagerDialog
+            categories={toManaged(buildings)}
+            upsertAction={upsertBuilding}
+            deleteAction={deleteBuilding}
+            reorderAction={reorderBuilding}
+            title="Edificis"
+            description="Els que es poden triar en crear o editar un espai. Només es poden eliminar si no hi ha cap espai."
+            itemNounSingular="espai"
+            itemNounPlural="espais"
+            labels={{
+              created: "Edifici creat",
+              updated: "Edifici actualitzat",
+              deleted: "Edifici eliminat",
+              empty: "Encara no hi ha cap edifici.",
+              newPlaceholder: "Nou edifici",
+            }}
+            triggerLabel="Edificis"
+            triggerVariant="outline"
+          />
+          <CategoryManagerDialog
+            categories={toManaged(floors)}
+            upsertAction={upsertFloor}
+            deleteAction={deleteFloor}
+            reorderAction={reorderFloor}
+            title="Plantes"
+            description="Les que es poden triar en crear o editar un espai, en l'ordre de l'edifici. Només es poden eliminar si no hi ha cap espai."
+            itemNounSingular="espai"
+            itemNounPlural="espais"
+            labels={{
+              created: "Planta creada",
+              updated: "Planta actualitzada",
+              deleted: "Planta eliminada",
+              empty: "Encara no hi ha cap planta.",
+              newPlaceholder: "Nova planta",
+            }}
+            triggerLabel="Plantes"
+            triggerVariant="outline"
+          />
+          <SpaceDialog buildings={buildingOptions} floors={floorOptions} />
+        </div>
       </div>
 
       <Card>
@@ -39,7 +117,7 @@ export default async function EspaisPage() {
                   <p className="font-medium">{space.name}</p>
                   {(space.building || space.floor) && (
                     <p className="text-sm text-muted-foreground">
-                      {[space.building, space.floor].filter(Boolean).join(", ")}
+                      {[space.building?.name, space.floor?.name].filter(Boolean).join(", ")}
                     </p>
                   )}
                   <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
@@ -55,12 +133,14 @@ export default async function EspaisPage() {
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <SpaceDialog
+                    buildings={buildingOptions}
+                    floors={floorOptions}
                     space={{
                       id: space.id,
                       number: space.number ?? "",
                       roomName: space.roomName ?? "",
-                      building: space.building ?? "",
-                      floor: space.floor ?? "",
+                      buildingId: space.buildingId ?? "",
+                      floorId: space.floorId ?? "",
                     }}
                     trigger={
                       <button className="rounded-md border px-2 py-1 text-xs hover:bg-muted">

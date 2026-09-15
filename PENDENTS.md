@@ -248,6 +248,15 @@ perquè cada consulta queda apuntada. Condicions:
   problema. La pàgina d'etiquetes imprimeix per defecte aquest QR, i les
   etiquetes per dispositiu continuen disponibles i funcionant. Cada dispositiu
   només ha de portar visible el seu número.
+- **Edificis i plantes d'una llista**: l'edifici i la planta d'un espai ja no
+  s'escriuen a mà, es trien d'un desplegable (amb «Sense edifici» i «Sense
+  planta»). Les llistes es gestionen des dels botons *Edificis* i *Plantes*
+  d'/espais, amb el mateix diàleg que les categories: ordenar, reanomenar i
+  eliminar, però només si no hi ha cap espai a dins. Les plantes són una sola
+  llista per a tots els edificis. Les migracions `20260915150000_edificis` i
+  `20260915160000_plantes` converteixen el que hi havia escrit en elements de la
+  llista, un per nom sense distingir majúscules, i hi enllacen els espais. Les
+  plantes queden en ordre alfabètic: cal posar-les en l'ordre de l'edifici.
 
 ### 2026-09-14
 

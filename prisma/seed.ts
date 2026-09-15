@@ -7,10 +7,25 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
+  const edificiPrincipal = await db.building.upsert({
+    where: { name: "Edifici principal" },
+    update: {},
+    create: { name: "Edifici principal" },
+  });
+  const [plantaBaixa, primeraPlanta, segonaPlanta] = await Promise.all(
+    ["Planta baixa", "1a planta", "2a planta"].map((name, order) =>
+      db.floor.upsert({ where: { name }, update: {}, create: { name, order } }),
+    ),
+  );
   const aula203 = await db.space.upsert({
     where: { name: "Aula 2.03" },
     update: {},
-    create: { name: "Aula 2.03", roomName: "Aula 2.03", building: "Edifici principal", floor: "2a planta" },
+    create: {
+      name: "Aula 2.03",
+      roomName: "Aula 2.03",
+      buildingId: edificiPrincipal.id,
+      floorId: segonaPlanta.id,
+    },
   });
   const salaProfes = await db.space.upsert({
     where: { name: "Sala de professorat" },
@@ -18,8 +33,8 @@ async function main() {
     create: {
       name: "Sala de professorat",
       roomName: "Sala de professorat",
-      building: "Edifici principal",
-      floor: "Planta baixa",
+      buildingId: edificiPrincipal.id,
+      floorId: plantaBaixa.id,
     },
   });
   const aulaInformatica = await db.space.upsert({
@@ -28,8 +43,8 @@ async function main() {
     create: {
       name: "Aula d'informàtica",
       roomName: "Aula d'informàtica",
-      building: "Edifici principal",
-      floor: "1a planta",
+      buildingId: edificiPrincipal.id,
+      floorId: primeraPlanta.id,
     },
   });
 

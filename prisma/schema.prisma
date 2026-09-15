@@ -137,16 +137,40 @@ model Space {
   /// Número oficial de l'aula (A.004): el que la identifica, també a les IP.
   number   String? @unique
   /// Com l'anomena el centre (Rosalia). Un espai sense número en té prou amb el nom.
-  roomName String?
-  building String?
-  floor    String?
+  roomName   String?
+  /// L'edifici i la planta es trien de llistes que manté la coordinació: escrits a
+  /// mà, el mateix edifici acabava sortint amb tres noms diferents.
+  buildingId String?
+  floorId    String?
 
+  building       Building?       @relation(fields: [buildingId], references: [id], onDelete: Restrict)
+  floor          Floor?          @relation(fields: [floorId], references: [id], onDelete: Restrict)
   inventoryItems InventoryItem[]
   carts          Cart[]
   chromebooks    Chromebook[]
   incidents      Incident[]
 
   @@unique([name])
+  @@index([buildingId])
+  @@index([floorId])
+}
+
+model Building {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  spaces Space[]
+}
+
+/// Una sola llista per a tots els edificis: «1a planta» és la mateixa a tot arreu.
+/// L'ordre és el de l'edifici, de baix a dalt.
+model Floor {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
+
+  spaces Space[]
 }
 
 // ---------------------------------------------------------------------------

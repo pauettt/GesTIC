@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
 
@@ -17,20 +17,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const EMPTY: UpsertSpaceInput = { number: "", roomName: "", building: "", floor: "" };
+type ListOption = { id: string; name: string };
+
+const EMPTY: UpsertSpaceInput = { number: "", roomName: "", buildingId: "", floorId: "" };
 
 export function SpaceDialog({
+  buildings,
+  floors,
   space,
   trigger,
 }: {
+  buildings: ListOption[];
+  floors: ListOption[];
   space?: UpsertSpaceInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -89,12 +97,42 @@ export function SpaceDialog({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="building">Edifici</FieldLabel>
-                <Input id="building" {...register("building")} />
+                <FieldLabel htmlFor="space-building">Edifici</FieldLabel>
+                <Controller
+                  control={control}
+                  name="buildingId"
+                  render={({ field }) => (
+                    <ListSelect
+                      id="space-building"
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={buildings}
+                      emptyLabel="Sense edifici"
+                    />
+                  )}
+                />
+                {buildings.length === 0 && (
+                  <FieldDescription>Es creen amb el botó «Edificis» de la pàgina.</FieldDescription>
+                )}
               </Field>
               <Field>
-                <FieldLabel htmlFor="floor">Planta</FieldLabel>
-                <Input id="floor" {...register("floor")} />
+                <FieldLabel htmlFor="space-floor">Planta</FieldLabel>
+                <Controller
+                  control={control}
+                  name="floorId"
+                  render={({ field }) => (
+                    <ListSelect
+                      id="space-floor"
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={floors}
+                      emptyLabel="Sense planta"
+                    />
+                  )}
+                />
+                {floors.length === 0 && (
+                  <FieldDescription>Es creen amb el botó «Plantes» de la pàgina.</FieldDescription>
+                )}
               </Field>
             </div>
             <div className="flex justify-end gap-2">
@@ -109,5 +147,40 @@ export function SpaceDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Desplegable d'una de les llistes de la pàgina. L'element `null` és el que permet tornar a deixar-lo buit. */
+function ListSelect({
+  id,
+  value,
+  onChange,
+  options,
+  emptyLabel,
+}: {
+  id: string;
+  value: string | undefined;
+  onChange: (value: string) => void;
+  options: ListOption[];
+  emptyLabel: string;
+}) {
+  const items = [
+    { value: null, label: emptyLabel },
+    ...options.map((option) => ({ value: option.id, label: option.name })),
+  ];
+
+  return (
+    <Select value={value || null} onValueChange={(next) => onChange(next ?? "")} items={items}>
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value ?? ""} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -32,6 +32,23 @@ export type ManagedCategory = {
   usageCount: number;
 };
 
+/** Els textos que depenen de què es gestiona: «Categoria creada», però «Edifici creat». */
+type ManagerLabels = {
+  created: string;
+  updated: string;
+  deleted: string;
+  empty: string;
+  newPlaceholder: string;
+};
+
+const CATEGORY_LABELS: ManagerLabels = {
+  created: "Categoria creada",
+  updated: "Categoria actualitzada",
+  deleted: "Categoria eliminada",
+  empty: "Encara no hi ha cap categoria.",
+  newPlaceholder: "Nova categoria",
+};
+
 export function CategoryManagerDialog({
   categories,
   upsertAction,
@@ -42,6 +59,7 @@ export function CategoryManagerDialog({
   itemNounSingular,
   itemNounPlural,
   deleteCascades = false,
+  labels = CATEGORY_LABELS,
   triggerLabel = "Categories",
   triggerVariant = "ghost",
 }: {
@@ -59,6 +77,7 @@ export function CategoryManagerDialog({
    * l'eliminació abans de demanar-la: així l'error del servidor no arriba mai.
    */
   deleteCascades?: boolean;
+  labels?: ManagerLabels;
   triggerLabel?: string;
   triggerVariant?: "ghost" | "outline";
 }) {
@@ -73,15 +92,15 @@ export function CategoryManagerDialog({
   }
 
   const create = useServerAction(upsertAction, {
-    successMessage: "Categoria creada",
+    successMessage: labels.created,
     onSuccess: () => setNewName(""),
   });
   const rename = useServerAction(upsertAction, {
-    successMessage: "Categoria actualitzada",
+    successMessage: labels.updated,
     onSuccess: () => setEditingId(null),
   });
   const remove = useServerAction(deleteAction, {
-    successMessage: "Categoria eliminada",
+    successMessage: labels.deleted,
     onSuccess: () => setConfirmingId(null),
   });
   // Reordenar no porta missatge: el moviment ja és la confirmació visible.
@@ -123,9 +142,7 @@ export function CategoryManagerDialog({
 
         <div className="max-h-[55vh] divide-y overflow-y-auto rounded-lg border">
           {categories.length === 0 && (
-            <p className="p-4 text-center text-sm text-muted-foreground">
-              Encara no hi ha cap categoria.
-            </p>
+            <p className="p-4 text-center text-sm text-muted-foreground">{labels.empty}</p>
           )}
 
           {categories.map((category, index) => {
@@ -259,7 +276,7 @@ export function CategoryManagerDialog({
         >
           <Input
             value={newName}
-            placeholder="Nova categoria"
+            placeholder={labels.newPlaceholder}
             onChange={(event) => setNewName(event.target.value)}
           />
           <Button type="submit" variant="outline" disabled={busy || !newName.trim()}>
