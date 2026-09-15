@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
+import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { WeeklySchedule } from "@/components/chromebooks/weekly-schedule";
 import { Separator } from "@/components/ui/separator";
@@ -149,6 +150,29 @@ export default async function CartDetailPage({
           isAdmin={admin}
         />
       </div>
+
+      {!admin && inService > 0 && (
+        <>
+          <Separator />
+          <div>
+            <h2 className="mb-1 text-lg font-semibold">Chromebooks del carro</h2>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Clica un Chromebook per saber si hi ha res a tenir en compte abans de fer-lo servir, o per
+              reportar-ne un problema.
+            </p>
+            <ChromebookStatusGrid
+              chromebooks={cart.chromebooks
+                .filter((chromebook) => chromebook.status !== "BAIXA")
+                .map(({ id: chromebookId, assetTag, status, unavailableReason }) => ({
+                  id: chromebookId,
+                  assetTag,
+                  status,
+                  unavailableReason,
+                }))}
+            />
+          </div>
+        </>
+      )}
 
       {admin && (
         <>

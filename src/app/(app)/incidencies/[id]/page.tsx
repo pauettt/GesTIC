@@ -17,14 +17,17 @@ import {
 import { AttachmentUploader } from "@/components/incidents/attachment-uploader";
 import { CommentForm } from "@/components/incidents/comment-form";
 import { StatusControls } from "@/components/incidents/status-controls";
+import { CleanUrlParam } from "@/components/shared/clean-url-param";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
+import { SuccessNotice } from "@/components/shared/success-notice";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export default async function IncidentDetailPage({ params }: PageProps<"/incidencies/[id]">) {
+export default async function IncidentDetailPage({ params, searchParams }: PageProps<"/incidencies/[id]">) {
   const user = await requireUser();
   const { id } = await params;
+  const { avis } = await searchParams;
 
   const [incident, coordinators] = await Promise.all([
     db.incident.findUnique({
@@ -85,6 +88,16 @@ export default async function IncidentDetailPage({ params }: PageProps<"/inciden
             : " · Sense assignar"}
         </p>
       </div>
+
+      {avis === "creada" && (
+        <SuccessNotice>
+          Incidència enviada. La coordinació TIC ja la té, i aquí en veuràs els canvis i les respostes.
+        </SuccessNotice>
+      )}
+      {avis === "ja-reportada" && (
+        <SuccessNotice>Ja tenies aquesta avaria reportada: és aquesta, i la coordinació TIC n&apos;està al cas.</SuccessNotice>
+      )}
+      <CleanUrlParam name="avis" />
 
       <Card>
         <CardContent className="whitespace-pre-wrap pt-6 text-sm">

@@ -129,7 +129,7 @@ function ChromebookAvailability({ chromebook }: { chromebook: Chromebook }) {
             autoFocus
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="Per què no està disponible? (falta el carregador, la bateria no aguanta…)"
+            placeholder="Per què no està disponible? El professorat veurà el motiu (falta el carregador…)"
             maxLength={200}
             rows={2}
             className="text-xs"

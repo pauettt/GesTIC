@@ -16,8 +16,12 @@ test("una incidència de l'entorn Google va i torna entre el professorat i la co
   await form.getByRole("button", { name: "Crea la incidència" }).click();
 
   await expect(professor.getByRole("heading", { name: "Entorn Google — Classroom" })).toBeVisible();
+  // Qui la crea ha de saber que s'ha enviat.
+  await expect(professor.getByText("Incidència enviada.")).toBeVisible();
   // L'error fals de l'11 de setembre: la incidència es creava però sortia aquest missatge.
   await expect(professor.getByText("No s'ha pogut completar l'acció")).toHaveCount(0);
+  // L'avís surt un cop: l'adreça ja no el porta.
+  await expect(professor).toHaveURL(/\/incidencies\/[^/?]+$/);
   const incidentUrl = professor.url();
 
   const admin = await pageAs(browser, "admin");

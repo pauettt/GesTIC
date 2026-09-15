@@ -101,7 +101,7 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
   await notifyIncidentReported(incident.id);
 
   revalidatePath("/incidencies");
-  redirect(`/incidencies/${incident.id}`);
+  redirect(`/incidencies/${incident.id}?avis=creada`);
 }
 
 export async function quickReportChromebookIncident(input: unknown): Promise<void> {
@@ -135,7 +135,18 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
     select: { id: true },
   });
   if (duplicate) {
-    redirect(`/incidencies/${duplicate.id}`);
+    redirect(`/incidencies/${duplicate.id}?avis=ja-reportada`);
+  }
+
+  // Si ja l'ha reportada algú altre, tampoc cal tornar a avisar tota la
+  // coordinació. La incidència d'un company no es pot obrir, així que es diu a la
+  // mateixa pàgina del QR.
+  const reportedByOthers = await db.incident.findFirst({
+    where: { chromebookId, category, status: { in: OPEN_INCIDENT_STATUSES } },
+    select: { id: true },
+  });
+  if (reportedByOthers) {
+    redirect(`/q/chromebook/${chromebookId}?avis=ja-reportada`);
   }
 
   // El mateix límit que el formulari: cada incidència avisa per correu tota la
@@ -163,7 +174,7 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
   await notifyIncidentReported(incident.id);
 
   revalidatePath("/incidencies");
-  redirect(`/incidencies/${incident.id}`);
+  redirect(`/incidencies/${incident.id}?avis=creada`);
 }
 
 export async function addComment(input: unknown): Promise<ActionResult> {

@@ -7,13 +7,16 @@ import { isAdmin, requireUser } from "@/lib/permissions";
 import { queryStatusLabels, queryStatusVariants } from "@/lib/labels";
 import { QueryCommentForm } from "@/components/queries/query-comment-form";
 import { QueryStatusControls } from "@/components/queries/query-status-controls";
+import { CleanUrlParam } from "@/components/shared/clean-url-param";
+import { SuccessNotice } from "@/components/shared/success-notice";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-export default async function ConsultaDetailPage({ params }: PageProps<"/consultes/[id]">) {
+export default async function ConsultaDetailPage({ params, searchParams }: PageProps<"/consultes/[id]">) {
   const user = await requireUser();
   const { id } = await params;
+  const { avis } = await searchParams;
 
   const query = await db.query.findUnique({
     where: { id },
@@ -42,6 +45,11 @@ export default async function ConsultaDetailPage({ params }: PageProps<"/consult
           Preguntada per {query.author.name ?? query.author.email} el {formatDate(query.createdAt)}
         </p>
       </div>
+
+      {avis === "creada" && (
+        <SuccessNotice>Consulta enviada. La coordinació TIC te respondrà aquí mateix.</SuccessNotice>
+      )}
+      <CleanUrlParam name="avis" />
 
       <Card>
         <CardContent className="whitespace-pre-wrap pt-6 text-sm">{query.description}</CardContent>

@@ -34,21 +34,37 @@ async function confirmStep(admin: Page, student: string, button: string, confirm
 }
 
 test("una avaria reportada des del QR treu l'equip de servei fins que es resol", async ({ browser }) => {
-  const { cartChromebooks } = readFixtures();
+  const { cartId, cartChromebooks } = readFixtures();
   const qr = `/q/chromebook/${cartChromebooks["E2E-01"]}`;
   const professor = await pageAs(browser, "professor");
 
   await professor.goto(qr);
   await expect(professor.getByText("Disponible", { exact: true })).toBeVisible();
   await professor.getByRole("button", { name: "Pantalla" }).click();
-  await expect(professor).toHaveURL(/\/incidencies\/[^/]+$/);
+  await expect(professor.getByText("Incidència enviada.")).toBeVisible();
+  // L'avís surt un cop: l'adreça ja no el porta.
+  await expect(professor).toHaveURL(/\/incidencies\/[^/?]+$/);
   const incidentUrl = professor.url();
 
   await professor.goto(qr);
   await expect(professor.getByText("En incidència", { exact: true })).toBeVisible();
   // Un segon toc no en crea una altra: porta a la que ja hi ha.
   await professor.getByRole("button", { name: "Pantalla" }).click();
+  await expect(professor.getByText("Ja tenies aquesta avaria reportada")).toBeVisible();
   await expect(professor).toHaveURL(incidentUrl);
+
+  // Una companya que ve després ho veu al carro, sense saber qui l'ha obert, i si la
+  // torna a reportar no se'n crea cap altra ni es torna a avisar la coordinació.
+  const colleague = await pageAs(browser, "professor2");
+  await colleague.goto(`/chromebooks/${cartId}`);
+  await colleague.getByRole("button", { name: /^E2E-01/ }).click();
+  const status = colleague.getByText("Té una incidència oberta");
+  await expect(status).toBeVisible();
+  // La graella d'horari sí que diu qui ha reservat el carro; la fitxa de l'equip no diu qui ha obert la incidència.
+  await expect(status.locator("..")).not.toContainText("Professor Un");
+  await colleague.goto(qr);
+  await colleague.getByRole("button", { name: "Pantalla" }).click();
+  await expect(colleague.getByText("Aquesta avaria ja està reportada")).toBeVisible();
 
   const admin = await pageAs(browser, "admin");
   await resolveIncident(admin, incidentUrl);
@@ -82,7 +98,7 @@ test("un equip del pool que passa per una incidència torna a l'alumne, no queda
   expect(await professor.content()).not.toContain("Aina");
 
   await professor.getByRole("button", { name: "No s'engega" }).click();
-  await expect(professor).toHaveURL(/\/incidencies\/[^/]+$/);
+  await expect(professor).toHaveURL(/\/incidencies\/[^/?]+$/);
   const incidentUrl = professor.url();
   await professor.goto(qr);
   await expect(professor.getByText("En incidència", { exact: true })).toBeVisible();
@@ -151,6 +167,8 @@ test("la coordinació marca un Chromebook com a no disponible i el professorat h
 
   await professor.reload();
   await expect(professor.getByText("3 de 4 Chromebooks disponibles.")).toBeVisible();
+  await professor.getByRole("button", { name: /^E2E-03/ }).click();
+  await expect(professor.getByText("No es pot fer servir: Falta el carregador")).toBeVisible();
 
   // Queda escrit per què, i tornar-lo a posar disponible és un clic.
   await admin.reload();

@@ -36,7 +36,7 @@ export async function createQuery(input: unknown): Promise<ActionResult> {
   await notifyQueryCreated(query.id);
 
   revalidatePath("/consultes");
-  redirect(`/consultes/${query.id}`);
+  redirect(`/consultes/${query.id}?avis=creada`);
 }
 
 export async function addQueryComment(input: unknown): Promise<ActionResult> {

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/permissions";
 import { quickReportChromebookIncident } from "@/actions/incidents";
 import { chromebookStatusLabels, chromebookStatusVariants, incidentCategoryIcons, incidentCategoryLabels } from "@/lib/labels";
+import { CleanUrlParam } from "@/components/shared/clean-url-param";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { IncidentCategory } from "@prisma/client";
@@ -62,6 +63,15 @@ export default async function QuickChromebookReportPage({
               coordinació TIC.
             </p>
           )}
+          {avis === "ja-reportada" && (
+            <p
+              role="status"
+              className="rounded-md border border-green-300 bg-green-50 p-3 text-center text-sm text-green-900"
+            >
+              Aquesta avaria ja està reportada i la coordinació TIC n&apos;està al cas. Gràcies per avisar!
+            </p>
+          )}
+          <CleanUrlParam name="avis" />
 
           {retired ? (
             <p className="text-center text-sm text-muted-foreground">

@@ -226,6 +226,15 @@ perquè cada consulta queda apuntada. Condicions:
   tenen la seva secció, amb el recompte i l'enllaç.
 - **Importació**: una coma o un punt de més al final del nom del carro ja no en
   crea un altre.
+- **Confirmació en crear una incidència o una consulta**: la fitxa diu que s'ha
+  enviat, un sol cop (recarregar ja no ho torna a dir). Si des del QR es torna a
+  reportar la mateixa avaria, no se'n crea cap altra: a qui ja la tenia se'l porta
+  a la seva, i a qui ve després se li diu que ja està reportada, sense tornar a
+  avisar la coordinació.
+- **El professorat veu els Chromebooks del carro**: en verd o vermell, amb el
+  motiu si no estan disponibles o l'avís que tenen una incidència oberta, i un
+  enllaç per reportar-ne un problema. No veu qui ha obert la incidència ni què hi
+  diu.
 
 ### 2026-09-14
 
