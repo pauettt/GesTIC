@@ -218,6 +218,19 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ## ✅ Fet
 
+### 2026-09-16
+
+- **RLS a totes les taules**: Supabase publica l'esquema `public` amb la seva
+  Data API, i sense RLS qui tingués la clau `anon` del projecte podia llegir i
+  esborrar qualsevol taula —també `Session`, `Account` i els noms de menors de
+  `StudentDeviceRequest`—. Un avís de seguretat de Supabase (2026-09-13) ho va
+  destapar: 32 taules marcades. La Data API s'ha desactivat des del panell, i la
+  migració `20260916100000_rls_a_totes_les_taules` hi posa el pany de dins, sense
+  cap política: així els rols de l'API no hi veuen res, mentre que gesTIC hi
+  entra amb el rol propietari (`postgres`), que se salta RLS. Com que cada taula
+  nova neix sense RLS, `prisma/rls.sql` ho torna a aplicar a cada desplegament de
+  producció. La clau `anon` no s'ha publicat mai enlloc, i no cal canviar-la.
+
 ### 2026-09-15
 
 - **Alumnat fora de gesTIC** (§28): l'aplicació queda bloquejada a la consola de

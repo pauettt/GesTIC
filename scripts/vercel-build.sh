@@ -13,6 +13,9 @@ set -e
 
 if [ "$VERCEL_ENV" = "production" ]; then
   npm run db:deploy
+  # Cada taula nova neix sense RLS, i a Supabase l'esquema `public` és el que
+  # publica la Data API. Això la torna a activar a totes; vegeu prisma/rls.sql.
+  npx prisma db execute --file prisma/rls.sql
 else
   echo "[build] entorn '${VERCEL_ENV:-desconegut}': no s'apliquen migracions"
 fi
