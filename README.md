@@ -79,6 +79,8 @@ El pla gratuït de Supabase no fa còpies diàries, i les dades de producció s�
 BACKUP_DATABASE_URL="<DIRECT_URL del projecte de Supabase>" npm run db:backup
 ```
 
+Ha de ser l'adreça del **port 5432** (*Direct connection* o *Session pooler*), no la del 6543: aquella és el pooler en mode transacció, que no manté la sessió i dona problemes amb les consultes preparades. A Vercel, la del 5432 és `DIRECT_URL` i la del 6543 és `DATABASE_URL`.
+
 Deixa un JSON datat a `backups/` (fora del repositori) amb totes les taules menys les sessions i els testimonis, que caduquen i no serveixen per restaurar res. Sense `BACKUP_DATABASE_URL` copia la base de dades local, cosa que només serveix per comprovar que l'script va bé.
 
 Amb `BACKUP_DIR` el fitxer va directament on es digui, que és el que convé: una còpia al mateix ordinador no és una còpia de seguretat.
