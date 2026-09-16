@@ -8,6 +8,6 @@ export function cartQrPath(cartId: string) {
   return `/q/carro/${cartId}`;
 }
 
-export async function generateQrDataUrl(text: string) {
-  return QRCode.toDataURL(text, { margin: 1, width: 240 });
+export async function generateQrDataUrl(text: string, width = 240) {
+  return QRCode.toDataURL(text, { margin: 1, width });
 }

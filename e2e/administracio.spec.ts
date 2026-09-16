@@ -26,8 +26,10 @@ test.describe("coordinació TIC", () => {
   test.use({ storageState: authFile("admin") });
 
   test("no entra a l'administració", async ({ page }) => {
-    await page.goto("/administracio");
-    await expect(page).toHaveURL(`${BASE_URL}/`);
+    for (const path of ["/administracio", "/administracio/cartell"]) {
+      await page.goto(path);
+      await expect(page, `${path} hauria de tornar a l'inici`).toHaveURL(`${BASE_URL}/`);
+    }
   });
 });
 
@@ -39,6 +41,15 @@ test.describe("superadministració", () => {
     await expect(page.getByRole("heading", { name: "Administració" })).toBeVisible();
     // El servidor de proves arrenca sense correu a propòsit: la pàgina ho ha de dir.
     await expect(page.getByText("Sense configurar: no s'envia cap avís")).toBeVisible();
+  });
+
+  test("imprimeix el cartell de la sala de professors", async ({ page }) => {
+    await page.goto("/administracio");
+    await page.getByRole("link", { name: "Obre el cartell" }).click();
+    await expect(page.getByRole("heading", { name: "Cartell per a la sala de professors" })).toBeVisible();
+    await expect(page.getByAltText("QR de gesTIC")).toBeVisible();
+    // El servidor de proves arrenca sense APP_URL: el QR apuntaria a localhost.
+    await expect(page.getByText("No imprimeixis encara")).toBeVisible();
   });
 
   test("treure l'accés a qui deixa el centre li tanca la sessió, i queda registrat", async ({

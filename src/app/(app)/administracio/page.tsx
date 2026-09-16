@@ -94,6 +94,21 @@ export default async function AdministracioPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Cartell per a la sala de professors</CardTitle>
+          <CardDescription>
+            Un QR per entrar a gesTIC, amb com afegir-la a la pantalla d&apos;inici del mòbil. Surt de
+            l&apos;adreça configurada a <code>APP_URL</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ButtonLink variant="outline" size="sm" href="/administracio/cartell">
+            Obre el cartell
+          </ButtonLink>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Dades personals</CardTitle>
           <CardDescription>
             gesTIC guarda noms de menors i dades del claustre: què s&apos;hi guarda i per què.

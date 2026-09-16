@@ -16,6 +16,7 @@ test.describe("professorat", () => {
       "/panell",
       "/usuaris",
       "/administracio",
+      "/administracio/cartell",
       "/espais",
       "/consergeria",
       "/contrasenyes",

@@ -14,7 +14,7 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Queden tres coses:
+Queden cinc coses:
 
 1. **Importar els carros i els Chromebooks**: *Chromebooks → Importa*, amb el
    full exportat en CSV. Les aules es creen soles amb el número i el nom.
@@ -22,10 +22,18 @@ Queden tres coses:
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
 3. **Programar la Xarxa** (§25) a partir de l'inventari.
+4. **Guardar `VAULT_ENCRYPTION_KEY` fora de l'ordinador i del servidor** (§27).
+   Ara les úniques còpies són a Vercel i al `.env` local. Un cop guardada, al
+   `.env` local se n'hi posa una de pròpia (`openssl rand -base64 32`): les dades
+   de `gestic_dev` són inventades.
+5. **Penjar el cartell a la sala de professors** un cop desplegat:
+   *Administració → Obre el cartell*. Abans, afegir gesTIC a la pantalla d'inici
+   en un Android i en un iPhone i entrar-hi des de la icona. A l'iPhone,
+   l'aplicació instal·lada no comparteix la sessió amb Safari: s'hi entra un cop
+   més.
 
-Per entrar en local cal el login de Google: `AUTH_GOOGLE_ID` i
-`AUTH_GOOGLE_SECRET` al `.env`, i `http://localhost:3000/api/auth/callback/google`
-a les URI de redirecció del client OAuth.
+En local es treballa amb la base de dades `gestic_dev` i el dev login (vegeu el
+README). Producció només la fa servir Vercel.
 
 La resta d'aquesta llista són **decisions preses**: riscos coneguts que s'han
 decidit assumir o ajornar, amb el motiu i el moment de tornar-hi.
@@ -45,10 +53,10 @@ README).
 | ✅ | `ADMIN_EMAILS` | ✅ | ✅ |
 | ✅ | `BLOB_READ_WRITE_TOKEN` | ✅ | ✅ |
 | ✅ | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | ✅ | ✅ |
-| ✅ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ | ✅ |
-| ✅ | `VAULT_ENCRYPTION_KEY`, **la mateixa** que el `.env` local (§27) | ✅ | ✅ (Secret) |
+| ✅ | `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` | ✅ `gestic_dev` | ✅ Supabase |
+| ☐ | `VAULT_ENCRYPTION_KEY`, guardada també fora del servidor (§27) | encara la real: vegeu «Per on seguir» | ✅ (Secret) |
 | ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
-| ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | buides: en local s'entra pel dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
+| ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | en local, també el dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
 
 Tot comprovat el 2026-09-13. Dos avisos per al primer desplegament d'aquests
@@ -293,6 +301,16 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
   `20260915160000_plantes` converteixen el que hi havia escrit en elements de la
   llista, un per nom sense distingir majúscules, i hi enllacen els espais. Les
   plantes queden en ordre alfabètic: cal posar-les en l'ordre de l'edifici.
+- **gesTIC es pot afegir a la pantalla d'inici**: manifest (`src/app/manifest.ts`)
+  i icones pròpies amb el requadre «TIC» de la pantalla d'inici de sessió, que
+  també substitueixen el triangle de Vercel de la pestanya. Totes surten de
+  `scripts/generate-icons.mjs`, que dibuixa les lletres amb traços. El manifest i
+  les icones es poden demanar sense sessió (prova `e2e/instal-lable.spec.ts`).
+- **Cartell per a la sala de professors**: *Administració → Obre el cartell*,
+  només per a superadministració. Un QR a l'adreça d'`APP_URL`, generat al
+  servidor com els dels carros (no caduca ni passa per cap web externa), amb com
+  afegir gesTIC a la pantalla d'inici a Android i a iPhone. Si `APP_URL` no hi és,
+  avisa que no s'imprimeixi.
 
 ### 2026-09-14
 
