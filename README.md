@@ -71,6 +71,24 @@ Amb `ENABLE_DEV_LOGIN="true"` al `.env`, la pantalla d'inici de sessió ofereix 
 
 Cada canvi d'esquema va amb una migració a `prisma/migrations/`, que es genera en local contra `gestic_dev` amb `npm run db:migrate`. En desplegar a producció, [scripts/vercel-build.sh](scripts/vercel-build.sh) les aplica abans del build. Als previews no: a Vercel apunten a la mateixa base de dades que producció.
 
+## Còpies de seguretat
+
+El pla gratuït de Supabase no fa còpies diàries, i les dades de producció són reals. La còpia es fa a mà des d'aquest ordinador:
+
+```bash
+BACKUP_DATABASE_URL="<DIRECT_URL del projecte de Supabase>" npm run db:backup
+```
+
+Deixa un JSON datat a `backups/` (fora del repositori) amb totes les taules menys les sessions i els testimonis, que caduquen i no serveixen per restaurar res. Sense `BACKUP_DATABASE_URL` copia la base de dades local, cosa que només serveix per comprovar que l'script va bé.
+
+Amb `BACKUP_DIR` el fitxer va directament on es digui, que és el que convé: una còpia al mateix ordinador no és una còpia de seguretat.
+
+```bash
+BACKUP_DATABASE_URL="<DIRECT_URL>" BACKUP_DIR="$HOME/Library/CloudStorage/GoogleDrive-<usuari>/La meva unitat/gesTIC" npm run db:backup
+```
+
+**El fitxer porta dades personals, també de menors.** Ha d'anar al Drive del centre (el compte del Workspace), no a un de particular, i al disc que sigui, tractat com el que és.
+
 ## Proves
 
 - **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos, xifrat de les contrasenyes i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
@@ -97,6 +115,7 @@ npx playwright install chromium
 | `npm run db:deploy`  | Aplica les migracions pendents                                  |
 | `npm run db:migrate` | Crea una migració nova (`prisma migrate dev`), només contra `gestic_dev` |
 | `npm run db:seed`    | Carrega dades d'exemple a `gestic_dev`                          |
+| `npm run db:backup`  | Còpia de seguretat de les dades en JSON (vegeu *Còpies de seguretat*) |
 | `npm run db:studio`  | Obre Prisma Studio                                              |
 
 ## Desplegament (Vercel)

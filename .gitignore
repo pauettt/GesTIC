@@ -40,6 +40,10 @@ yarn-error.log*
 # quines variables calen. Abans `.env*` també se l'enduia i no s'havia pujat mai.
 !.env.example
 
+# Còpies de seguretat de les dades reals (npm run db:backup). Porten dades
+# personals, també de menors: no han d'anar mai al repositori.
+/backups/
+
 # vercel
 .vercel
 

@@ -111,41 +111,28 @@ s'indexen, però qui rebi l'enllaç l'obre sense passar per gesTIC. Assumit el
 pugin captures de Classroom amb noms d'alumnes**: llavors tocaria passar a
 blobs privats i firmar les URL a cada pàgina, que no és un canvi petit.
 
-### 12. Producció i desenvolupament comparteixen base de dades
-El `.env` local i Vercel apunten al mateix projecte de Supabase, així que tot el
-que es prova en local va a parar a la base de dades real.
+### 12. Producció i local, cada una amb la seva base de dades
+Fins al 2026-09-15, el `.env` local i Vercel apuntaven al mateix projecte de
+Supabase i tot el que es provava en local anava a parar a les dades reals. **Ja
+no**: en local es treballa amb `gestic_dev` i el projecte de Supabase només el fa
+servir Vercel. Les dues regles que hi havia mentre la compartien —no executar
+`npm run db:migrate` ni `npm run db:seed`— ja no calen: contra `gestic_dev` es
+fan servir amb normalitat.
 
-**Des del 2026-09-15 les dades de producció són reals**: s'hi van buidar totes
-les de prova per ensenyar l'aplicació al claustre. A partir d'aquí no s'hi fan
-proves amb dades inventades, i el `.env` local té `ENABLE_DEV_LOGIN="false"`:
-amb els botons de prova, cada entrada en local tornava a crear comptes
-`@local.test` a producció.
+**El que continua obert són les còpies de seguretat.** El pla gratuït de Supabase
+no en fa de diàries, i des del 2026-09-15 les dades de producció són reals:
+incidències, préstecs i noms de menors. Mentre no es passi al Pro, la còpia es fa
+a mà des de l'ordinador de la coordinació:
 
-**Decidit el 2026-09-13: de moment es prova sobre producció.** El compte de
-Supabase és al pla gratuït, que no deixa tenir més de dos projectes actius, i
-pagar el Pro (25 $/mes) només per tenir-ne un de proves no s'ho val mentre
-l'aplicació no la faci servir ningú més.
+```
+BACKUP_DATABASE_URL="<DIRECT_URL de Vercel>" npm run db:backup
+```
 
-Mentre sigui així, dues regles:
-- **No executar `npm run db:migrate`** (`prisma migrate dev`): si detecta
-  diferències ofereix **resetejar** la base de dades, i esborraria les dades
-  reals. Les migracions noves s'escriuen a mà (es poden generar amb
-  `prisma migrate diff` contra la base de dades local de les proves) i les
-  aplica el desplegament.
-- **No executar `npm run db:seed`**: hi posaria aules, equips i un carro de
-  Chromebooks d'exemple.
+Deixa un JSON datat a `backups/`, fora del repositori, sense sessions ni
+testimonis. Val la pena fer-la abans de cada canvi gros i, si no, un cop al mes.
 
-Les proves automàtiques no hi tenen res a veure: `npm run test:e2e` fa servir
-un PostgreSQL local propi que es buida a cada execució. Això només afecta les
-proves a mà.
-
-**A revisar quan el professorat hi entri de debò**: llavors les proves amb dades
-inventades barrejades amb incidències reals, i els correus de prova a la
-coordinació, ja no són assumibles. Opcions sense pagar: pausar l'altre projecte
-de Supabase si ja no es fa servir (els pausats no compten per al límit), o una
-base de dades PostgreSQL al mateix ordinador. Si mai es passa al Pro, que sigui
-per les còpies de seguretat diàries de les dades reals, que el pla gratuït no
-té, i no pas per les proves.
+**A revisar**: si algun dia es passa al Pro (25 $/mes), que sigui per les còpies
+diàries de les dades reals, no pas per tenir una base de dades de proves.
 
 ### 22. Els préstecs de Chromebooks a l'alumnat es guarden amb el nom, sense caducitat
 Decidit el 2026-09-14: cada equip del pool ha de poder dir quins alumnes l'han
@@ -235,6 +222,15 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
   entra amb el rol propietari (`postgres`), que se salta RLS. Com que cada taula
   nova neix sense RLS, `prisma/rls.sql` ho torna a aplicar a cada desplegament de
   producció. La clau `anon` no s'ha publicat mai enlloc, i no cal canviar-la.
+  Després d'això, l'advisor de Supabase mostra 32 avisos INFO «RLS enabled, no
+  policy»: **és l'estat correcte i no s'hi han d'afegir polítiques**, perquè cap
+  política vol dir que ningú no hi entra per l'API.
+- **Còpia de seguretat de les dades** (`npm run db:backup`): treu totes les
+  taules en un JSON datat a `backups/` (fora del repositori), sense sessions ni
+  testimonis, i avisa que porta dades de menors. Es fa amb Prisma i no amb
+  `pg_dump`, que es nega a funcionar si la versió de PostgreSQL del servidor no
+  coincideix amb la de l'ordinador. Les taules surten de l'esquema: una de nova
+  hi entra sola. Vegeu el §12.
 
 ### 2026-09-15
 
