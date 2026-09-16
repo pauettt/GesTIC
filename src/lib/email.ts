@@ -46,9 +46,9 @@ export async function sendEmail({
   html: string;
 }): Promise<EmailResult> {
   // Els comptes del dev login porten adreces @….test, un domini reservat que no
-  // pot rebre correu (RFC 2606). Mentre desenvolupament i producció comparteixin
-  // base de dades surten a les llistes de coordinació i de professorat, i sense
-  // aquest filtre cada avís hi rebotaria i tornaria a la bústia d'enviament.
+  // pot rebre correu (RFC 2606). En local, amb el SMTP del centre configurat,
+  // sense aquest filtre cada avís a aquests comptes hi rebotaria i tornaria a la
+  // bústia d'enviament.
   const recipients = (Array.isArray(to) ? to : [to]).filter(
     (address) => !address.toLowerCase().endsWith(".test"),
   );

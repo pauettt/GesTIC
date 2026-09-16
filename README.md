@@ -14,13 +14,15 @@ Què falta, què s'ha fet i per què és a [PENDENTS.md](PENDENTS.md).
 
 ## Configuració inicial
 
-### 1. Base de dades (Supabase)
+### 1. Base de dades de producció (Supabase)
 
 1. Crea un projecte a [supabase.com](https://supabase.com).
 2. A **Project Settings → Database → Connection string**:
    - Copia la connexió en mode **Transaction pooler** (port `6543`) → `DATABASE_URL`.
    - Copia la connexió en mode **Direct connection** (port `5432`) → `DIRECT_URL`.
 3. Substitueix `[YOUR-PASSWORD]` per la contrasenya real de la base de dades del projecte.
+
+Aquestes dues adreces només van a Vercel. En local es treballa amb una base de dades pròpia (vegeu *Desenvolupament local*).
 
 ### 2. Autenticació (Google Workspace)
 
@@ -48,25 +50,33 @@ npx auth secret
 
 ## Desenvolupament local
 
+En local es treballa amb una base de dades pròpia, `gestic_dev`, al PostgreSQL de l'ordinador (per exemple, `brew install postgresql@16`). **Mai no s'hi posa la de Supabase**: les dades de producció són reals.
+
 ```bash
 npm install
+createdb gestic_dev
+```
+
+Al `.env`, `DATABASE_URL` i `DIRECT_URL` han d'apuntar a `postgresql://<usuari>@localhost:5432/gestic_dev`. Després:
+
+```bash
+npm run db:deploy   # aplica les migracions
+npm run db:seed     # aules, equips i un carro d'exemple
 npm run dev
 ```
 
 Amb `ENABLE_DEV_LOGIN="true"` al `.env`, la pantalla d'inici de sessió ofereix botons per entrar amb cada rol sense passar per Google. En producció no s'activa mai, encara que la variable hi sigui.
 
-> **Compte:** ara mateix desenvolupament i producció comparteixen la mateixa base de dades (PENDENTS.md §12). Tot el que facis en local ho fas sobre les dades reals. No executis `npm run db:migrate` ni `npm run db:seed` fins que desenvolupament en tingui una de pròpia.
-
 ## Migracions
 
-Cada canvi d'esquema va amb una migració a `prisma/migrations/`. En desplegar a producció, [scripts/vercel-build.sh](scripts/vercel-build.sh) les aplica abans del build. Als previews no, perquè apuntarien a la mateixa base de dades.
+Cada canvi d'esquema va amb una migració a `prisma/migrations/`, que es genera en local contra `gestic_dev` amb `npm run db:migrate`. En desplegar a producció, [scripts/vercel-build.sh](scripts/vercel-build.sh) les aplica abans del build. Als previews no: a Vercel apunten a la mateixa base de dades que producció.
 
 ## Proves
 
 - **`npm test`**: proves unitàries (Vitest) de les regles que fan mal si fallen —dates i curs escolar, estat dels Chromebooks, préstecs, claus, permisos, xifrat de les contrasenyes i validacions—. Triguen menys d'un segon i no toquen cap base de dades.
 - **`npm run test:e2e`**: proves end-to-end (Playwright) que recorren l'aplicació amb cada rol: permisos, incidències, QR, préstec a l'alumnat, reserves, claus, préstecs, cites, tutorials, contrasenyes i importació de Chromebooks. Compilen l'aplicació i l'executen contra un **PostgreSQL local** (`gestic_e2e`) que es buida i es torna a omplir a cada execució. No envien correus ni pugen fitxers, i no arrenquen si la base de dades no és local i de proves.
 
-Per preparar-les el primer cop cal PostgreSQL a l'ordinador (per exemple, `brew install postgresql@16`):
+Per preparar-les el primer cop:
 
 ```bash
 createdb gestic_e2e
@@ -85,17 +95,17 @@ npx playwright install chromium
 | `npm run test:watch` | Proves unitàries, tornant-les a passar a cada canvi             |
 | `npm run test:e2e`   | Proves end-to-end (vegeu *Proves*)                              |
 | `npm run db:deploy`  | Aplica les migracions pendents                                  |
-| `npm run db:migrate` | Crea una migració nova (`prisma migrate dev`); vegeu l'avís de dalt |
-| `npm run db:seed`    | Carrega dades d'exemple; vegeu l'avís de dalt                   |
+| `npm run db:migrate` | Crea una migració nova (`prisma migrate dev`), només contra `gestic_dev` |
+| `npm run db:seed`    | Carrega dades d'exemple a `gestic_dev`                          |
 | `npm run db:studio`  | Obre Prisma Studio                                              |
 
 ## Desplegament (Vercel)
 
 1. Importa el repositori a [Vercel](https://vercel.com/new).
-2. Configura les variables de `.env.example` a **Project Settings → Environment Variables**, totes excepte `ENABLE_DEV_LOGIN`.
+2. Configura les variables de `.env.example` a **Project Settings → Environment Variables**, totes excepte `ENABLE_DEV_LOGIN`. `DATABASE_URL` i `DIRECT_URL` són les de Supabase.
 3. Afegeix el domini definitiu a les URI de redirecció autoritzades de Google Cloud, i posa'l a `APP_URL` **abans d'imprimir cap etiqueta QR**.
 4. `vercel.json` ja programa els dos crons (`/api/cron/loan-reminders` i `/api/cron/keep-alive`); sense `CRON_SECRET` no s'executen.
-5. Afegeix `VAULT_ENCRYPTION_KEY` **amb el mateix valor que el `.env` local**, perquè comparteixen base de dades. Guarda-la també fora del servidor: sense ella, les contrasenyes desades no es poden recuperar.
+5. Afegeix `VAULT_ENCRYPTION_KEY`, generada un sol cop, i guarda-la també fora del servidor: sense ella, les contrasenyes desades no es poden recuperar. En local se'n fa servir una altra.
 
 ## Rols
 

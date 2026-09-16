@@ -36,8 +36,9 @@ export async function sendTestEmail(): Promise<ActionResult> {
 /**
  * Esborra els comptes de prova (`@local.test`, els del dev login) i tot el que
  * en penja: incidències amb les seves fotos, préstecs, reserves, claus, cites,
- * consultes… És el que va quedant a la base de dades de producció mentre
- * desenvolupament i producció la comparteixen (PENDENTS.md §10 i §12).
+ * consultes… Va néixer quan desenvolupament i producció compartien base de
+ * dades i s'hi anaven quedant. Des que local té la seva, a producció no n'hi
+ * hauria d'haver cap: es manté per si mai se n'hi cola algun.
  *
  * Només toca comptes amb aquesta adreça, que cap persona real del centre no pot
  * tenir. El que no penja de cap compte —conserges, claus, equips o aules
