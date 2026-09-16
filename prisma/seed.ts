@@ -154,22 +154,27 @@ async function main() {
   // frenava i cada execució les tornava a afegir. Només es posen si no n'hi ha cap.
   const faqCount = await db.faqEntry.count();
   if (faqCount === 0) {
+    const [faqChromebooks, faqIncidencies] = await Promise.all(
+      ["Chromebooks", "Incidències"].map((name, order) =>
+        db.faqCategory.upsert({ where: { name }, update: {}, create: { name, order } }),
+      ),
+    );
     await db.faqEntry.createMany({
       data: [
         {
-          category: "Chromebooks",
+          categoryId: faqChromebooks.id,
           question: "Com reservo un carro de Chromebooks?",
           answer: "Vés a l'apartat Chromebooks, obre el carro i clica una sessió lliure de la graella.",
           order: 1,
         },
         {
-          category: "Chromebooks",
+          categoryId: faqChromebooks.id,
           question: "Què faig si un Chromebook no s'engega?",
           answer: "Escaneja el codi QR de l'etiqueta o reporta-ho des d'Incidències TIC, indicant el carro i el Chromebook afectat.",
           order: 2,
         },
         {
-          category: "Incidències",
+          categoryId: faqIncidencies.id,
           question: "Quant triga a resoldre's una incidència?",
           answer: "Depèn de la prioritat i disponibilitat de material, però el coordinador TIC en farà seguiment i podràs veure'n l'estat en tot moment.",
           order: 1,

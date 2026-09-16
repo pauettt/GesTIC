@@ -563,14 +563,27 @@ model IncidentAttachment {
 // Dubtes del professorat (FAQ)
 // ---------------------------------------------------------------------------
 
-model FaqEntry {
-  id       String @id @default(cuid())
-  question String
-  answer   String @db.Text
-  category String
-  order    Int    @default(0)
+/// Secció dels Dubtes freqüents. Com les categories de Tutorials, Inventari i
+/// Contrasenyes: una llista que manté la coordinació, i no un text que
+/// s'escriu a cada pregunta.
+model FaqCategory {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int    @default(0)
 
-  @@index([category])
+  entries FaqEntry[]
+}
+
+model FaqEntry {
+  id         String @id @default(cuid())
+  question   String
+  answer     String @db.Text
+  categoryId String
+  order      Int    @default(0)
+
+  category FaqCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
 }
 
 // ---------------------------------------------------------------------------

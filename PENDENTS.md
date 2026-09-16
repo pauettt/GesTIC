@@ -215,6 +215,16 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-16
 
+- **Categories dels dubtes freqüents, d'una llista**: s'escrivien a mà a cada
+  pregunta, i una errada d'escriptura creava una secció nova sense que ningú se
+  n'adonés. Ara es trien d'un desplegable i es gestionen des del botó
+  *Categories*, amb el mateix diàleg compartit que Tutorials, Inventari,
+  Contrasenyes, Edificis i Plantes: ordenar, reanomenar i eliminar (aquí
+  eliminar arrossega les preguntes, i el diàleg avisa de quantes). Migració
+  `20260916210000_categories_de_dubtes`, que converteix el que hi havia escrit
+  en elements de la llista, un per nom sense distingir majúscules, i hi enllaça
+  les preguntes. A producció no n'hi havia cap. Prova `e2e/dubtes.spec.ts`, que
+  abans no existia.
 - **Fora dels cercadors**: `src/app/robots.ts` demana que no s'hi entri i la
   capçalera `X-Robots-Tag: noindex, nofollow` de `next.config.ts` ho rebla, per si
   un cercador hi arriba des d'un enllaç de fora. L'única pàgina que en podia

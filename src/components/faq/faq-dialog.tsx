@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
 
 import { upsertFaq } from "@/actions/faq";
 import { useServerAction } from "@/hooks/use-server-action";
+import { toSelectItems } from "@/lib/utils";
 import { upsertFaqSchema, type UpsertFaqInput } from "@/lib/validations/faq";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,24 +19,32 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
+type Category = { id: string; name: string };
+
 export function FaqDialog({
+  categories,
   faq,
   trigger,
 }: {
+  categories: Category[];
   faq?: UpsertFaqInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const {
+    control,
     register,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<UpsertFaqInput>({
     resolver: zodResolver(upsertFaqSchema),
-    defaultValues: faq ?? { question: "", answer: "", category: "General", order: "" },
+    // Una pregunta nova neix a la primera categoria: així el desplegable mai no
+    // surt buit i no cal triar res per desar.
+    defaultValues: faq ?? { question: "", answer: "", categoryId: categories[0]?.id ?? "", order: "" },
   });
 
   const { run, isPending } = useServerAction(upsertFaq, {
@@ -66,10 +75,31 @@ export function FaqDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => run(values))}>
           <FieldGroup>
-            <Field data-invalid={Boolean(errors.category)}>
-              <FieldLabel htmlFor="category">Categoria</FieldLabel>
-              <Input id="category" {...register("category")} />
-              <FieldError errors={errors.category ? [errors.category] : undefined} />
+            <Field data-invalid={Boolean(errors.categoryId)}>
+              <FieldLabel htmlFor="faq-category">Categoria</FieldLabel>
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={toSelectItems(categories, (c) => c.id, (c) => c.name)}
+                  >
+                    <SelectTrigger id="faq-category" className="w-full">
+                      <SelectValue placeholder="Selecciona una categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldError errors={errors.categoryId ? [errors.categoryId] : undefined} />
             </Field>
             <Field data-invalid={Boolean(errors.question)}>
               <FieldLabel htmlFor="question">Pregunta</FieldLabel>
