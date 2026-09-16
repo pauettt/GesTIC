@@ -87,7 +87,22 @@ Amb `BACKUP_DIR` el fitxer va directament on es digui, que és el que convé: un
 BACKUP_DATABASE_URL="<DIRECT_URL>" BACKUP_DIR="$HOME/Library/CloudStorage/GoogleDrive-<usuari>/La meva unitat/gesTIC" npm run db:backup
 ```
 
-**El fitxer porta dades personals, també de menors.** Ha d'anar al Drive del centre (el compte del Workspace), no a un de particular, i al disc que sigui, tractat com el que és.
+**El fitxer porta dades personals, també de menors.** Ha d'anar a un lloc del centre —el NAS, el Drive del Workspace—, mai a un compte particular, i tractat com el que és.
+
+### Cada setmana, sense pensar-hi
+
+A l'ordinador de la coordinació hi ha una tasca que la fa cada dilluns a les 9. Si el Mac dorm, macOS l'executa en despertar-lo; si està apagat, a l'arrencada següent: arriba tard, però no es perd. Per instal·lar-la:
+
+```bash
+sed "s|__RUTA_DEL_PROJECTE__|$PWD|" scripts/com.gestic.backup.plist > ~/Library/LaunchAgents/com.gestic.backup.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.gestic.backup.plist
+```
+
+Abans cal tenir `BACKUP_DATABASE_URL` i `BACKUP_DIR` al `.env`: sense la primera, la tasca no fa res i ho diu al registre, en comptes de copiar la base de dades local i semblar que ha anat bé.
+
+Per provar-la sense esperar al dilluns, `launchctl kickstart -k gui/$(id -u)/com.gestic.backup`. El registre és a `~/Library/Logs/gestic-backup.log`, i per treure-la, `launchctl bootout gui/$(id -u)/com.gestic.backup`.
+
+Això depèn que el Mac estigui engegat. Si algun dia ha de ser independent del tot, el lloc natural és el NAS mateix (Task Scheduler del DSM), que no s'apaga.
 
 ## Proves
 

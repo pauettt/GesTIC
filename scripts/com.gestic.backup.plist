@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Plantilla de la tasca setmanal de còpia de seguretat. No s'instal·la sola:
+  vegeu l'apartat *Còpies de seguretat* del README, que diu com posar-hi la ruta
+  del projecte i carregar-la.
+
+  Cada dilluns a les 9. Si el Mac dorm a aquella hora, macOS l'executa quan es
+  desperta; si està apagat, a l'arrencada següent. Arribarà tard, però no es
+  perd.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.gestic.backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>__RUTA_DEL_PROJECTE__/scripts/backup-programat.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+</dict>
+</plist>

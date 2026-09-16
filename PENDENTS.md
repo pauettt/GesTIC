@@ -128,8 +128,16 @@ a mà des de l'ordinador de la coordinació:
 BACKUP_DATABASE_URL="<DIRECT_URL de Vercel>" npm run db:backup
 ```
 
-Deixa un JSON datat a `backups/`, fora del repositori, sense sessions ni
-testimonis. Val la pena fer-la abans de cada canvi gros i, si no, un cop al mes.
+Deixa un JSON datat sense sessions ni testimonis. A l'ordinador de la coordinació
+va a parar al Synology Drive (`BACKUP_DIR` al `.env`), que el sincronitza amb el
+NAS, i una tasca de `launchd` la fa cada dilluns a les 9 (vegeu el README). Si el
+Mac està apagat, s'executa a l'arrencada següent: arriba tard, però no es perd.
+Val la pena fer-la a mà, a més, abans de cada canvi gros.
+
+**Depèn que el Mac s'engegui.** Si algun dia ha de ser independent, toca fer-ho
+al NAS (Task Scheduler del DSM), que no s'apaga. L'altra opció, un cron a Vercel
+cap a un Blob privat, es va descartar: ja hi ha 2 crons i el pla gratuït s'hi
+queda, i la còpia viuria al mateix proveïdor que l'aplicació.
 
 **A revisar**: si algun dia es passa al Pro (25 $/mes), que sigui per les còpies
 diàries de les dades reals, no pas per tenir una base de dades de proves.
