@@ -5,6 +5,10 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // gesTIC és de portes endins i no ha de sortir a cap cerca. Vegeu
+  // src/app/robots.ts: el fitxer demana que no s'hi entri i això ho rebla, perquè
+  // un cercador que hi arribi per un enllaç de fora tampoc no l'indexi.
+  { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 
 const nextConfig: NextConfig = {

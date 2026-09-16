@@ -220,6 +220,11 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-16
 
+- **Fora dels cercadors**: `src/app/robots.ts` demana que no s'hi entri i la
+  capçalera `X-Robots-Tag: noindex, nofollow` de `next.config.ts` ho rebla, per si
+  un cercador hi arriba des d'un enllaç de fora. L'única pàgina que en podia
+  sortir era la d'inici de sessió, perquè la resta hi redirigeix. Prova
+  `e2e/buscadors.spec.ts`, sense sessió, com hi aniria un cercador.
 - **RLS a totes les taules**: Supabase publica l'esquema `public` amb la seva
   Data API, i sense RLS qui tingués la clau `anon` del projecte podia llegir i
   esborrar qualsevol taula —també `Session`, `Account` i els noms de menors de
