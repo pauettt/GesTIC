@@ -6,6 +6,9 @@ test.use({ storageState: authFile("professor") });
 
 test("un préstec que ja ha començat no es pot cancel·lar; un de pendent sí", async ({ page }) => {
   await page.goto("/inventari");
+  // El professorat no hi veu l'inventari, sinó el que pot demanar.
+  await expect(page.getByRole("heading", { name: "Préstec de material" })).toBeVisible();
+  await expect(page).toHaveTitle(/^Préstec de material/);
 
   const started = page.locator("tr", { hasText: "ThinkPad E2E" }).filter({ hasText: "Aprovada" });
   await expect(started).toBeVisible();

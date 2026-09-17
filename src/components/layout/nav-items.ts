@@ -23,6 +23,8 @@ import { canAccessStudentLoans, isAdmin, isConcierge, isSuperAdmin } from "@/lib
 export type NavItem = {
   href: Route;
   label: string;
+  /** Nom que veu el professorat, quan la seva pantalla no és la de la coordinació. */
+  professorLabel?: string;
   icon: typeof HomeIcon;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
@@ -35,7 +37,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Inici", icon: HomeIcon },
   { href: "/incidencies", label: "Incidències TIC", icon: TicketIcon },
-  { href: "/inventari", label: "Inventari TIC", icon: PackageIcon },
+  { href: "/inventari", label: "Inventari TIC", professorLabel: "Préstec de material", icon: PackageIcon },
   { href: "/chromebooks", label: "Carros", icon: LaptopIcon },
   { href: "/alumnat", label: "Préstec a l'alumnat", icon: BackpackIcon, tutorsOnly: true },
   { href: "/espais", label: "Aules i espais", icon: MapPinIcon, adminOnly: true },
@@ -57,7 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 export function navItemsFor(user: { role: Role; isTutor: boolean }) {
   const { role } = user;
-  return NAV_ITEMS.filter((item) => {
+  const items = NAV_ITEMS.filter((item) => {
     // Consergeria comparteix un compte al taulell i només fa una cosa: el
     // control de claus. Només veu allò on el seu rol surt explícitament, en
     // comptes d'anar amagant-li seccions una per una.
@@ -68,4 +70,6 @@ export function navItemsFor(user: { role: Role; isTutor: boolean }) {
     if (item.adminOnly) return isAdmin(role);
     return true;
   });
+  if (isAdmin(role)) return items;
+  return items.map((item) => (item.professorLabel ? { ...item, label: item.professorLabel } : item));
 }

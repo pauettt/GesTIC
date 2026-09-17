@@ -30,7 +30,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export const metadata = { title: "Inventari TIC" };
+// La pestanya diu el que hi veu la majoria, el professorat. Un títol per rol
+// voldria `generateMetadata` amb la sessió, i llavors Next envia el títol després
+// de la pàgina: provant-ho, el servidor s'omplia d'errors "The destination stream
+// closed early".
+export const metadata = { title: "Préstec de material" };
 
 export default async function InventariPage({ searchParams }: PageProps<"/inventari">) {
   const user = await requireUser();

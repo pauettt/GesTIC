@@ -45,6 +45,13 @@ describe("menú per rol", () => {
     }
   });
 
+  it("el professorat veu el préstec de material on la coordinació veu l'inventari", () => {
+    const label = (role: Role) => navItemsFor({ role, isTutor: false }).find((item) => item.href === "/inventari")?.label;
+    expect(label("PROFESSOR")).toBe("Préstec de material");
+    expect(label("ADMIN")).toBe("Inventari TIC");
+    expect(label("SUPER_ADMIN")).toBe("Inventari TIC");
+  });
+
   it("el tutor/a veu el préstec a l'alumnat, a part dels carros", () => {
     expect(hrefs("PROFESSOR", true)).toEqual(expect.arrayContaining(["/chromebooks", "/alumnat"]));
   });

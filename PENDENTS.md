@@ -247,6 +247,13 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
   *Administració* i l'avís de l'inventari hi porten. Els correus enviats abans
   porten a *Carros*, on ja no surt. La importació de Chromebooks continua a
   *Carros*, però els equips sense carro surten al préstec.
+- **«Préstec de material» per al professorat**: a `/inventari` el professorat
+  només hi veu el material que pot demanar i les seves sol·licituds, i el nom
+  d'«Inventari TIC» no ho deia. Ara el menú, el títol i la targeta de l'inici hi
+  diuen «Préstec de material»; la coordinació continua veient «Inventari TIC».
+  L'adreça no canvia. La pestanya del navegador diu «Préstec de material» per a
+  tothom: fer-la dependre del rol feia que Next enviés el títol després de la
+  pàgina, i el servidor s'omplia d'errors "The destination stream closed early".
 
 ### 2026-09-16
 

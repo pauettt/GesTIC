@@ -30,9 +30,9 @@ export function LoanableItemsView({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Inventari TIC</h1>
+        <h1 className="text-2xl font-semibold">Préstec de material</h1>
         <p className="text-muted-foreground">
-          Material prestable disponible per demanar en préstec.
+          Demana el que necessitis per als dies que calgui. La coordinació TIC aprova cada préstec.
         </p>
       </div>
 

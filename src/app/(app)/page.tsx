@@ -26,6 +26,8 @@ const MODULE_CARDS: Array<{
   title: string;
   description: string;
   icon: typeof TicketIcon;
+  /** El que en veu el professorat, quan la seva pantalla no és la de la coordinació. */
+  professor?: { title: string; description: string };
   /** Només per a tutors/es: la resta del professorat no hi pot fer res. */
   tutorsOnly?: boolean;
 }> = [
@@ -40,6 +42,10 @@ const MODULE_CARDS: Array<{
     title: "Inventari i préstecs",
     description: "Consulta l'equipament del centre i demana material en préstec.",
     icon: PackageIcon,
+    professor: {
+      title: "Préstec de material",
+      description: "Demana material del centre en préstec i segueix com van les teves sol·licituds.",
+    },
   },
   {
     href: "/chromebooks",
@@ -314,13 +320,14 @@ export default async function HomePage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULE_CARDS.filter((item) => !item.tutorsOnly || user.isTutor).map((item) => {
           const Icon = item.icon;
+          const { title, description } = !coordinator && item.professor ? item.professor : item;
           return (
             <Link key={item.href} href={item.href}>
               <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/40">
                 <CardHeader>
                   <Icon className="size-6 text-primary" />
-                  <CardTitle className="mt-2">{item.title}</CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
+                  <CardTitle className="mt-2">{title}</CardTitle>
+                  <CardDescription>{description}</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
