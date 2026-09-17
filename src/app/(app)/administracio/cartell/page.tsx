@@ -85,7 +85,7 @@ export default async function CartellPage() {
           <p className="mt-1 text-lg text-neutral-600 print:mt-2 print:text-2xl">{address}</p>
         </div>
 
-        <p className="text-lg print:text-2xl">Incidències · Carros · Cites · Consultes · Dubtes i tutorials</p>
+        <p className="text-lg print:text-2xl">Incidències · Carros · Cites · Peticions i consultes · Dubtes i tutorials</p>
 
         <div className="grid w-full gap-4 border-t border-neutral-300 pt-6 text-left sm:grid-cols-2 print:grid-cols-2 print:gap-x-8 print:pt-[0.8cm] print:text-base">
           <p className="text-center text-lg font-semibold sm:col-span-2 print:col-span-2 print:text-2xl">

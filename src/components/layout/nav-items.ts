@@ -43,7 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/espais", label: "Aules i espais", icon: MapPinIcon, adminOnly: true },
   { href: "/cites", label: "Cites", icon: CalendarCheckIcon },
   { href: "/dubtes", label: "Dubtes freqüents", icon: HelpCircleIcon },
-  { href: "/consultes", label: "Consultes", icon: MessageCircleQuestionIcon },
+  { href: "/consultes", label: "Peticions i consultes", icon: MessageCircleQuestionIcon },
   { href: "/tutorials", label: "Tutorials", icon: SquarePlayIcon },
   {
     href: "/consergeria",

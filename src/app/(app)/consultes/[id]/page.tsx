@@ -35,19 +35,19 @@ export default async function ConsultaDetailPage({ params, searchParams }: PageP
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
         <Link href="/consultes" className="text-sm text-muted-foreground hover:underline">
-          &larr; Totes les consultes
+          &larr; Peticions i consultes
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{query.title}</h1>
           <Badge variant={queryStatusVariants[query.status]}>{queryStatusLabels[query.status]}</Badge>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Preguntada per {query.author.name ?? query.author.email} el {formatDate(query.createdAt)}
+          Feta per {query.author.name ?? query.author.email} el {formatDate(query.createdAt)}
         </p>
       </div>
 
       {avis === "creada" && (
-        <SuccessNotice>Consulta enviada. La coordinació TIC te respondrà aquí mateix.</SuccessNotice>
+        <SuccessNotice>Enviada. La coordinació TIC te respondrà aquí mateix.</SuccessNotice>
       )}
       <CleanUrlParam name="avis" />
 

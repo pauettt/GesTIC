@@ -26,7 +26,7 @@ const STATUS_FILTERS: { value: QueryStatus | "TOTES"; label: string }[] = [
   { value: "TANCADA", label: "Tancades" },
 ];
 
-export const metadata = { title: "Consultes" };
+export const metadata = { title: "Peticions i consultes" };
 
 export default async function ConsultesPage({ searchParams }: PageProps<"/consultes">) {
   const user = await requireUser();
@@ -46,16 +46,16 @@ export default async function ConsultesPage({ searchParams }: PageProps<"/consul
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Consultes</h1>
+          <h1 className="text-2xl font-semibold">Peticions i consultes</h1>
           <p className="text-muted-foreground">
             {isAdmin(user.role)
-              ? "Dubtes d'ús que ha plantejat el professorat."
-              : "Les consultes que has fet."}
+              ? "El que el professorat demana o pregunta a la coordinació TIC."
+              : "El que has demanat o preguntat a la coordinació TIC."}
           </p>
         </div>
         <ButtonLink href="/consultes/nova">
           <PlusIcon className="size-4" />
-          Fes una pregunta
+          Nova petició o consulta
         </ButtonLink>
       </div>
 

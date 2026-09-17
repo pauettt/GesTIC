@@ -328,7 +328,7 @@ export function buildLoanOverdueEmail({
 }
 
 // ---------------------------------------------------------------------------
-// Consultes
+// Peticions i consultes
 // ---------------------------------------------------------------------------
 
 export function buildQueryAnsweredEmail({
@@ -343,10 +343,10 @@ export function buildQueryAnsweredEmail({
   url: string;
 }) {
   return {
-    subject: `Resposta a la teva consulta: ${title}`,
+    subject: `Resposta de la coordinació TIC: ${title}`,
     ...layout({
-      intro: `${answeredBy} ha respost la teva consulta.`,
-      rows: [["Consulta", title]],
+      intro: `${answeredBy} t'ha respost.`,
+      rows: [["Assumpte", title]],
       quote: { label: "Resposta", body },
       cta: { label: "Veure la conversa", url },
       footer: "Pots continuar la conversa responent des de gesTIC.",
@@ -366,15 +366,15 @@ export function buildQueryCreatedEmail({
   url: string;
 }) {
   return {
-    subject: `Nova consulta: ${title}`,
+    subject: `Nova petició o consulta: ${title}`,
     ...layout({
-      intro: `${authorName} ha fet una consulta a la coordinació TIC.`,
+      intro: `${authorName} ha escrit a la coordinació TIC.`,
       rows: [
-        ["Consulta", title],
+        ["Assumpte", title],
         ["Feta per", authorName],
       ],
       quote: { label: "Descripció", body: description },
-      cta: { label: "Respondre la consulta", url },
+      cta: { label: "Respondre", url },
     }),
   };
 }
@@ -391,11 +391,11 @@ export function buildQueryRepliedEmail({
   url: string;
 }) {
   return {
-    subject: `Nova resposta a la consulta: ${title}`,
+    subject: `Nova resposta: ${title}`,
     ...layout({
-      intro: `${authorName} ha tornat a escriure a la seva consulta.`,
+      intro: `${authorName} ha tornat a escriure.`,
       rows: [
-        ["Consulta", title],
+        ["Assumpte", title],
         ["Feta per", authorName],
       ],
       quote: { label: "Missatge", body },

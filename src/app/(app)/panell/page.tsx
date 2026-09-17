@@ -85,9 +85,9 @@ export default async function PanellPage() {
         />
 
         <WorkQueue
-          title="Consultes sense tancar"
+          title="Peticions i consultes sense tancar"
           icon={MessageCircleQuestionIcon}
-          empty="No hi ha consultes obertes."
+          empty="No n'hi ha cap d'oberta."
           items={work.openQueries.map((query) => ({
             id: query.id,
             href: `/consultes/${query.id}` as Route,

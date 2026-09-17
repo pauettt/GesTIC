@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/permissions";
 import { QueryForm } from "@/components/queries/query-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata = { title: "Nova consulta" };
+export const metadata = { title: "Nova petició o consulta" };
 
 export default async function NovaConsultaPage() {
   await requireUser();
@@ -11,7 +11,7 @@ export default async function NovaConsultaPage() {
     <div className="mx-auto max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Fes una pregunta</CardTitle>
+          <CardTitle>Nova petició o consulta</CardTitle>
         </CardHeader>
         <CardContent>
           <QueryForm />

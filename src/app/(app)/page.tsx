@@ -68,8 +68,8 @@ const MODULE_CARDS: Array<{
   },
   {
     href: "/consultes",
-    title: "Consultes",
-    description: "Pregunta directament a la coordinació TIC i fes-ne seguiment.",
+    title: "Peticions i consultes",
+    description: "Demana o pregunta directament a la coordinació TIC i fes-ne seguiment.",
     icon: MessageCircleQuestionIcon,
   },
   {

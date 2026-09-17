@@ -254,6 +254,12 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
   L'adreça no canvia. La pestanya del navegador diu «Préstec de material» per a
   tothom: fer-la dependre del rol feia que Next enviés el títol després de la
   pàgina, i el servidor s'omplia d'errors "The destination stream closed early".
+- **«Peticions i consultes»**: el professorat també hi demana coses a la
+  coordinació, no només pregunta dubtes. El menú, el títol, la targeta de
+  l'inici, el panell i el cartell en diuen així, i el botó és «Nova petició o
+  consulta». El formulari pregunta «Què necessites?», i els correus ja no diuen
+  «la teva consulta»: porten l'assumpte. L'adreça continua sent `/consultes`.
+  Des de *Dubtes freqüents* el botó continua dient «Fes una pregunta».
 
 ### 2026-09-16
 

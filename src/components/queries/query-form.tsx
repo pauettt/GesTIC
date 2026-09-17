@@ -29,10 +29,10 @@ export function QueryForm() {
     <form onSubmit={handleSubmit((values) => run(values))}>
       <FieldGroup>
         <Field data-invalid={Boolean(errors.title)}>
-          <FieldLabel htmlFor="query-title">De què tracta la teva consulta?</FieldLabel>
+          <FieldLabel htmlFor="query-title">Què necessites?</FieldLabel>
           <Input
             id="query-title"
-            placeholder="Ex: Com comparteixo un document de Drive amb els alumnes?"
+            placeholder="Ex: Instal·lar GeoGebra a l'aula 203, o com comparteixo un Drive amb el grup"
             {...register("title")}
           />
           <FieldError errors={errors.title ? [errors.title] : undefined} />
@@ -43,7 +43,7 @@ export function QueryForm() {
           <Textarea
             id="query-description"
             rows={5}
-            placeholder="Quina eina fas servir, què has provat i què esperaves que passés."
+            placeholder="Si és una petició, per a quan ho necessites. Si és un dubte, quina eina fas servir, què has provat i què esperaves que passés."
             {...register("description")}
           />
           <FieldError errors={errors.description ? [errors.description] : undefined} />
@@ -54,7 +54,7 @@ export function QueryForm() {
             Cancel·la
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Enviant…" : "Envia la consulta"}
+            {isPending ? "Enviant…" : "Envia"}
           </Button>
         </div>
       </FieldGroup>
