@@ -73,6 +73,27 @@ canvis:
 
 ## 🧹 Per fer
 
+### 29. Dades d'exemple a producció, per treure
+El 2026-09-17 s'hi van posar dades d'exemple perquè el claustre pugui provar
+l'aplicació plena —préstecs, reserves, incidències, claus i cites— en comptes de
+trobar-se-la buida. Les crea `scripts/demo-data.ts`.
+
+**S'han de treure abans que l'aplicació sigui la de debò**, amb:
+
+```
+DEMO_DATABASE_URL="<DIRECT_URL>" npm run db:demo -- --treu
+```
+
+Es reconeixen perquè les persones inventades porten adreça `@local.test` (i tot
+el que en penja cau amb elles) i la resta porta `DEMO-` al número de sèrie o de
+clau. No toca les aules, els carros, els Chromebooks ni les categories, que són
+de debò: les dades d'exemple només s'hi pengen.
+
+**El que sí que quedarà** és el que el professorat hagi fet provant amb el seu
+compte real: aquelles reserves, incidències i consultes no les treu l'script, i
+s'han de repassar a mà. Val la pena fer una còpia (`npm run db:backup`) abans de
+la neteja.
+
 ### 23. Vista de les incidències: per decidir
 El 2026-09-14 va sortir la idea d'un diagrama de Gantt o un cronograma per
 gestionar-les. Un Gantt no hi encaixa: les incidències no tenen data prevista ni

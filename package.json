@@ -15,6 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:backup": "tsx scripts/backup.ts",
+    "db:demo": "tsx scripts/demo-data.ts",
     "db:studio": "prisma studio"
   },
   "comment:overrides": "next-auth declara nodemailer com a peer opcional ^7||^8, però aquesta versió té una vulnerabilitat coneguda. Nosaltres no fem servir el seu proveïdor Email (només Google OAuth), així que forcem la 10 a tot l'arbre: si no, npm install falla per conflicte de peers. deepmerge-ts i mysql2 són dependències del CLI de Prisma amb vulnerabilitats conegudes (GHSA-ggr8-5vv4-36mx, GHSA-3f6p-5ww8-9rcr, GHSA-rgwj-5xj2-c3m3): es forcen les versions corregides fins que Prisma les actualitzi.",

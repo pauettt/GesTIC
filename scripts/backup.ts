@@ -37,8 +37,19 @@ if (!url) {
   process.exit(1);
 }
 
-const { host, pathname } = new URL(url);
-const origen = `${host}${pathname}`;
+// L'adreça porta la contrasenya de la base de dades. Si no es pot llegir, l'error
+// de Node l'ensenyaria sencera per pantalla i als registres: val més dir només
+// què s'ha de mirar.
+let origen: string;
+try {
+  const { host, pathname } = new URL(url);
+  origen = `${host}${pathname}`;
+} catch {
+  console.error(
+    "L'adreça de la base de dades no és vàlida. Revisa-la al .env: ha d'anar en una sola línia i entre cometes.",
+  );
+  process.exit(1);
+}
 
 const pool = new Pool({ connectionString: url });
 const db = new PrismaClient({ adapter: new PrismaPg(pool) });
