@@ -50,7 +50,7 @@ function StatusBadge({ request }: { request: StudentDeviceRequest }) {
 function DeviceLink({ chromebook }: { chromebook: Chromebook | null }) {
   if (!chromebook) return <>—</>;
   return (
-    <Link href={`/chromebooks/alumnat/${chromebook.id}`} className="hover:underline">
+    <Link href={`/alumnat/${chromebook.id}`} className="hover:underline">
       {device(chromebook)}
     </Link>
   );

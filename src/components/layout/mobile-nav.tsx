@@ -9,12 +9,12 @@ import { MenuIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { navItemsForRole } from "@/components/layout/nav-items";
+import { navItemsFor } from "@/components/layout/nav-items";
 
-export function MobileNav({ role }: { role: Role }) {
+export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const items = navItemsForRole(role);
+  const items = navItemsFor({ role, isTutor });
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

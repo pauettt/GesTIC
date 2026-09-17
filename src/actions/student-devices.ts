@@ -25,9 +25,9 @@ export type ActionResult = { success: true } | { success: false; error: string }
 const ALREADY_RESOLVED = "student-device/already-resolved";
 const DEVICE_TAKEN = "student-device/device-taken";
 
-/** La pantalla de Chromebooks i la fitxa d'historial de cada equip, que en penja. */
+/** La pantalla del préstec a l'alumnat i la fitxa d'historial de cada equip, que en penja. */
 function revalidateStudentDevices() {
-  revalidatePath("/chromebooks", "layout");
+  revalidatePath("/alumnat", "layout");
 }
 
 export async function createStudentDeviceRequest(input: unknown): Promise<ActionResult> {

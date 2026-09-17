@@ -34,3 +34,12 @@ export function isConcierge(role: Role) {
 export function canAccessKeys(role: Role) {
   return isConcierge(role) || isAdmin(role);
 }
+
+/**
+ * Qui entra al préstec de Chromebooks a l'alumnat: els tutors/es, que en
+ * demanen per al seu grup, i la coordinació TIC, que decideix les sol·licituds
+ * i porta els equips. La resta del professorat no hi té res a fer.
+ */
+export function canAccessStudentLoans({ role, isTutor }: { role: Role; isTutor: boolean }) {
+  return isTutor || isAdmin(role);
+}

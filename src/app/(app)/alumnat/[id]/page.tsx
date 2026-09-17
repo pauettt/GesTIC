@@ -47,7 +47,7 @@ function Moment({ at, by }: { at: Date | null; by: Person | null }) {
  */
 export default async function StudentChromebookHistoryPage({
   params,
-}: PageProps<"/chromebooks/alumnat/[id]">) {
+}: PageProps<"/alumnat/[id]">) {
   await requireAdmin();
   const { id } = await params;
 
@@ -80,8 +80,8 @@ export default async function StudentChromebookHistoryPage({
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div>
-        <Link href="/chromebooks" className="text-sm text-muted-foreground hover:underline">
-          &larr; Chromebooks
+        <Link href="/alumnat" className="text-sm text-muted-foreground hover:underline">
+          &larr; Préstec a l&apos;alumnat
         </Link>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div>

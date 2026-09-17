@@ -16,8 +16,9 @@ el que en quedava obert i era codi.
 
 Queden cinc coses:
 
-1. **Importar els carros i els Chromebooks**: *Chromebooks → Importa*, amb el
-   full exportat en CSV. Les aules es creen soles amb el número i el nom.
+1. **Importar els carros i els Chromebooks**: *Carros → Importa*, amb el
+   full exportat en CSV. Les aules es creen soles amb el número i el nom, i els
+   equips sense carro van a *Préstec a l'alumnat*.
 2. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
@@ -233,6 +234,19 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 ---
 
 ## ✅ Fet
+
+### 2026-09-17
+
+- **Préstec a l'alumnat, secció pròpia**: les sol·licituds dels tutors/es, les
+  entregues i el pool d'equips eren a sota dels carros, i no hi tenen res a
+  veure. Ara viuen a `/alumnat` (la fitxa de cada equip, a `/alumnat/[id]`, i
+  les etiquetes, a `/alumnat/etiquetes`), amb entrada pròpia al menú que només
+  veuen els tutors/es i la coordinació TIC, que és qui decideix. A la resta del
+  professorat no li surt, i si hi entra per l'adreça torna a l'inici. A l'inici
+  del tutor/a hi ha una targeta més per anar-hi. Els correus, el panell,
+  *Administració* i l'avís de l'inventari hi porten. Els correus enviats abans
+  porten a *Carros*, on ja no surt. La importació de Chromebooks continua a
+  *Carros*, però els equips sense carro surten al préstec.
 
 ### 2026-09-16
 

@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import type { Role } from "@prisma/client";
 
 import { cn } from "@/lib/utils";
-import { navItemsForRole } from "@/components/layout/nav-items";
+import { navItemsFor } from "@/components/layout/nav-items";
 
-export function AppSidebar({ role }: { role: Role }) {
+export function AppSidebar({ role, isTutor }: { role: Role; isTutor: boolean }) {
   const pathname = usePathname();
-  const items = navItemsForRole(role);
+  const items = navItemsFor({ role, isTutor });
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-background md:flex print:hidden">

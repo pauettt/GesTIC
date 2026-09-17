@@ -11,10 +11,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-screen w-full">
-      <AppSidebar role={user.role} />
+      <AppSidebar role={user.role} isTutor={user.isTutor} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6 print:hidden">
-          <MobileNav role={user.role} />
+          <MobileNav role={user.role} isTutor={user.isTutor} />
           <span className="font-semibold md:hidden">gesTIC</span>
           <div className="ml-auto">
             <UserMenu user={user} />

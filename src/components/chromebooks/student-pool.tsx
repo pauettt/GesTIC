@@ -60,7 +60,7 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
         </div>
         <div className="flex flex-wrap gap-2">
           {inService > 0 && (
-            <ButtonLink variant="outline" size="sm" href="/chromebooks/alumnat/etiquetes">
+            <ButtonLink variant="outline" size="sm" href="/alumnat/etiquetes">
               <QrCodeIcon className="size-4" />
               Etiquetes QR
             </ButtonLink>
@@ -91,7 +91,7 @@ export function StudentChromebookPool({ chromebooks }: { chromebooks: PoolChrome
                   <TableRow key={chromebook.id}>
                     <TableCell className="font-medium">
                       <Link
-                        href={`/chromebooks/alumnat/${chromebook.id}`}
+                        href={`/alumnat/${chromebook.id}`}
                         className="underline-offset-4 hover:underline"
                       >
                         {chromebook.assetTag}

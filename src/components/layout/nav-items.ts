@@ -1,6 +1,7 @@
 import type { Role } from "@prisma/client";
 import type { Route } from "next";
 import {
+  BackpackIcon,
   CalendarCheckIcon,
   HelpCircleIcon,
   HomeIcon,
@@ -17,7 +18,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 
-import { isAdmin, isConcierge, isSuperAdmin } from "@/lib/roles";
+import { canAccessStudentLoans, isAdmin, isConcierge, isSuperAdmin } from "@/lib/roles";
 
 export type NavItem = {
   href: Route;
@@ -25,6 +26,8 @@ export type NavItem = {
   icon: typeof HomeIcon;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
+  /** Tutors/es i la coordinació TIC, que en decideix les sol·licituds. */
+  tutorsOnly?: boolean;
   /** Si hi és, només aquests rols veuen l'enllaç. Mana sobre la resta de flags. */
   roles?: Role[];
 };
@@ -34,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/incidencies", label: "Incidències TIC", icon: TicketIcon },
   { href: "/inventari", label: "Inventari TIC", icon: PackageIcon },
   { href: "/chromebooks", label: "Carros", icon: LaptopIcon },
+  { href: "/alumnat", label: "Préstec a l'alumnat", icon: BackpackIcon, tutorsOnly: true },
   { href: "/espais", label: "Aules i espais", icon: MapPinIcon, adminOnly: true },
   { href: "/cites", label: "Cites", icon: CalendarCheckIcon },
   { href: "/dubtes", label: "Dubtes freqüents", icon: HelpCircleIcon },
@@ -51,7 +55,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/administracio", label: "Administració", icon: ShieldCheckIcon, superAdminOnly: true },
 ];
 
-export function navItemsForRole(role: Role) {
+export function navItemsFor(user: { role: Role; isTutor: boolean }) {
+  const { role } = user;
   return NAV_ITEMS.filter((item) => {
     // Consergeria comparteix un compte al taulell i només fa una cosa: el
     // control de claus. Només veu allò on el seu rol surt explícitament, en
@@ -59,6 +64,7 @@ export function navItemsForRole(role: Role) {
     if (isConcierge(role)) return item.roles?.includes(role) ?? false;
     if (item.roles) return item.roles.includes(role);
     if (item.superAdminOnly) return isSuperAdmin(role);
+    if (item.tutorsOnly) return canAccessStudentLoans(user);
     if (item.adminOnly) return isAdmin(role);
     return true;
   });

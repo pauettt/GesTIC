@@ -34,8 +34,8 @@ const EMPTY: UpsertStudentChromebookInput = {
  * `ChromebookDialog`, però aquell demana el carro i aquí no n'hi ha cap, i el
  * número de sèrie hi és obligatori.
  *
- * Els identificadors dels camps van amb prefix perquè a /chromebooks aquest
- * diàleg conviu amb el del carro, que fa servir els mateixos noms.
+ * Els identificadors dels camps van amb prefix perquè no topin amb els de
+ * `ChromebookDialog`, que fa servir els mateixos noms.
  */
 export function StudentChromebookDialog({
   chromebook,

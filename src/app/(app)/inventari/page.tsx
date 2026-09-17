@@ -110,16 +110,19 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
         <InventoryItemDialog spaces={spaces} categories={categories} />
       </div>
 
-      {/* Els Chromebooks tenen la seva secció: sense l'avís semblaria que no són a l'inventari. */}
+      {/* Els Chromebooks tenen les seves seccions: sense l'avís semblaria que no són a l'inventari. */}
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
         <LaptopIcon className="size-4 shrink-0" />
         <span>
-          Els Chromebooks no surten aquí: tenen la seva secció, amb {chromebookCount}{" "}
+          Els Chromebooks no surten aquí: n&apos;hi ha {chromebookCount}{" "}
           {chromebookCount === 1 ? "equip" : "equips"} entre {cartCount === 1 ? "el carro" : `els ${cartCount} carros`} i
-          el préstec a l&apos;alumnat.
+          el préstec a l&apos;alumnat, cadascun a la seva secció.
         </span>
         <Link href="/chromebooks" className="font-medium text-foreground hover:underline">
-          Ves a Chromebooks →
+          Ves a Carros →
+        </Link>
+        <Link href="/alumnat" className="font-medium text-foreground hover:underline">
+          Ves al préstec a l&apos;alumnat →
         </Link>
       </p>
 

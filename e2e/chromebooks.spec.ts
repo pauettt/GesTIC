@@ -5,7 +5,7 @@ import { pageAs, readFixtures, resolveIncident } from "./helpers";
 /** El tutor demana un equip per a un alumne/a del seu grup. */
 async function requestDevice(browser: Browser, firstName: string, lastName: string) {
   const tutor = await pageAs(browser, "tutor");
-  await tutor.goto("/chromebooks");
+  await tutor.goto("/alumnat");
   await tutor.getByRole("button", { name: "Demana un Chromebook" }).click();
   const dialog = tutor.getByRole("dialog");
   await dialog.locator("#studentFirstName").fill(firstName);
@@ -18,7 +18,7 @@ async function requestDevice(browser: Browser, firstName: string, lastName: stri
 
 /** La coordinació aprova la sol·licitud i hi aparta un equip concret. */
 async function approveWith(admin: Page, student: string, device: string) {
-  await admin.goto("/chromebooks");
+  await admin.goto("/alumnat");
   await admin.locator("tr", { hasText: student }).getByRole("button", { name: "Aprova" }).click();
   const dialog = admin.getByRole("dialog");
   await dialog.locator('[id^="device-"]').click();
@@ -108,7 +108,7 @@ test("un equip del pool que passa per una incidència torna a l'alumne, no queda
   // Abans tornava com a "Disponible" i es podia assignar a un segon alumne.
   await expect(professor.getByText("Assignat a alumnat", { exact: true })).toBeVisible();
 
-  await admin.goto("/chromebooks");
+  await admin.goto("/alumnat");
   await confirmStep(admin, "Aina Serra Vidal", "Marca com retornat", "Registra la devolució");
   await expect(admin.getByText("Devolució registrada i equip alliberat")).toBeVisible();
   await professor.goto(qr);
@@ -138,7 +138,7 @@ test("anul·lar un equip que ningú no ha vingut a buscar l'allibera, i la fitxa
   await confirmStep(admin, "Nil Roca Puig", "Marca com retornat", "Registra la devolució");
   await expect(admin.getByText("Devolució registrada i equip alliberat")).toBeVisible();
 
-  await admin.goto(`/chromebooks/alumnat/${poolChromebooks["ALU-02"]}`);
+  await admin.goto(`/alumnat/${poolChromebooks["ALU-02"]}`);
   await expect(admin.getByRole("heading", { name: "ALU-02" })).toBeVisible();
   const nil = admin.locator("tr", { hasText: "Nil Roca Puig" });
   await expect(nil.getByText("Retornada")).toBeVisible();

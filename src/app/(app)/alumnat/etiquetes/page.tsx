@@ -24,8 +24,8 @@ export default async function StudentPoolLabelsPage() {
   return (
     <QrLabelSheet
       title="Etiquetes QR — préstec a l'alumnat"
-      backHref="/chromebooks"
-      backLabel="Torna a Chromebooks"
+      backHref="/alumnat"
+      backLabel="Torna al préstec a l'alumnat"
       caption="Préstec a l'alumnat"
       chromebooks={chromebooks}
     />

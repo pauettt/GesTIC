@@ -7,6 +7,7 @@ import { REQUESTED_PATH_HEADER, loginPath } from "@/lib/login-redirect";
 import {
   COORDINATOR_ROLES,
   canAccessKeys,
+  canAccessStudentLoans,
   isAdmin,
   isConcierge,
   isSuperAdmin,
@@ -80,6 +81,15 @@ export async function requireKeyAccess() {
 export async function requireTutor() {
   const user = await requireUser();
   if (!user.isTutor) {
+    redirect("/");
+  }
+  return user;
+}
+
+/** El préstec de Chromebooks a l'alumnat: tutors/es i la coordinació TIC. */
+export async function requireStudentLoanAccess() {
+  const user = await requireUser();
+  if (!canAccessStudentLoans(user)) {
     redirect("/");
   }
   return user;

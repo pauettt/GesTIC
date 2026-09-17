@@ -1,6 +1,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import {
+  BackpackIcon,
   CalendarCheckIcon,
   HandCoinsIcon,
   HelpCircleIcon,
@@ -25,6 +26,8 @@ const MODULE_CARDS: Array<{
   title: string;
   description: string;
   icon: typeof TicketIcon;
+  /** Només per a tutors/es: la resta del professorat no hi pot fer res. */
+  tutorsOnly?: boolean;
 }> = [
   {
     href: "/incidencies",
@@ -43,6 +46,13 @@ const MODULE_CARDS: Array<{
     title: "Carros",
     description: "Reserva carros de Chromebooks, portàtils o iPads i consulta'n l'estat.",
     icon: LaptopIcon,
+  },
+  {
+    href: "/alumnat",
+    title: "Préstec a l'alumnat",
+    description: "Demana un Chromebook per a un alumne/a del teu grup per a tot el curs.",
+    icon: BackpackIcon,
+    tutorsOnly: true,
   },
   {
     href: "/cites",
@@ -268,7 +278,7 @@ export default async function HomePage() {
                 <CardTitle className="text-base">Chromebooks per a l&apos;alumnat</CardTitle>
               </CardHeader>
               <Link
-                href="/chromebooks"
+                href="/alumnat"
                 className="mx-(--card-spacing) -mt-2 mb-1 flex flex-col gap-0.5 rounded-md px-2 py-2 text-sm hover:bg-muted"
               >
                 {pendingStudentRequests > 0 && (
@@ -302,7 +312,7 @@ export default async function HomePage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {MODULE_CARDS.map((item) => {
+        {MODULE_CARDS.filter((item) => !item.tutorsOnly || user.isTutor).map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href}>

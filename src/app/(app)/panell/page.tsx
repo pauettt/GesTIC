@@ -104,7 +104,7 @@ export default async function PanellPage() {
           items={[
             ...work.pendingStudentRequests.map((request) => ({
               id: request.id,
-              href: "/chromebooks" as Route,
+              href: "/alumnat" as Route,
               main: request.groupName
                 ? `Sol·licitud per a un alumne/a de ${request.groupName}`
                 : "Sol·licitud per a un alumne/a",
@@ -113,7 +113,7 @@ export default async function PanellPage() {
             })),
             ...work.awaitingStudentDeliveries.map((request) => ({
               id: request.id,
-              href: "/chromebooks" as Route,
+              href: "/alumnat" as Route,
               main: `${request.chromebook?.assetTag ?? "Equip"} per entregar${
                 request.groupName ? ` a un alumne/a de ${request.groupName}` : ""
               }`,

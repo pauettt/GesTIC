@@ -31,6 +31,8 @@ test("la coordinació importa carros i Chromebooks d'un full, i se'n creen les a
 
   await expect(page.getByText("Carro 7 (B.201)").first()).toBeVisible();
   await expect(page.getByText("B.201 · Informàtica").first()).toBeVisible();
+  // Els equips sense carro van al préstec a l'alumnat, que té la seva secció.
+  await page.goto("/alumnat");
   await expect(page.getByText("ALU-03").first()).toBeVisible();
 
   await page.goto("/espais");

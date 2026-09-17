@@ -123,8 +123,8 @@ export default async function AdministracioPage() {
               Es guarden sense data de caducitat, perquè cada equip pugui dir qui l&apos;ha tingut curs
               rere curs, i només les veuen el tutor/a que les fa i la coordinació TIC.
             </p>
-            <ButtonLink variant="outline" size="sm" href="/chromebooks">
-              Chromebooks
+            <ButtonLink variant="outline" size="sm" href="/alumnat">
+              Préstec a l&apos;alumnat
             </ButtonLink>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">

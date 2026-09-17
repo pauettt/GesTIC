@@ -20,9 +20,11 @@ test.describe("professorat", () => {
       "/espais",
       "/consergeria",
       "/contrasenyes",
-      "/chromebooks/alumnat/etiquetes",
+      // El préstec a l'alumnat és dels tutors/es i la coordinació, i porta noms de menors.
+      "/alumnat",
+      "/alumnat/etiquetes",
       // La fitxa d'un equip del pool porta els noms dels alumnes que l'han tingut.
-      `/chromebooks/alumnat/${poolChromebooks["ALU-01"]}`,
+      `/alumnat/${poolChromebooks["ALU-01"]}`,
     ]) {
       await page.goto(path);
       await expect(page, `${path} hauria de tornar a l'inici`).toHaveURL(`${BASE_URL}/`);

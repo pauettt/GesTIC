@@ -284,7 +284,7 @@ export async function notifyStudentDeviceRequested(requestId: string) {
         tutorName: request.tutor.name ?? request.tutor.email,
         groupName: request.groupName,
         reason: studentDeviceReasonLabels[request.reason],
-        url: `${baseUrl}/chromebooks`,
+        url: `${baseUrl}/alumnat`,
       }),
     });
   });
@@ -310,7 +310,7 @@ export async function notifyStudentDeviceDecision(requestId: string, approved: b
               .join(" · ")
           : null,
         responseNote: request.responseNote,
-        url: `${baseUrl}/chromebooks`,
+        url: `${baseUrl}/alumnat`,
       }),
     });
   });

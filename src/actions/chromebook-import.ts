@@ -79,6 +79,7 @@ export async function importChromebooks(input: unknown): Promise<ImportChromeboo
     );
 
     revalidatePath("/chromebooks");
+    revalidatePath("/alumnat");
     revalidatePath("/espais");
     return {
       success: true,
