@@ -1,8 +1,11 @@
+import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
+import { formatDateTimeFull, startOfWeek, toDateParam } from "@/lib/date";
 import { deviceSummary } from "@/lib/devices";
 import { loadBuildingOptions } from "@/lib/location-data";
 import {
@@ -13,6 +16,7 @@ import {
 } from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
+import { CartFinder, QuickReserveButton } from "@/components/chromebooks/cart-finder";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
 import { LocationFilter } from "@/components/shared/location-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +50,34 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
       : Promise.resolve([]),
   ]);
+  // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
+  // busca un carro lliure el vol a prop.
+  const cartSearch = parseCartSearch(params);
+  const busyCartIds =
+    cartSearch.status === "ok"
+      ? new Set(
+          (
+            await db.reservation.findMany({
+              where: {
+                cartId: { in: carts.map((cart) => cart.id) },
+                status: "CONFIRMADA",
+                startDate: { lt: cartSearch.search.endDate },
+                endDate: { gt: cartSearch.search.startDate },
+              },
+              select: { cartId: true },
+            })
+          ).map((reservation) => reservation.cartId),
+        )
+      : new Set<string>();
+  const finderDefaults =
+    cartSearch.status === "ok"
+      ? {
+          dateKey: cartSearch.search.dateKey,
+          periodId: cartSearch.search.period.id,
+          minDevices: cartSearch.search.minDevices,
+        }
+      : { ...defaultCartSearch(), minDevices: 0 };
+
   // La importació ha de conèixer tots els carros, també els que el filtre amaga.
   const allCartNames = admin
     ? filtered
@@ -80,6 +112,38 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       </div>
 
       <LocationFilter buildings={buildings} spaces={spaces} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Busca un carro lliure</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Tria el dia i la sessió, i si cal, quants equips necessites.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <CartFinder
+            // Una cerca nova (o treure-la) torna a omplir el formulari amb el que diu la URL.
+            key={`${finderDefaults.dateKey}-${finderDefaults.periodId}-${finderDefaults.minDevices}`}
+            initial={finderDefaults}
+            searching={cartSearch.status !== "none"}
+          />
+          {cartSearch.status === "invalid" && (
+            <p className="text-sm text-destructive">{cartSearch.message}</p>
+          )}
+          {cartSearch.status === "ok" && (
+            <CartSearchResults
+              search={cartSearch.search}
+              carts={carts.map((cart) => ({
+                id: cart.id,
+                name: cart.name,
+                spaceName: cart.space?.name ?? null,
+                available: cart.chromebooks.filter((cb) => cb.status === "DISPONIBLE").length,
+                busy: busyCartIds.has(cart.id),
+              }))}
+            />
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {carts.map((cart) => {
@@ -131,6 +195,70 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function CartSearchResults({
+  search,
+  carts,
+}: {
+  search: CartSearch;
+  carts: { id: string; name: string; spaceName: string | null; available: number; busy: boolean }[];
+}) {
+  const free = carts.filter((cart) => !cart.busy);
+  const matching = free
+    .filter((cart) => cart.available >= search.minDevices)
+    // Els que en tenen més, primer: si en sobren, millor que si en falten.
+    .sort((a, b) => b.available - a.available);
+  const tooSmall = free.length - matching.length;
+  const when = `${formatDateTimeFull(search.startDate)}–${search.period.end} · ${search.period.label}`;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm font-medium">
+        {matching.length === 0
+          ? "Cap carro lliure"
+          : `${matching.length} ${matching.length === 1 ? "carro lliure" : "carros lliures"}`}{" "}
+        <span className="font-normal text-muted-foreground">
+          {when}
+          {search.minDevices > 0 && ` · amb ${search.minDevices} equips o més`}
+        </span>
+      </p>
+      {matching.length > 0 && (
+        <ul className="flex flex-col divide-y rounded-lg border">
+          {matching.map((cart) => (
+            <li key={cart.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <Link
+                  href={`/chromebooks/${cart.id}?week=${toDateParam(startOfWeek(search.startDate))}` as Route}
+                  className="font-medium hover:underline"
+                >
+                  {cart.name}
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  {cart.spaceName ?? "Sense ubicació fixa"} · {cart.available}{" "}
+                  {cart.available === 1 ? "equip disponible" : "equips disponibles"}
+                </p>
+              </div>
+              <QuickReserveButton
+                cartId={cart.id}
+                cartName={cart.name}
+                dateKey={search.dateKey}
+                periodId={search.period.id}
+                when={when}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+      {tooSmall > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {tooSmall === 1
+            ? "Hi ha 1 carro més lliure, però amb menys equips dels que calen."
+            : `Hi ha ${tooSmall} carros més lliures, però amb menys equips dels que calen.`}
+        </p>
+      )}
     </div>
   );
 }

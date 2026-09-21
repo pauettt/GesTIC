@@ -54,3 +54,33 @@ test("consergeria entrega la clau d'una reserva d'avui i el professor la veu a l
   await professor.reload();
   await expect(professor.getByText("Claus que tens")).toHaveCount(0);
 });
+
+test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà mateix", async ({ browser }) => {
+  const { cartId, nextWeek } = readFixtures();
+  const professor = await pageAs(browser, "professor");
+  await professor.goto("/chromebooks");
+
+  await professor.getByLabel("Dia").fill(nextWeek);
+  await professor.getByLabel("Sessió").click();
+  await professor.getByRole("option", { name: /^6a hora/ }).click();
+  // Més equips dels que té cap carro: no n'hi ha cap que serveixi, i ho diu.
+  await professor.getByLabel("Equips que calen").fill("500");
+  await professor.getByRole("button", { name: "Busca" }).click();
+  await expect(professor).toHaveURL(/dia=.+&sessio=6&equips=500/);
+  await expect(professor.getByText("Cap carro lliure")).toBeVisible();
+  await expect(professor.getByText(/menys equips dels que calen/)).toBeVisible();
+
+  await professor.getByLabel("Equips que calen").fill("");
+  await professor.getByRole("button", { name: "Busca" }).click();
+  const result = professor.locator("li", { has: professor.getByRole("link", { name: "Carro E2E", exact: true }) });
+  await expect(result).toBeVisible();
+  await result.getByRole("button", { name: "Reserva" }).click();
+  await professor.getByPlaceholder("Motiu (opcional)").fill("Taller de programació");
+  await professor.getByRole("button", { name: "Confirma la reserva" }).click();
+  await expect(professor.getByText("Reserva confirmada: Carro E2E")).toBeVisible();
+  // Ja no és lliure: surt de la llista, i a la graella hi consta.
+  await expect(result).toHaveCount(0);
+
+  await professor.goto(`/chromebooks/${cartId}?week=${nextWeek}`);
+  await expect(cell(professor, "6a hora", 1)).toContainText("Professor Un");
+});

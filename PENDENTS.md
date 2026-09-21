@@ -228,6 +228,12 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Buscar un carro lliure** a *Carros*: dia, sessió i, si cal, quants equips
+  disponibles com a mínim. Surten els carros lliures en aquella sessió (dins
+  del filtre d'edifici, planta i aula), els que en tenen més primer, i es
+  reserven d'allà mateix. Abans calia entrar a cada carro a mirar-ne l'horari.
+  Proposa la sessió que encara no ha acabat, avui, o la primera del proper dia
+  lectiu. Va a la URL (`?dia=…&sessio=…&equips=…`).
 - **Les reserves de carros a l'inici**: qui té reservat un carro el veu a la
   pantalla d'inici (les 4 properes, també la que està en curs), i en clicar-la
   va a la setmana del carro.
