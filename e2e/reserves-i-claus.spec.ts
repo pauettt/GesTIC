@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { pageAs, readFixtures } from "./helpers";
+import { authFile, pageAs, readFixtures } from "./helpers";
 
 /** Casella de la graella setmanal: fila de la sessió i columna del dia (1 = dilluns). */
 const cell = (page: Page, period: string, weekday: number) =>
@@ -83,4 +83,33 @@ test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà
 
   await professor.goto(`/chromebooks/${cartId}?week=${nextWeek}`);
   await expect(cell(professor, "6a hora", 1)).toContainText("Professor Un");
+});
+
+test("al mòbil es reserven unes quantes sessions seguides d'un dia", async ({ browser }) => {
+  const { cartId, nextWeek } = readFixtures();
+  const context = await browser.newContext({
+    storageState: authFile("professor2"),
+    viewport: { width: 390, height: 844 },
+  });
+  const phone = await context.newPage();
+  await phone.goto(`/chromebooks/${cartId}?week=${nextWeek}`);
+
+  // Un dia a la vegada: la graella de la setmana no hi cap.
+  await expect(phone.getByRole("columnheader", { name: "Sessió" })).toBeHidden();
+  await phone.getByRole("tab", { name: /Dimecres/ }).click();
+  await phone.getByRole("button", { name: /^4a hora.*lliure$/ }).click();
+  await phone.getByRole("button", { name: /^5a hora.*lliure$/ }).click();
+  await phone.getByPlaceholder("Motiu (opcional)").fill("Examen amb Forms");
+  await phone.getByRole("button", { name: "Reserva 2 sessions (Dimecres)" }).click();
+  await expect(phone.getByText("Reserva confirmada")).toBeVisible();
+
+  const sessions = phone.getByRole("list", { name: "Sessions de Dimecres" });
+  await expect(sessions.getByText("Professora Dos")).toHaveCount(2);
+  await context.close();
+
+  // A l'ordinador, les dues a la graella de la setmana.
+  const desktop = await pageAs(browser, "professor");
+  await desktop.goto(`/chromebooks/${cartId}?week=${nextWeek}`);
+  await expect(cell(desktop, "4a hora", 3)).toContainText("Professora Dos");
+  await expect(cell(desktop, "5a hora", 3)).toContainText("Examen amb Forms");
 });

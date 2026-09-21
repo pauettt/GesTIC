@@ -26,6 +26,9 @@ export const RECESS = { label: "Pati", start: "10:45", end: "11:15" };
 
 export const SCHOOL_WEEKDAYS = ["Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres"];
 
+/** Les abreviatures de sempre: totes comencen per «Di», i les dues primeres lletres no les distingeixen. */
+export const SCHOOL_WEEKDAYS_SHORT = ["Dl", "Dt", "Dc", "Dj", "Dv"];
+
 /**
  * Una franja es considera passada quan ja ha acabat, no quan ha començat: si un
  * professor necessita el carro a mitja classe, ha de poder reservar la sessió

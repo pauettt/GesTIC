@@ -9,8 +9,10 @@ import {
   RECESS_BEFORE_PERIOD_INDEX,
   SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
+  SCHOOL_WEEKDAYS_SHORT,
 } from "@/lib/schedule";
 import { ButtonLink } from "@/components/ui/button-link";
+import { DaySchedule, type ScheduleDay } from "@/components/chromebooks/day-schedule";
 import { ReservationCell } from "@/components/chromebooks/reservation-cell";
 
 type Reservation = {
@@ -47,6 +49,38 @@ export function WeeklySchedule({
     );
   }
 
+  const canCancel = (reservation: Reservation | undefined) =>
+    Boolean(reservation && (isAdmin || reservation.userId === currentUserId));
+
+  const scheduleDays: ScheduleDay[] = days.map((day, index) => {
+    const dayKey = madridDateKey(day.date);
+    return {
+      dayKey,
+      label: day.label,
+      shortLabel: SCHOOL_WEEKDAYS_SHORT[index],
+      dayOfMonth: Number(dayKey.split("-")[2]),
+      slots: SCHOOL_PERIODS.map((period) => {
+        const reservation = findReservation(dayKey, period.start);
+        if (reservation) {
+          return {
+            kind: "reserved" as const,
+            id: reservation.id,
+            who: reservation.user.name ?? reservation.user.email,
+            purpose: reservation.purpose,
+            canCancel: canCancel(reservation),
+          };
+        }
+        return isPastPeriod(zonedDateTime(dayKey, period.end)) ? { kind: "past" as const } : { kind: "free" as const };
+      }),
+    };
+  });
+  // Al mòbil s'obre el dia d'avui si és d'aquesta setmana; si no, el primer que encara té sessions.
+  const todayKey = madridDateKey(new Date());
+  const initialDay =
+    scheduleDays.find((day) => day.dayKey === todayKey) ??
+    scheduleDays.find((day) => day.slots.some((slot) => slot.kind !== "past")) ??
+    scheduleDays[0];
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
@@ -56,7 +90,7 @@ export function WeeklySchedule({
           href={`/chromebooks/${cartId}?week=${prevWeek}` as Route}
         >
           <ChevronLeftIcon className="size-4" />
-          Setmana anterior
+          <span className="sr-only sm:not-sr-only">Setmana anterior</span>
         </ButtonLink>
         <p className="text-sm font-medium">{rangeLabel}</p>
         <ButtonLink
@@ -64,12 +98,25 @@ export function WeeklySchedule({
           size="sm"
           href={`/chromebooks/${cartId}?week=${nextWeek}` as Route}
         >
-          Setmana següent
+          <span className="sr-only sm:not-sr-only">Setmana següent</span>
           <ChevronRightIcon className="size-4" />
         </ButtonLink>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-background">
+      <div className="md:hidden">
+        <DaySchedule
+          // Canviar de setmana torna a obrir el dia que toca, sense sessions triades.
+          key={toDateParam(weekStart)}
+          cartId={cartId}
+          days={scheduleDays}
+          periods={SCHOOL_PERIODS}
+          recessBeforeIndex={RECESS_BEFORE_PERIOD_INDEX}
+          recessLabel={`${RECESS.label} · ${RECESS.start}–${RECESS.end}`}
+          initialDayKey={initialDay.dayKey}
+        />
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-lg border bg-background md:block">
         <table className="w-full min-w-[720px] border-collapse text-xs">
           <thead>
             <tr className="border-b bg-muted/40">
@@ -110,7 +157,7 @@ export function WeeklySchedule({
                           dayLabel={day.label}
                           period={period}
                           reservation={reservation}
-                          canCancel={Boolean(reservation && (isAdmin || reservation.userId === currentUserId))}
+                          canCancel={canCancel(reservation)}
                           isPast={isPastPeriod(zonedDateTime(dayKey, period.end))}
                         />
                       </td>

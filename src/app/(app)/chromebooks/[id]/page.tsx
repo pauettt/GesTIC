@@ -154,7 +154,10 @@ export default async function CartDetailPage({
           <span className={cn("font-medium", available < inService ? "text-red-700" : "text-foreground")}>
             {available} de {inService} dispositius disponibles.
           </span>{" "}
-          Clica una sessió lliure per reservar-la a l&apos;instant.
+          <span className="hidden md:inline">Clica una sessió lliure per reservar-la a l&apos;instant.</span>
+          <span className="md:hidden">
+            Toca les sessions lliures que vulguis del dia i reserva-les totes alhora.
+          </span>
         </p>
         <WeeklySchedule
           cartId={cart.id}

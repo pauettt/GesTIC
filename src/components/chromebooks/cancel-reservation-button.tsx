@@ -17,6 +17,7 @@ export function CancelReservationButton({ reservationId }: { reservationId: stri
       variant="ghost"
       size="icon-sm"
       disabled={isPending}
+      aria-label="Cancel·la la reserva"
       onClick={() => run({ id: reservationId })}
     >
       <XIcon className="size-4" />

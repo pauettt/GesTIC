@@ -228,6 +228,10 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Reservar des del mòbil**: la graella de la setmana no hi cabia (calia
+  moure-la de costat). Al mòbil ara es mira un dia a la vegada, i les sessions
+  lliures es toquen per triar-ne una o unes quantes seguides i reservar-les
+  totes alhora, amb el motiu. A l'ordinador, la graella de sempre.
 - **Buscar un carro lliure** a *Carros*: dia, sessió i, si cal, quants equips
   disponibles com a mínim. Surten els carros lliures en aquella sessió (dins
   del filtre d'edifici, planta i aula), els que en tenen més primer, i es
