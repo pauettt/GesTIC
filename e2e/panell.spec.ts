@@ -1,11 +1,17 @@
 import { expect, test } from "@playwright/test";
 
 import { STALLED_INCIDENT_TITLE } from "./data";
-import { authFile } from "./helpers";
+import { authFile, pageAs } from "./helpers";
 
 test.use({ storageState: authFile("admin") });
 
 test("el panell marca les incidències aturades encara que tinguin responsable", async ({ page }) => {
+  // A l'inici, la coordinació ja ho veu en números, i porta a la mateixa llista.
+  await page.goto("/");
+  const summary = page.locator('[data-slot="card"]', { has: page.getByRole("heading", { name: "Feina pendent" }) });
+  await summary.getByRole("link", { name: /^1 incidència aturada$/ }).click();
+  await expect(page).toHaveURL(/vista=aturades/);
+
   await page.goto("/panell");
   const stalled = page.locator('[data-slot="card"]', {
     // El títol porta el comptador al costat: «Incidències aturades 1».
@@ -29,4 +35,11 @@ test("el panell marca les incidències aturades encara que tinguin responsable",
 
   await page.goto("/panell");
   await expect(row).toHaveCount(0);
+});
+
+test("el professorat no veu la feina pendent de la coordinació a l'inici", async ({ browser }) => {
+  const professor = await pageAs(browser, "professor");
+  await professor.goto("/");
+  await expect(professor.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(professor.getByRole("heading", { name: "Feina pendent" })).toHaveCount(0);
 });

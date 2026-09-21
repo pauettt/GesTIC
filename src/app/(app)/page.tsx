@@ -22,8 +22,10 @@ import {
   startOfWeek,
   toDateParam,
 } from "@/lib/date";
+import { getPendingCounts } from "@/lib/panell-data";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { incidentStatusLabels, incidentStatusVariants } from "@/lib/labels";
+import { PendingSummary } from "@/components/panell/pending-summary";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,6 +114,7 @@ export default async function HomePage() {
     pendingStudentRequests,
     toCollectStudentDevices,
     deliveredStudentDevices,
+    pendingCounts,
   ] =
     await Promise.all([
       db.incident.findMany({
@@ -159,6 +162,7 @@ export default async function HomePage() {
       user.isTutor
         ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "ENTREGADA" } })
         : Promise.resolve(0),
+      coordinator ? getPendingCounts(now) : Promise.resolve(null),
     ]);
 
   const hasStudentDevices =
@@ -179,9 +183,7 @@ export default async function HomePage() {
             Hola, {user.name?.split(" ")[0] ?? "benvingut/da"}
           </h1>
           <p className="text-muted-foreground">
-            {coordinator
-              ? "Consulta el panell per veure què necessita la teva atenció."
-              : "Què necessites avui?"}
+            Què necessites avui?
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -199,6 +201,8 @@ export default async function HomePage() {
           </ButtonLink>
         </div>
       </div>
+
+      {pendingCounts && <PendingSummary counts={pendingCounts} />}
 
       {hasSomethingOpen && (
         <div className="grid gap-4 sm:grid-cols-2">

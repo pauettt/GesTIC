@@ -225,6 +225,12 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **La feina pendent, a l'inici de la coordinació**: una franja amb els
+  números (sense responsable, aturades, devolucions fora de termini, préstecs,
+  consultes, Chromebooks d'alumnat), cadascun cap a la seva llista, i «Obre el
+  panell». No es va ajuntar l'inici amb el panell: la coordinació també
+  reserva, demana material i té claus, i això és a l'inici. Fa els mateixos
+  recomptes que el panell (`pendingWhere`), no les llistes.
 - **Accessos directes a la icona**: mantenint premuda la icona de gesTIC a la
   pantalla d'inici d'un Android surten «Nova incidència» i «Reserva un carro».
   L'iPhone no en fa cas.

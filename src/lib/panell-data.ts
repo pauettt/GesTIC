@@ -24,15 +24,54 @@ async function queue<T>(items: Promise<T[]>, total: Promise<number>) {
   return { items: list, total: count };
 }
 
+/**
+ * Què compta com a feina pendent de cada cua. El panell i el resum de l'inici
+ * en fan servir els mateixos criteris: els números han de coincidir.
+ */
+function pendingWhere(now: Date) {
+  return {
+    unassignedWhere: incidentViewWhere("sense-responsable", now),
+    stalledWhere: incidentViewWhere("aturades", now),
+    pendingLoansWhere: { status: "PENDENT" } as const,
+    overdueLoansWhere: { status: "APROVADA", endDate: { lt: now } } satisfies Prisma.LoanRequestWhereInput,
+    openQueriesWhere: { status: { in: ["OBERTA", "EN_CURS"] } } satisfies Prisma.QueryWhereInput,
+    pendingStudentWhere: { status: "PENDENT" } as const,
+    awaitingStudentWhere: { status: "APROVADA" } as const,
+    upcomingWhere: { slot: { endDate: { gt: now } } } satisfies Prisma.AppointmentWhereInput,
+  };
+}
+
+/**
+ * Només els números de la feina pendent, per a la franja de l'inici de la
+ * coordinació: uns quants recomptes, no les llistes del panell.
+ */
+export async function getPendingCounts(now: Date = new Date()) {
+  const where = pendingWhere(now);
+  const [unassigned, stalled, pendingLoans, overdueLoans, openQueries, pendingStudent, awaitingStudent] =
+    await Promise.all([
+      db.incident.count({ where: where.unassignedWhere }),
+      db.incident.count({ where: where.stalledWhere }),
+      db.loanRequest.count({ where: where.pendingLoansWhere }),
+      db.loanRequest.count({ where: where.overdueLoansWhere }),
+      db.query.count({ where: where.openQueriesWhere }),
+      db.studentDeviceRequest.count({ where: where.pendingStudentWhere }),
+      db.studentDeviceRequest.count({ where: where.awaitingStudentWhere }),
+    ]);
+  return { unassigned, stalled, pendingLoans, overdueLoans, openQueries, pendingStudent, awaitingStudent };
+}
+
 /** Tot allò que espera una decisió o una estona de la coordinació. */
 export async function getPendingWork(now: Date = new Date()) {
-  const unassignedWhere = incidentViewWhere("sense-responsable", now);
-  const stalledWhere = incidentViewWhere("aturades", now);
-  const pendingLoansWhere = { status: "PENDENT" } as const;
-  const openQueriesWhere = { status: { in: ["OBERTA", "EN_CURS"] } } satisfies Prisma.QueryWhereInput;
-  const pendingStudentWhere = { status: "PENDENT" } as const;
-  const awaitingStudentWhere = { status: "APROVADA" } as const;
-  const upcomingWhere = { slot: { endDate: { gt: now } } } satisfies Prisma.AppointmentWhereInput;
+  const {
+    unassignedWhere,
+    stalledWhere,
+    pendingLoansWhere,
+    overdueLoansWhere,
+    openQueriesWhere,
+    pendingStudentWhere,
+    awaitingStudentWhere,
+    upcomingWhere,
+  } = pendingWhere(now);
 
   const [
     unassignedIncidents,
@@ -80,7 +119,7 @@ export async function getPendingWork(now: Date = new Date()) {
     ),
     // Sense límit: cada devolució endarrerida és feina, no n'hi ha d'haver cap d'amagada.
     db.loanRequest.findMany({
-      where: { status: "APROVADA", endDate: { lt: now } },
+      where: overdueLoansWhere,
       include: { requester: true, item: true },
       orderBy: { endDate: "asc" },
     }),
