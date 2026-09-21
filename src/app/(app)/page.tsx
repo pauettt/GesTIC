@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { formatDate, formatDateTime, formatDateTimeFull } from "@/lib/date";
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeFull,
+  formatTime,
+  startOfWeek,
+  toDateParam,
+} from "@/lib/date";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { incidentStatusLabels, incidentStatusVariants } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
@@ -101,6 +108,7 @@ export default async function HomePage() {
     myLoans,
     myKeys,
     myAppointments,
+    myReservations,
     pendingStudentRequests,
     toCollectStudentDevices,
     deliveredStudentDevices,
@@ -130,6 +138,18 @@ export default async function HomePage() {
         orderBy: { slot: { startDate: "asc" } },
         take: 4,
       }),
+      // Les que encara no s'han acabat: la d'ara mateix també, per saber quin carro toca.
+      db.reservation.findMany({
+        where: { userId: user.id, status: "CONFIRMADA", endDate: { gt: now } },
+        select: {
+          id: true,
+          startDate: true,
+          endDate: true,
+          cart: { select: { id: true, name: true } },
+        },
+        orderBy: { startDate: "asc" },
+        take: 4,
+      }),
       user.isTutor
         ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "PENDENT" } })
         : Promise.resolve(0),
@@ -148,6 +168,7 @@ export default async function HomePage() {
     myLoans.length > 0 ||
     myKeys.length > 0 ||
     myAppointments.length > 0 ||
+    myReservations.length > 0 ||
     hasStudentDevices;
 
   return (
@@ -249,6 +270,31 @@ export default async function HomePage() {
                     <span className="block text-xs text-muted-foreground">
                       Des del {formatDateTime(loan.deliveredAt)}
                     </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {myReservations.length > 0 && (
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="text-base">Les meves reserves de carros</CardTitle>
+              </CardHeader>
+              <ul className="flex flex-col divide-y px-(--card-spacing)">
+                {myReservations.map((reservation) => (
+                  <li key={reservation.id}>
+                    <Link
+                      href={
+                        `/chromebooks/${reservation.cart.id}?week=${toDateParam(startOfWeek(reservation.startDate))}` as Route
+                      }
+                      className="-mx-2 block rounded-md px-2 py-2 hover:bg-muted"
+                    >
+                      <span className="block truncate text-sm font-medium">{reservation.cart.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatDateTimeFull(reservation.startDate)} – {formatTime(reservation.endDate)}
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>

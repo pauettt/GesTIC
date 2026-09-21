@@ -228,6 +228,9 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Les reserves de carros a l'inici**: qui té reservat un carro el veu a la
+  pantalla d'inici (les 4 properes, també la que està en curs), i en clicar-la
+  va a la setmana del carro.
 - **El panell diu quanta feina hi ha de debò**: cada cua en mostra 8, però el
   comptador marcava 8 encara que n'hi hagués més. Ara diu el total, i si n'hi
   ha més de les que caben porta a la llista sencera («Veure-les totes»).

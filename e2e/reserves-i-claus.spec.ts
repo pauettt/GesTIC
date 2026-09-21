@@ -20,6 +20,16 @@ test("un professor reserva una sessió lliure i ja no la pot agafar ningú més"
   await colleague.goto(url);
   await expect(cell(colleague, "2a hora", 2)).toContainText("Professor Un");
   await expect(cell(colleague, "2a hora", 2).getByRole("button", { name: "Lliure" })).toHaveCount(0);
+
+  // A l'inici la té a la vista, i porta a la setmana del carro on és.
+  await professor.goto("/");
+  const reservations = professor.locator('[data-slot="card"]', {
+    has: professor.getByText("Les meves reserves de carros", { exact: true }),
+  });
+  const link = reservations.locator(`a[href="/chromebooks/${cartId}?week=${nextWeek}"]`);
+  await expect(link).toContainText("Carro E2E");
+  await link.click();
+  await expect(cell(professor, "2a hora", 2)).toContainText("Professor Un");
 });
 
 test("consergeria entrega la clau d'una reserva d'avui i el professor la veu a l'inici", async ({ browser }) => {
