@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isBlobUrl } from "@/lib/blob";
+import { normalizeIPv4 } from "@/lib/network";
 import { isDateKey } from "@/lib/validations/common";
 
 const optionalDate = z
@@ -20,6 +21,13 @@ export const upsertInventoryItemSchema = z.object({
   brand: z.string().trim().min(1, "Indica la marca").max(100),
   model: z.string().trim().min(1, "Indica el model").max(100),
   serialNumber: z.string().trim().max(150).optional().or(z.literal("")),
+  ipAddress: z
+    .string()
+    .trim()
+    .refine((value) => !value || normalizeIPv4(value) !== null, "La IP no és vàlida (ha de ser com 10.1.2.30)")
+    .optional()
+    .or(z.literal("")),
+  hostname: z.string().trim().max(63).optional().or(z.literal("")),
   spaceId: z.string().optional().or(z.literal("")),
   status: z.enum(["ACTIU", "EN_REPARACIO", "BAIXA"]),
   isLoanable: z.boolean(),

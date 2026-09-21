@@ -296,6 +296,8 @@ function itemValues(item: InventoryItem) {
     brand: item.brand,
     model: item.model,
     serialNumber: item.serialNumber ?? "",
+    ipAddress: item.ipAddress ?? "",
+    hostname: item.hostname ?? "",
     spaceId: item.spaceId ?? "",
     status: item.status,
     isLoanable: item.isLoanable,

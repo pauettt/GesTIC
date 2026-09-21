@@ -14,7 +14,7 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Queden cinc coses:
+Queden sis coses:
 
 1. **Importar els carros i els Chromebooks**: tot d'un cop amb *Carros →
    Importa*, o carro a carro des de la pàgina de cada carro (*Importa des d'un
@@ -23,12 +23,17 @@ Queden cinc coses:
 2. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
-3. **Programar la Xarxa** (§25) a partir de l'inventari.
+3. **Posar les IP a l'inventari**, a partir del full de control: a la fitxa de
+   cada equip (*Edita → Adreça IP* i *Nom a la xarxa*). La secció *Xarxa* en
+   surt sola. Queda per aclarir què vol dir la columna «connexió» del full
+   (cable o wifi? la presa?) i si cal a l'aplicació.
 4. **Guardar `VAULT_ENCRYPTION_KEY` fora de l'ordinador i del servidor** (§27).
    Ara les úniques còpies són a Vercel i al `.env` local. Un cop guardada, al
    `.env` local se n'hi posa una de pròpia (`openssl rand -base64 32`): les dades
    de `gestic_dev` són inventades.
-5. **Penjar el cartell a la sala de professors** un cop desplegat:
+5. **Treure les dades d'exemple de producció** (§29), amb una còpia abans,
+   quan s'acabi de provar i abans del cartell.
+6. **Penjar el cartell a la sala de professors** un cop desplegat:
    *Administració → Obre el cartell*. Abans, afegir gesTIC a la pantalla d'inici
    en un Android i en un iPhone i entrar-hi des de la icona. A l'iPhone,
    l'aplicació instal·lada no comparteix la sessió amb Safari: s'hi entra un cop
@@ -95,14 +100,6 @@ de debò: les dades d'exemple només s'hi pengen.
 compte real: aquelles reserves, incidències i consultes no les treu l'script, i
 s'han de repassar a mà. Val la pena fer una còpia (`npm run db:backup`) abans de
 la neteja.
-
-### 25. Xarxa: el mapa d'IP ha de sortir de l'inventari
-Decidit el 2026-09-15. El full de control d'IP (planta, aula, IP, connexió, nom
-del PC) no s'importa com una llista a part: les IP són de material informàtic
-actiu i s'han d'anar omplint a mesura que es fa inventari. Caldrà un camp IP a
-l'inventari (ordinadors, impressores, routers, servidors...) i una secció
-«Xarxa», per a superadministració i coordinació, que en surti sola: cerca per
-IP, aula o equip, filtre per planta i les IP lliures a la vista.
 
 ---
 
@@ -228,6 +225,15 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Xarxa** (tanca el §25): l'equip d'inventari porta la seva *Adreça IP*
+  (única, validada i desada sense zeros davant) i el seu *Nom a la xarxa*. La
+  secció *Xarxa*, per a la coordinació, en surt sola: totes les IP ordenades,
+  amb l'equip, l'aula i la planta; cerca per IP, nom, equip o aula; filtre per
+  edifici, planta i aula; i per a cada xarxa /24 en ús, les IP lliures i la
+  primera. Una IP sencera es busca exacta i diu si és lliure. Dues vegades la
+  mateixa IP no es desa, i l'avís diu quin equip la té. També surten a la
+  fitxa de l'equip (només per a la coordinació) i a l'exportació CSV. Migració
+  `20260921200000_inventari_ip`: dues columnes noves i buides.
 - **Nova incidència, en dos passos**: primer es tria on és el problema (aula,
   carro o dispositiu, entorn Google) i després només surt aquell formulari; els
   tres seguits feien pensar que calia omplir-los tots. Des del QR d'un carro o

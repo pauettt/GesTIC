@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { normalizeIPv4 } from "@/lib/network";
 import { requireAdmin } from "@/lib/permissions";
 import {
   createInventoryCategorySchema,
@@ -22,12 +23,30 @@ export async function upsertInventoryItem(input: unknown): Promise<ActionResult>
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
   const data = parsed.data;
+  const ipAddress = data.ipAddress ? normalizeIPv4(data.ipAddress) : null;
+
+  // Dues vegades la mateixa IP és un conflicte a la xarxa: es diu quin equip la té.
+  if (ipAddress) {
+    const holder = await db.inventoryItem.findFirst({
+      where: { ipAddress, ...(data.id ? { NOT: { id: data.id } } : {}) },
+      select: { brand: true, model: true, space: { select: { name: true } } },
+    });
+    if (holder) {
+      const where = holder.space ? ` (${holder.space.name})` : "";
+      return {
+        success: false,
+        error: `La IP ${ipAddress} ja la té ${holder.brand} ${holder.model}${where}`,
+      };
+    }
+  }
 
   const payload = {
     categoryId: data.categoryId,
     brand: data.brand,
     model: data.model,
     serialNumber: data.serialNumber || null,
+    ipAddress,
+    hostname: data.hostname || null,
     spaceId: data.spaceId || null,
     status: data.status,
     isLoanable: data.isLoanable,
@@ -44,10 +63,11 @@ export async function upsertInventoryItem(input: unknown): Promise<ActionResult>
       await db.inventoryItem.create({ data: payload });
     }
   } catch {
-    return { success: false, error: "El número de sèrie ja existeix a l'inventari" };
+    return { success: false, error: "El número de sèrie o la IP ja són d'un altre equip" };
   }
 
   revalidatePath("/inventari");
+  revalidatePath("/xarxa");
   return { success: true };
 }
 
@@ -75,6 +95,7 @@ export async function deleteInventoryItem(input: unknown): Promise<ActionResult>
 
   await db.inventoryItem.delete({ where: { id: parsed.data.id } });
   revalidatePath("/inventari");
+  revalidatePath("/xarxa");
   return { success: true };
 }
 

@@ -42,8 +42,8 @@ type Category = { id: string; name: string };
 
 /**
  * Amb `item`, edita aquell equip. Amb `copyFrom`, en crea un de nou que parteix
- * de les seves dades: de deu projectors iguals només canvia l'aula i el número
- * de sèrie, que és de cada equip i per això no es copia.
+ * de les seves dades: de deu projectors iguals només canvia l'aula. El número de
+ * sèrie, la IP i el nom a la xarxa són de cada equip i per això no es copien.
  */
 export function InventoryItemDialog({
   spaces,
@@ -62,12 +62,14 @@ export function InventoryItemDialog({
   const initialValues = (): UpsertInventoryItemInput =>
     item ??
     (copyFrom
-      ? { ...copyFrom, id: undefined, serialNumber: "" }
+      ? { ...copyFrom, id: undefined, serialNumber: "", ipAddress: "", hostname: "" }
       : {
           categoryId: categories[0]?.id ?? "",
           brand: "",
           model: "",
           serialNumber: "",
+          ipAddress: "",
+          hostname: "",
           spaceId: "",
           status: "ACTIU",
           imageUrl: "",
@@ -175,6 +177,20 @@ export function InventoryItemDialog({
               <FieldLabel htmlFor="serialNumber">Número de sèrie</FieldLabel>
               <Input id="serialNumber" {...register("serialNumber")} />
             </Field>
+
+            {/* Per al material de xarxa: la secció «Xarxa» surt d'aquests dos camps. */}
+            <div className="grid grid-cols-2 gap-4">
+              <Field data-invalid={Boolean(errors.ipAddress)}>
+                <FieldLabel htmlFor="ipAddress">Adreça IP</FieldLabel>
+                <Input id="ipAddress" inputMode="decimal" placeholder="10.1.2.30" {...register("ipAddress")} />
+                <FieldError errors={errors.ipAddress ? [errors.ipAddress] : undefined} />
+              </Field>
+              <Field data-invalid={Boolean(errors.hostname)}>
+                <FieldLabel htmlFor="hostname">Nom a la xarxa</FieldLabel>
+                <Input id="hostname" placeholder="A004-PC01" {...register("hostname")} />
+                <FieldError errors={errors.hostname ? [errors.hostname] : undefined} />
+              </Field>
+            </div>
 
             <Field>
               <FieldLabel htmlFor="spaceId">Ubicació</FieldLabel>

@@ -210,6 +210,11 @@ model InventoryItem {
   brand         String
   model         String
   serialNumber  String?             @unique
+  /// IPv4 fixa, normalitzada (`normalizeIPv4`). La secció «Xarxa» en surt sola:
+  /// les IP s'omplen a mesura que es fa inventari, no en una llista a part.
+  ipAddress     String?             @unique
+  /// El nom de l'equip a la xarxa (el «nom del PC» del full de control).
+  hostname      String?
   spaceId       String?
   status        InventoryItemStatus @default(ACTIU)
   imageUrl      String?

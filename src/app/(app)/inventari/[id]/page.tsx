@@ -86,6 +86,9 @@ export default async function InventoryItemDetailPage({ params }: PageProps<"/in
               <DataRow label="Núm. de sèrie" value={item.serialNumber ?? "—"} />
               {canManage && (
                 <>
+                  {/* Dades de xarxa: com la secció «Xarxa», només per a la coordinació. */}
+                  {item.ipAddress && <DataRow label="Adreça IP" value={item.ipAddress} />}
+                  {item.hostname && <DataRow label="Nom a la xarxa" value={item.hostname} />}
                   <DataRow
                     label="Data de compra"
                     value={item.purchaseDate ? formatDate(item.purchaseDate) : "—"}

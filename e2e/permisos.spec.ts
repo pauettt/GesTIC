@@ -18,6 +18,7 @@ test.describe("professorat", () => {
       "/administracio",
       "/administracio/cartell",
       "/espais",
+      "/xarxa",
       "/consergeria",
       "/contrasenyes",
       // El préstec a l'alumnat és dels tutors/es i la coordinació, i porta noms de menors.
