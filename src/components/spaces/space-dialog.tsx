@@ -26,16 +26,26 @@ type ListOption = { id: string; name: string };
 
 const EMPTY: UpsertSpaceInput = { number: "", roomName: "", buildingId: "", floorId: "" };
 
+/**
+ * Amb `space`, edita aquell espai. Amb `copyFrom`, en crea un de nou al mateix
+ * edifici i planta. El número s'hi queda perquè d'A.001 a A.002 només cal
+ * canviar-ne l'última xifra (repetit, no es desa); el nom és de cada aula i no
+ * es copia.
+ */
 export function SpaceDialog({
   buildings,
   space,
+  copyFrom,
   trigger,
 }: {
   buildings: BuildingOption[];
   space?: UpsertSpaceInput;
+  copyFrom?: UpsertSpaceInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const initialValues = (): UpsertSpaceInput =>
+    space ?? (copyFrom ? { ...copyFrom, id: undefined, roomName: "" } : EMPTY);
   const {
     control,
     register,
@@ -45,7 +55,7 @@ export function SpaceDialog({
     formState: { errors },
   } = useForm<UpsertSpaceInput>({
     resolver: zodResolver(upsertSpaceSchema),
-    defaultValues: space ?? EMPTY,
+    defaultValues: initialValues(),
   });
 
   const buildingId = useWatch({ control, name: "buildingId" });
@@ -58,7 +68,7 @@ export function SpaceDialog({
 
   function handleOpenChange(next: boolean) {
     // Cada cop que s'obre, amb les dades d'ara: si ja s'havia editat, la pàgina porta les noves.
-    if (next) reset(space ?? EMPTY);
+    if (next) reset(initialValues());
     setOpen(next);
   }
 
@@ -78,7 +88,7 @@ export function SpaceDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{space ? "Edita l'espai" : "Nou espai"}</DialogTitle>
+          <DialogTitle>{space ? "Edita l'espai" : copyFrom ? "Duplica l'espai" : "Nou espai"}</DialogTitle>
           <DialogDescription>
             El número és el que identifica l&apos;aula. Un espai sense número, com consergeria, en té prou amb
             el nom.

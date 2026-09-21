@@ -40,18 +40,42 @@ import { Textarea } from "@/components/ui/textarea";
 type Space = { id: string; name: string };
 type Category = { id: string; name: string };
 
+/**
+ * Amb `item`, edita aquell equip. Amb `copyFrom`, en crea un de nou que parteix
+ * de les seves dades: de deu projectors iguals només canvia l'aula i el número
+ * de sèrie, que és de cada equip i per això no es copia.
+ */
 export function InventoryItemDialog({
   spaces,
   categories,
   item,
+  copyFrom,
   trigger,
 }: {
   spaces: Space[];
   categories: Category[];
   item?: UpsertInventoryItemInput;
+  copyFrom?: UpsertInventoryItemInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const initialValues = (): UpsertInventoryItemInput =>
+    item ??
+    (copyFrom
+      ? { ...copyFrom, id: undefined, serialNumber: "" }
+      : {
+          categoryId: categories[0]?.id ?? "",
+          brand: "",
+          model: "",
+          serialNumber: "",
+          spaceId: "",
+          status: "ACTIU",
+          imageUrl: "",
+          isLoanable: false,
+          purchaseDate: "",
+          warrantyUntil: "",
+          notes: "",
+        });
   const {
     control,
     register,
@@ -60,19 +84,7 @@ export function InventoryItemDialog({
     formState: { errors },
   } = useForm<UpsertInventoryItemInput>({
     resolver: zodResolver(upsertInventoryItemSchema),
-    defaultValues: item ?? {
-      categoryId: categories[0]?.id ?? "",
-      brand: "",
-      model: "",
-      serialNumber: "",
-      spaceId: "",
-      status: "ACTIU",
-      imageUrl: "",
-      isLoanable: false,
-      purchaseDate: "",
-      warrantyUntil: "",
-      notes: "",
-    },
+    defaultValues: initialValues(),
   });
 
   const { run, isPending } = useServerAction(upsertInventoryItem, {
@@ -83,8 +95,14 @@ export function InventoryItemDialog({
     },
   });
 
+  function handleOpenChange(next: boolean) {
+    // Una còpia parteix de l'equip tal com és ara, no de com era en carregar la pàgina.
+    if (next && copyFrom) reset(initialValues());
+    setOpen(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           trigger ? (
@@ -99,7 +117,9 @@ export function InventoryItemDialog({
       />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{item ? "Edita l'equip" : "Nou equip d'inventari"}</DialogTitle>
+          <DialogTitle>
+            {item ? "Edita l'equip" : copyFrom ? "Duplica l'equip" : "Nou equip d'inventari"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((values) => run(values))}>
           <FieldGroup>

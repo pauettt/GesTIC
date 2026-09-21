@@ -62,3 +62,39 @@ test("la coordinació crea un edifici amb la seva planta i els tria en crear un 
   await expect(manager.getByText("1 espai · no es pot eliminar")).toBeVisible();
   await expect(manager.getByRole("button", { name: "Elimina Planta E2E" })).toBeDisabled();
 });
+
+test("duplicar un espai en copia l'edifici i el número, que s'ha de canviar", async ({ page }) => {
+  await page.goto("/espais");
+  await addToList(page, "Edificis", "Nou edifici", "Duplicats E2E");
+
+  await page.getByRole("button", { name: "Nou espai" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Número").fill("D.001");
+  await dialog.getByLabel("Nom", { exact: true }).fill("Original E2E");
+  await dialog.locator("#space-building").click();
+  await page.getByRole("option", { name: "Duplicats E2E" }).click();
+  await dialog.getByRole("button", { name: "Desa" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await page.locator("li", { hasText: "D.001 · Original E2E" }).getByRole("button", { name: "Duplica" }).click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Duplica l'espai" })).toBeVisible();
+  await expect(dialog.getByLabel("Número")).toHaveValue("D.001");
+  // El nom és de cada aula: no es copia.
+  await expect(dialog.getByLabel("Nom", { exact: true })).toHaveValue("");
+  await expect(dialog.locator("#space-building")).toHaveText(/Duplicats E2E/);
+
+  // Amb el mateix número no es desa: no se'n fa un de repetit sense voler.
+  await dialog.getByRole("button", { name: "Desa" }).click();
+  await expect(page.getByText("Ja hi ha un espai amb aquest número o aquest nom")).toBeVisible();
+
+  await dialog.getByLabel("Número").fill("D.002");
+  await dialog.getByLabel("Nom", { exact: true }).fill("Còpia E2E");
+  await dialog.getByRole("button", { name: "Desa" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await page.getByLabel("Edifici", { exact: true }).click();
+  await page.getByRole("option", { name: "Duplicats E2E" }).click();
+  await expect(page.getByText("D.001 · Original E2E")).toBeVisible();
+  await expect(page.getByText("D.002 · Còpia E2E")).toBeVisible();
+});

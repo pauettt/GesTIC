@@ -141,16 +141,19 @@ export default async function EspaisPage({ searchParams }: PageProps<"/espais">)
                     <div className="flex shrink-0 gap-1">
                       <SpaceDialog
                         buildings={buildingOptions}
-                        space={{
-                          id: space.id,
-                          number: space.number ?? "",
-                          roomName: space.roomName ?? "",
-                          buildingId: space.buildingId ?? "",
-                          floorId: space.floorId ?? "",
-                        }}
+                        space={spaceValues(space)}
                         trigger={
                           <button className="rounded-md border px-2 py-1 text-xs hover:bg-muted">
                             Edita
+                          </button>
+                        }
+                      />
+                      <SpaceDialog
+                        buildings={buildingOptions}
+                        copyFrom={spaceValues(space)}
+                        trigger={
+                          <button className="rounded-md border px-2 py-1 text-xs hover:bg-muted">
+                            Duplica
                           </button>
                         }
                       />
@@ -180,4 +183,21 @@ export default async function EspaisPage({ searchParams }: PageProps<"/espais">)
       )}
     </div>
   );
+}
+
+/** El que el diàleg d'espai necessita d'un espai desat, per editar-lo o duplicar-lo. */
+function spaceValues(space: {
+  id: string;
+  number: string | null;
+  roomName: string | null;
+  buildingId: string | null;
+  floorId: string | null;
+}) {
+  return {
+    id: space.id,
+    number: space.number ?? "",
+    roomName: space.roomName ?? "",
+    buildingId: space.buildingId ?? "",
+    floorId: space.floorId ?? "",
+  };
 }

@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import type { InventoryItem } from "@prisma/client";
 import Link from "next/link";
 import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 
@@ -212,7 +213,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
               <TableHead>Núm. sèrie</TableHead>
               <TableHead>Prestable</TableHead>
               <TableHead>Estat</TableHead>
-              <TableHead className="w-20" />
+              <TableHead className="w-36" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -250,23 +251,20 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
                     <InventoryItemDialog
                       spaces={spaces}
                       categories={categories}
-                      item={{
-                        id: item.id,
-                        categoryId: item.categoryId,
-                        brand: item.brand,
-                        model: item.model,
-                        serialNumber: item.serialNumber ?? "",
-                        spaceId: item.spaceId ?? "",
-                        status: item.status,
-                        isLoanable: item.isLoanable,
-                        imageUrl: item.imageUrl ?? "",
-                        purchaseDate: item.purchaseDate?.toISOString().slice(0, 10) ?? "",
-                        warrantyUntil: item.warrantyUntil?.toISOString().slice(0, 10) ?? "",
-                        notes: item.notes ?? "",
-                      }}
+                      item={itemValues(item)}
                       trigger={
                         <button className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted">
                           Edita
+                        </button>
+                      }
+                    />
+                    <InventoryItemDialog
+                      spaces={spaces}
+                      categories={categories}
+                      copyFrom={itemValues(item)}
+                      trigger={
+                        <button className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted">
+                          Duplica
                         </button>
                       }
                     />
@@ -288,4 +286,22 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
       <ActiveLoans loans={activeLoanRequests} />
     </div>
   );
+}
+
+/** El que el diàleg d'equip necessita d'un equip desat, per editar-lo o duplicar-lo. */
+function itemValues(item: InventoryItem) {
+  return {
+    id: item.id,
+    categoryId: item.categoryId,
+    brand: item.brand,
+    model: item.model,
+    serialNumber: item.serialNumber ?? "",
+    spaceId: item.spaceId ?? "",
+    status: item.status,
+    isLoanable: item.isLoanable,
+    imageUrl: item.imageUrl ?? "",
+    purchaseDate: item.purchaseDate?.toISOString().slice(0, 10) ?? "",
+    warrantyUntil: item.warrantyUntil?.toISOString().slice(0, 10) ?? "",
+    notes: item.notes ?? "",
+  };
 }
