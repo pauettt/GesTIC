@@ -74,6 +74,8 @@ test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà
   await professor.getByRole("button", { name: "Busca" }).click();
   const result = professor.locator("li", { has: professor.getByRole("link", { name: "Carro E2E", exact: true }) });
   await expect(result).toBeVisible();
+  // Diu on és, per triar el que queda més a prop.
+  await expect(result).toContainText("Edifici Nord E2E, Planta 2 E2E, Aula E2E");
   await result.getByRole("button", { name: "Reserva" }).click();
   await professor.getByPlaceholder("Motiu (opcional)").fill("Taller de programació");
   await professor.getByRole("button", { name: "Confirma la reserva" }).click();
@@ -83,6 +85,8 @@ test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà
 
   await professor.goto(`/chromebooks/${cartId}?week=${nextWeek}`);
   await expect(cell(professor, "6a hora", 1)).toContainText("Professor Un");
+  // La pàgina del carro també diu on anar-lo a buscar.
+  await expect(professor.getByText("Edifici Nord E2E, Planta 2 E2E, Aula E2E")).toBeVisible();
 });
 
 test("al mòbil es reserven unes quantes sessions seguides d'un dia", async ({ browser }) => {

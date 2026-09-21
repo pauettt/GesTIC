@@ -72,7 +72,15 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
-    const space = await db.space.create({ data: { name: "Aula E2E", roomName: "Aula E2E" } });
+    // L'aula del carro és d'un edifici i d'una planta, com les de debò: el cercador
+    // de carros ha de dir on és cada un.
+    const building = await db.building.create({
+      data: { name: "Edifici Nord E2E", floors: { create: { name: "Planta 2 E2E" } } },
+      include: { floors: true },
+    });
+    const space = await db.space.create({
+      data: { name: "Aula E2E", roomName: "Aula E2E", buildingId: building.id, floorId: building.floors[0].id },
+    });
     const cart = await db.cart.create({ data: { name: "Carro E2E", spaceId: space.id } });
 
     await db.incident.create({

@@ -10,13 +10,16 @@ import { deviceSummary } from "@/lib/devices";
 import { loadBuildingOptions } from "@/lib/location-data";
 import {
   locationLabel,
+  placedSpaceSelect,
   resolveLocationFilter,
   resolveSpaceFilter,
   spaceLocationWhere,
+  type PlacedSpace,
 } from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { CartFinder, QuickReserveButton } from "@/components/chromebooks/cart-finder";
+import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
 import { LocationFilter } from "@/components/shared/location-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +45,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
         : location
           ? { space: spaceLocationWhere(location) }
           : {},
-      include: { space: true, chromebooks: true },
+      include: { space: { select: placedSpaceSelect }, chromebooks: true },
       orderBy: { name: "asc" },
     }),
     // Per a la vista prèvia de la importació: què ja hi és i no s'ha de repetir.
@@ -136,7 +139,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
               carts={carts.map((cart) => ({
                 id: cart.id,
                 name: cart.name,
-                spaceName: cart.space?.name ?? null,
+                space: cart.space,
                 available: cart.chromebooks.filter((cb) => cb.status === "DISPONIBLE").length,
                 busy: busyCartIds.has(cart.id),
               }))}
@@ -170,9 +173,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                 </div>
                 <CardHeader>
                   <CardTitle>{cart.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {cart.space?.name ?? "Sense ubicació fixa"}
-                  </p>
+                  <CartPlace space={cart.space} className="text-sm" />
                 </CardHeader>
                 <CardContent className="flex flex-col gap-0.5">
                   {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
@@ -204,7 +205,7 @@ function CartSearchResults({
   carts,
 }: {
   search: CartSearch;
-  carts: { id: string; name: string; spaceName: string | null; available: number; busy: boolean }[];
+  carts: { id: string; name: string; space: PlacedSpace | null; available: number; busy: boolean }[];
 }) {
   const free = carts.filter((cart) => !cart.busy);
   const matching = free
@@ -236,9 +237,9 @@ function CartSearchResults({
                 >
                   {cart.name}
                 </Link>
+                <CartPlace space={cart.space} className="text-sm" />
                 <p className="text-sm text-muted-foreground">
-                  {cart.spaceName ?? "Sense ubicació fixa"} · {cart.available}{" "}
-                  {cart.available === 1 ? "equip disponible" : "equips disponibles"}
+                  {cart.available} {cart.available === 1 ? "equip disponible" : "equips disponibles"}
                 </p>
               </div>
               <QuickReserveButton

@@ -39,9 +39,29 @@ export function spaceLocationWhere(filter: LocationFilter | null): Prisma.SpaceW
   return { buildingId: filter.building.id, ...(filter.floor ? { floorId: filter.floor.id } : {}) };
 }
 
-/** «Edifici principal, Planta 0», per dir què s'està mirant. */
-export function locationLabel(filter: LocationFilter) {
+/** «Edifici principal, Planta 0»: el que s'està mirant, o on és un espai. */
+export function locationLabel(filter: { building: { name: string }; floor: { name: string } | null }) {
   return filter.floor ? `${filter.building.name}, ${filter.floor.name}` : filter.building.name;
+}
+
+/** El que cal llegir d'un espai per dir on és (`spacePlace`). */
+export const placedSpaceSelect = {
+  name: true,
+  building: { select: { name: true } },
+  floor: { select: { name: true } },
+} satisfies Prisma.SpaceSelect;
+
+export type PlacedSpace = { name: string; building: { name: string } | null; floor: { name: string } | null };
+
+/**
+ * On és un espai, de fora cap a dins: «Edifici principal, Planta 1, A.004 ·
+ * Rosalia». Qui va a buscar un carro hi llegeix primer l'edifici i la planta,
+ * que és el que diu quant l'haurà d'arrossegar. Sense edifici, només l'aula.
+ */
+export function spacePlace(space: PlacedSpace) {
+  return space.building
+    ? `${locationLabel({ building: space.building, floor: space.floor })}, ${space.name}`
+    : space.name;
 }
 
 export type SpaceOption = { id: string; name: string; buildingId: string | null; floorId: string | null };

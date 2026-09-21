@@ -7,11 +7,13 @@ import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
 import { deviceSummary } from "@/lib/devices";
+import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { CartImportDialog } from "@/components/chromebooks/cart-import-dialog";
+import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
 import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
@@ -38,7 +40,7 @@ export default async function CartDetailPage({
     db.cart.findUnique({
       where: { id },
       include: {
-        space: true,
+        space: { select: placedSpaceSelect },
         chromebooks: {
           orderBy: { assetTag: "asc" },
           include: {
@@ -97,11 +99,12 @@ export default async function CartDetailPage({
             </div>
             <div>
               <h1 className="text-2xl font-semibold">{cart.name}</h1>
-              <p className="text-muted-foreground">
-                {cart.space?.name ?? "Sense ubicació fixa"}
-                {summary ? ` · ${summary}` : ""}
-                {cart.serialNumber ? ` · Núm. sèrie: ${cart.serialNumber}` : ""}
-              </p>
+              <CartPlace space={cart.space} />
+              {(summary || cart.serialNumber) && (
+                <p className="text-muted-foreground">
+                  {[summary, cart.serialNumber && `Núm. sèrie: ${cart.serialNumber}`].filter(Boolean).join(" · ")}
+                </p>
+              )}
               <div className="flex flex-wrap gap-3">
                 <Link
                   href={`/incidencies?cartId=${cart.id}`}

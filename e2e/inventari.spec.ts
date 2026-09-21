@@ -27,7 +27,7 @@ test("una categoria que no hi és es crea des del mateix formulari de l'equip i 
 
 test("els carros es filtren per edifici", async ({ page }) => {
   await page.goto("/espais");
-  // L'aula del Carro E2E no és de cap edifici: filtrant per un de nou, no surt.
+  // L'aula del Carro E2E és d'un altre edifici: filtrant per un de nou, no surt.
   await page.getByRole("button", { name: "Edificis" }).click();
   const manager = page.getByRole("dialog");
   await manager.getByPlaceholder("Nou edifici").fill("Annex E2E");

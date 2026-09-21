@@ -19,7 +19,11 @@ Queden sis coses:
 1. **Importar els carros i els Chromebooks**: tot d'un cop amb *Carros →
    Importa*, o carro a carro des de la pàgina de cada carro (*Importa des d'un
    full*), amb el full exportat en CSV. Les aules es creen soles amb el número i
-   el nom, i els equips sense carro van a *Préstec a l'alumnat*.
+   el nom, i els equips sense carro van a *Préstec a l'alumnat*. Després, cada
+   carro ha de portar la seva *Ubicació habitual* (*Edita*), i la seva aula,
+   l'edifici i la planta: és el que el cercador ensenya al professorat per triar
+   el que li queda a prop. El 2026-09-21 la majoria dels carros de producció
+   encara sortien «Sense ubicació fixa».
 2. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
@@ -225,6 +229,11 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **On és cada carro**: el cercador de carros lliures, les targetes de
+  *Carros* i la pàgina de cada carro diuen l'edifici, la planta i l'aula
+  («Edifici principal, Planta 1, A.004 · Rosalia»), per triar el que queda més
+  a prop i no haver-lo d'arrossegar per tot el centre. Surt de la *Ubicació
+  habitual* del carro i de l'edifici i la planta de la seva aula.
 - **La feina pendent, a l'inici de la coordinació**: una franja amb els
   números (sense responsable, aturades, devolucions fora de termini, préstecs,
   consultes, Chromebooks d'alumnat), cadascun cap a la seva llista, i «Obre el

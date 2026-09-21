@@ -5,6 +5,7 @@ import {
   resolveLocationFilter,
   resolveSpaceFilter,
   spaceLocationWhere,
+  spacePlace,
   spacesInLocation,
 } from "@/lib/locations";
 
@@ -55,6 +56,21 @@ describe("spaceLocationWhere i locationLabel", () => {
     expect(spaceLocationWhere(filter)).toEqual({ buildingId: "principal", floorId: "p0" });
     expect(spaceLocationWhere(null)).toEqual({});
     expect(filter && locationLabel(filter)).toBe("Edifici principal, Planta 0");
+  });
+});
+
+describe("spacePlace", () => {
+  it("diu l'edifici i la planta abans de l'aula", () => {
+    expect(
+      spacePlace({ name: "A.004 · Rosalia", building: { name: "Edifici principal" }, floor: { name: "Planta 1" } }),
+    ).toBe("Edifici principal, Planta 1, A.004 · Rosalia");
+  });
+
+  it("un edifici sense plantes, i un espai sense edifici, diuen el que hi ha", () => {
+    expect(spacePlace({ name: "Pista coberta", building: { name: "Exterior" }, floor: null })).toBe(
+      "Exterior, Pista coberta",
+    );
+    expect(spacePlace({ name: "A.004 · Rosalia", building: null, floor: null })).toBe("A.004 · Rosalia");
   });
 });
 
