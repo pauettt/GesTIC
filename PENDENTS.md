@@ -96,16 +96,6 @@ compte real: aquelles reserves, incidències i consultes no les treu l'script, i
 s'han de repassar a mà. Val la pena fer una còpia (`npm run db:backup`) abans de
 la neteja.
 
-### 23. Vista de les incidències: per decidir
-El 2026-09-14 va sortir la idea d'un diagrama de Gantt o un cronograma per
-gestionar-les. Un Gantt no hi encaixa: les incidències no tenen data prevista ni
-dependències, i la majoria duren hores o pocs dies. Segons quin sigui el problema
-de debò, hi ha tres millores possibles: un tauler per estats amb els dies que fa
-que cada una és oberta, marcar les que fa dies que ningú no toca, o una data
-prevista per a les reparacions que tenen dia. Un cronograma sí que tindria sentit
-per als projectes de la coordinació al llarg del curs, com a apartat nou.
-**Abans de fer res cal decidir quin problema es vol resoldre.**
-
 ### 25. Xarxa: el mapa d'IP ha de sortir de l'inventari
 Decidit el 2026-09-15. El full de control d'IP (planta, aula, IP, connexió, nom
 del PC) no s'importa com una llista a part: les IP són de material informàtic
@@ -238,6 +228,17 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **El panell diu quanta feina hi ha de debò**: cada cua en mostra 8, però el
+  comptador marcava 8 encara que n'hi hagués més. Ara diu el total, i si n'hi
+  ha més de les que caben porta a la llista sencera («Veure-les totes»).
+- **Incidències aturades** (tanca el §23): una cua nova al panell amb les que
+  tenen responsable però fa 7 dies o més que ningú no hi canvia res ni hi
+  comenta, amb els dies que fa. El problema de debò era aquest, que se
+  n'oblidessin; el tauler per estats i la data prevista no calen. La llista
+  sencera és a `/incidencies?vista=aturades` (i `?vista=sense-responsable`),
+  de tots els cursos. La migració `20260921180000_incidencies_updated_at`
+  afegeix quan es va tocar cada incidència; les que ja hi són prenen la data de
+  creació.
 - **El `DIRECT_URL` del `.env` local ja és `gestic_dev`** (era el §30): apuntava
   a Supabase, i és el que fa servir `prisma.config.ts`, de manera que
   `npm run db:migrate` en local anava contra producció.

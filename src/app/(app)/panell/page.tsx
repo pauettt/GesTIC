@@ -4,6 +4,7 @@ import {
   CalendarCheckIcon,
   DownloadIcon,
   HandCoinsIcon,
+  HourglassIcon,
   LaptopIcon,
   MapPinIcon,
   MessageCircleQuestionIcon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { formatDate, formatDateTimeFull } from "@/lib/date";
+import { daysSinceActivity, STALLED_DAYS } from "@/lib/incidents";
 import { daysOverdue } from "@/lib/loans";
 import { getCourseStats, getPendingWork } from "@/lib/panell-data";
 import { incidentPriorityLabels, incidentPriorityVariants } from "@/lib/labels";
@@ -46,7 +48,9 @@ export default async function PanellPage() {
           title="Incidències sense assignar"
           icon={TicketIcon}
           empty="Totes les incidències obertes tenen responsable."
-          items={work.unassignedIncidents.map((incident) => ({
+          total={work.unassignedIncidents.total}
+          allHref={"/incidencies?vista=sense-responsable" as Route}
+          items={work.unassignedIncidents.items.map((incident) => ({
             id: incident.id,
             href: `/incidencies/${incident.id}` as Route,
             main: incident.title,
@@ -59,10 +63,27 @@ export default async function PanellPage() {
         />
 
         <WorkQueue
+          title="Incidències aturades"
+          icon={HourglassIcon}
+          empty={`Cap incidència amb responsable porta ${STALLED_DAYS} dies sense moure's.`}
+          total={work.stalledIncidents.total}
+          allHref={"/incidencies?vista=aturades" as Route}
+          items={work.stalledIncidents.items.map((incident) => ({
+            id: incident.id,
+            href: `/incidencies/${incident.id}` as Route,
+            main: incident.title,
+            meta: incident.assignedTo ? `Responsable: ${who(incident.assignedTo)}` : "",
+            badge: { label: `${daysSinceActivity(incident)} dies`, variant: "outline" as const },
+          }))}
+        />
+
+        <WorkQueue
           title="Préstecs per aprovar"
           icon={HandCoinsIcon}
           empty="No hi ha sol·licituds pendents."
-          items={work.pendingLoans.map((loan) => ({
+          total={work.pendingLoans.total}
+          allHref="/inventari"
+          items={work.pendingLoans.items.map((loan) => ({
             id: loan.id,
             href: "/inventari" as Route,
             main: `${loan.item.brand} ${loan.item.model}`,
@@ -88,7 +109,9 @@ export default async function PanellPage() {
           title="Peticions i consultes sense tancar"
           icon={MessageCircleQuestionIcon}
           empty="No n'hi ha cap d'oberta."
-          items={work.openQueries.map((query) => ({
+          total={work.openQueries.total}
+          allHref="/consultes"
+          items={work.openQueries.items.map((query) => ({
             id: query.id,
             href: `/consultes/${query.id}` as Route,
             main: query.title,
@@ -101,8 +124,10 @@ export default async function PanellPage() {
           title="Chromebooks per a l'alumnat"
           icon={LaptopIcon}
           empty="No hi ha sol·licituds pendents ni equips per entregar."
+          total={work.pendingStudentRequests.total + work.awaitingStudentDeliveries.total}
+          allHref="/alumnat"
           items={[
-            ...work.pendingStudentRequests.map((request) => ({
+            ...work.pendingStudentRequests.items.map((request) => ({
               id: request.id,
               href: "/alumnat" as Route,
               main: request.groupName
@@ -111,7 +136,7 @@ export default async function PanellPage() {
               meta: `${who(request.tutor)} · ${formatDate(request.createdAt)}`,
               badge: null,
             })),
-            ...work.awaitingStudentDeliveries.map((request) => ({
+            ...work.awaitingStudentDeliveries.items.map((request) => ({
               id: request.id,
               href: "/alumnat" as Route,
               main: `${request.chromebook?.assetTag ?? "Equip"} per entregar${
@@ -127,7 +152,9 @@ export default async function PanellPage() {
           title="Properes cites"
           icon={CalendarCheckIcon}
           empty="No hi ha cap cita demanada."
-          items={work.upcomingAppointments.map((appointment) => ({
+          total={work.upcomingAppointments.total}
+          allHref="/cites"
+          items={work.upcomingAppointments.items.map((appointment) => ({
             id: appointment.id,
             href: "/cites" as Route,
             main: `${who(appointment.user)} · ${appointment.purpose}`,

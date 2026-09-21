@@ -22,6 +22,9 @@ export const FOREIGN_APPOINTMENT_PURPOSE = "Revisar el compte de Classroom de 2n
 /** Incidència de la Professora Dos que el Professor Un no ha de poder veure. */
 export const PRIVATE_INCIDENT_TITLE = "Incidència privada de la Professora Dos";
 
+/** Incidència assignada que fa deu dies que ningú no toca. */
+export const STALLED_INCIDENT_TITLE = "Projector que ningú no ha tornat a mirar";
+
 /** Incidència d'un compte del dev login: l'esborrat de dades de prova se l'ha d'endur. */
 export const DEV_ACCOUNT_INCIDENT_TITLE = "Incidència d'un compte de prova";
 

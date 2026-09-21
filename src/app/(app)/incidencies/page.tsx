@@ -5,6 +5,7 @@ import { PlusIcon, UserIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { deviceTypeLabels } from "@/lib/devices";
 import { formatDate, schoolYearOf, schoolYearRange, schoolYearsBetween } from "@/lib/date";
+import { incidentViewLabels, incidentViewWhere, parseIncidentView } from "@/lib/incidents";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import {
   incidentCategoryLabels,
@@ -44,7 +45,9 @@ export default async function IncidenciesPage({
   searchParams,
 }: PageProps<"/incidencies">) {
   const user = await requireUser();
-  const { status, inventoryItemId, chromebookId, cartId, assignada, curs } = await searchParams;
+  const { status, inventoryItemId, chromebookId, cartId, assignada, curs, vista } = await searchParams;
+  // Les cues del panell: «Veure-les totes» hi porta amb el mateix criteri que compta.
+  const view = isAdmin(user.role) ? parseIncidentView(vista) : null;
   const statusFilter = typeof status === "string" ? status : "TOTES";
   // Amb tres coordinadors, "les meves" és la vista de treball habitual.
   const onlyMine = assignada === "jo" && isAdmin(user.role);
@@ -64,8 +67,10 @@ export default async function IncidenciesPage({
 
   const currentSchoolYear = schoolYearOf(new Date());
   // L'historial d'un objecte ha de mostrar-ho tot: acotar-lo a un curs buidaria
-  // justament allò que el fa útil (veure que un equip falla any rere any).
-  const schoolYear = objectFilter
+  // justament allò que el fa útil (veure que un equip falla any rere any). Les
+  // vistes del panell tampoc: una avaria de juny aturada és feina d'ara.
+  const allYears = Boolean(objectFilter || view);
+  const schoolYear = allYears
     ? "TOTS"
     : typeof curs === "string"
       ? curs
@@ -87,6 +92,7 @@ export default async function IncidenciesPage({
         ...visibleToUser,
         ...schoolYearWhere,
         ...(onlyMine ? { assignedToId: user.id } : {}),
+        ...(view ? incidentViewWhere(view) : {}),
         ...(statusFilter !== "TOTES" ? { status: statusFilter as IncidentStatus } : {}),
       },
       include: {
@@ -131,10 +137,11 @@ export default async function IncidenciesPage({
       const [key, value] = Object.entries(objectFilter)[0];
       params.set(key, value);
     }
+    if (view) params.set("vista", view);
     if (nextStatus && nextStatus !== "TOTES") params.set("status", nextStatus);
     if (nextMine) params.set("assignada", "jo");
-    // L'historial d'un objecte ja és de tots els cursos: no cal dir-ho a la URL.
-    if (!objectFilter && nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
+    // L'historial d'un objecte i les vistes ja són de tots els cursos: no cal dir-ho a la URL.
+    if (!allYears && nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
     const query = params.toString();
     return (query ? `/incidencies?${query}` : "/incidencies") as Route;
   }
@@ -211,7 +218,7 @@ export default async function IncidenciesPage({
           </>
         )}
 
-        {!objectFilter && (schoolYears.length > 1 || schoolYear !== currentSchoolYear) && (
+        {!allYears && (schoolYears.length > 1 || schoolYear !== currentSchoolYear) && (
           <>
             <span className="mx-1 h-5 w-px bg-border" />
             {schoolYears.map((year) => (
@@ -236,6 +243,15 @@ export default async function IncidenciesPage({
           </>
         )}
       </div>
+
+      {view && (
+        <p className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          Només les incidències {incidentViewLabels[view]}.{" "}
+          <Link href="/incidencies" className="font-medium text-foreground hover:underline">
+            Veure totes les incidències
+          </Link>
+        </p>
+      )}
 
       {openBefore > 0 && (
         <p className="text-sm text-muted-foreground">

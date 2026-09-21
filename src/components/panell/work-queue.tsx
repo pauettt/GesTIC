@@ -13,27 +13,37 @@ export type QueueItem = {
   badge: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } | null;
 };
 
-/** Una llista de feina pendent: què és, de qui i quan, amb enllaç per resoldre-ho. */
+/**
+ * Una llista de feina pendent: què és, de qui i quan, amb enllaç per resoldre-ho.
+ * El panell en mostra només les primeres; `total` diu quantes n'hi ha de debò, i
+ * `allHref` porta a la pàgina on surten totes.
+ */
 export function WorkQueue({
   title,
   icon: Icon,
   items,
+  total = items.length,
+  allHref,
   empty,
 }: {
   title: string;
   icon: LucideIcon;
   items: QueueItem[];
+  total?: number;
+  allHref?: Route;
   empty: string;
 }) {
+  const hidden = total - items.length;
+
   return (
     <Card className="h-full">
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2 text-base">
           <Icon className="size-4 text-muted-foreground" />
           {title}
-          {items.length > 0 && (
+          {total > 0 && (
             <Badge variant="secondary" className="ml-auto">
-              {items.length}
+              {total}
             </Badge>
           )}
         </CardTitle>
@@ -58,6 +68,11 @@ export function WorkQueue({
               </li>
             ))}
           </ul>
+        )}
+        {hidden > 0 && allHref && (
+          <Link href={allHref} className="mt-2 block text-sm font-medium hover:underline">
+            {hidden === 1 ? "1 més" : `${hidden} més`} · Veure-les totes →
+          </Link>
         )}
       </CardContent>
     </Card>

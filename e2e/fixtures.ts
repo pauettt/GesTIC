@@ -10,6 +10,7 @@ import {
   DEV_ACCOUNT_INCIDENT_TITLE,
   FOREIGN_APPOINTMENT_PURPOSE,
   PRIVATE_INCIDENT_TITLE,
+  STALLED_INCIDENT_TITLE,
   TUTORIAL_VIDEOS,
   USERS,
   type Fixtures,
@@ -190,6 +191,22 @@ export async function seed(connectionString: string): Promise<{
         spaceId: space.id,
         title: PRIVATE_INCIDENT_TITLE,
         description: "Només l'han de veure la Professora Dos i la coordinació.",
+      },
+    });
+
+    // Una avaria amb responsable que fa dies que ningú no toca: el panell l'ha de
+    // marcar com a aturada, encara que ja tingui qui se n'encarrega.
+    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000);
+    await db.incident.create({
+      data: {
+        reporterId: userIds.professor2,
+        assignedToId: userIds.admin,
+        targetType: "GENERAL",
+        spaceId: space.id,
+        title: STALLED_INCIDENT_TITLE,
+        description: "Assignada i oblidada.",
+        createdAt: tenDaysAgo,
+        updatedAt: tenDaysAgo,
       },
     });
 
