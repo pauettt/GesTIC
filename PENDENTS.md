@@ -16,9 +16,10 @@ el que en quedava obert i era codi.
 
 Queden cinc coses:
 
-1. **Importar els carros i els Chromebooks**: *Carros → Importa*, amb el
-   full exportat en CSV. Les aules es creen soles amb el número i el nom, i els
-   equips sense carro van a *Préstec a l'alumnat*.
+1. **Importar els carros i els Chromebooks**: tot d'un cop amb *Carros →
+   Importa*, o carro a carro des de la pàgina de cada carro (*Importa des d'un
+   full*), amb el full exportat en CSV. Les aules es creen soles amb el número i
+   el nom, i els equips sense carro van a *Préstec a l'alumnat*.
 2. **Omplir els Dubtes freqüents i els Tutorials**, que després del buidat del
    2026-09-15 són buits. Els tutorials són vídeos de YouTube per categories
    (§24): n'hi ha prou d'enganxar-ne l'enllaç.
@@ -73,6 +74,13 @@ canvis:
 ---
 
 ## 🧹 Per fer
+
+### 30. El `DIRECT_URL` del `.env` local apunta a producció
+Detectat el 2026-09-21: `DATABASE_URL` és `gestic_dev`, però `DIRECT_URL`
+continua sent el de Supabase, i és el que fa servir `prisma.config.ts`. Vol dir
+que `npm run db:migrate` en local **va contra producció**. Ara no hi entra
+perquè la contrasenya ja no és vàlida, però cal posar-hi el mateix que a
+`DATABASE_URL`.
 
 ### 29. Dades d'exemple a producció, per treure
 El 2026-09-17 s'hi van posar dades d'exemple perquè el claustre pugui provar
@@ -234,6 +242,35 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 ---
 
 ## ✅ Fet
+
+### 2026-09-21
+
+- **Plantes per edifici**: hi havia una sola llista de plantes per a tots els
+  edificis, i l'exterior no en té cap. Ara cada edifici té les seves (*Aules i
+  espais → Plantes*, triant l'edifici), i en un espai només es poden triar les
+  del seu edifici; la base de dades no en deixa desar una d'un altre ni una
+  planta sense edifici. La migració `20260921100000_plantes_per_edifici`
+  reparteix les que ja hi havia sense perdre cap enllaç: cada planta es copia a
+  cada edifici que té espais seus, i les que no fa servir cap espai van a
+  l'edifici amb més espais. **Després de desplegar, repassar-les**: potser n'hi
+  ha alguna a l'edifici principal que sobra.
+- **Filtre per edifici i planta** a *Aules i espais* (que ara surt agrupat per
+  edifici i, a dins, de baix a dalt), a l'*Inventari TIC* de la coordinació i a
+  *Carros*, on també el té el professorat per trobar el carro que li queda a
+  prop. Va a la URL (`?edifici=…&planta=…`).
+- **Importar els dispositius d'un carro** des del full on els teniu
+  documentats, a la pàgina del carro. En crear un carro nou, s'obre la seva
+  pàgina, que convida a fer-ho. Cada fila porta l'etiqueta (el «nom» de
+  l'equip) i, si n'hi ha, el tipus, el número de sèrie, la marca i el model.
+  No es repeteix mai cap dispositiu, ni per etiqueta ni per número de sèrie, ni
+  si ja és a un altre carro o al préstec a l'alumnat. Llegeix el CSV d'Excel
+  tant en UTF-8 com en el format antic de Windows (els accents sortien
+  trencats).
+- **Les importacions ja no suposen que tot són Chromebooks**: si el full no diu
+  el tipus d'algun equip, cal triar-lo abans d'importar.
+- **Categoria nova des del formulari d'un equip** d'inventari: el desplegable
+  porta «Nova categoria…» i la deixa triada. El formulari ara fa scroll: en
+  pantalles petites el botó «Desa» quedava fora.
 
 ### 2026-09-17
 

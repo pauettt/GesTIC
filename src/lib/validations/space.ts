@@ -11,12 +11,18 @@ export const upsertSpaceSchema = z
   .refine((space) => space.number !== "" || space.roomName !== "", {
     message: "Indica el número de l'aula, el nom o tots dos",
     path: ["roomName"],
+  })
+  // Les plantes són de cada edifici: sense edifici no n'hi ha cap per triar.
+  .refine((space) => !space.floorId || Boolean(space.buildingId), {
+    message: "Tria abans l'edifici",
+    path: ["floorId"],
   });
 export type UpsertSpaceInput = z.infer<typeof upsertSpaceSchema>;
 
 export const deleteSpaceSchema = z.object({ id: z.string() });
 
-// Els edificis i les plantes són llistes iguals: un nom i un ordre.
+// Els edificis i les plantes són llistes iguals: un nom i un ordre. Les plantes,
+// a més, són d'un edifici.
 const upsertListItemSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1, "Indica un nom").max(100),
@@ -32,6 +38,6 @@ export const upsertBuildingSchema = upsertListItemSchema;
 export const deleteBuildingSchema = deleteListItemSchema;
 export const reorderBuildingSchema = reorderListItemSchema;
 
-export const upsertFloorSchema = upsertListItemSchema;
+export const upsertFloorSchema = upsertListItemSchema.extend({ buildingId: z.string().min(1) });
 export const deleteFloorSchema = deleteListItemSchema;
 export const reorderFloorSchema = reorderListItemSchema;

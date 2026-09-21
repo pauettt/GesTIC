@@ -196,3 +196,37 @@ test("un equip donat de baixa ja no accepta incidències", async ({ browser }) =
   await expect(professor.getByText("Aquest dispositiu està donat de baixa")).toBeVisible();
   await expect(professor.getByRole("button", { name: "Pantalla" })).toHaveCount(0);
 });
+
+test("l'historial de sol·licituds diu qui les va demanar, i es filtra i es cerca", async ({ browser }) => {
+  const admin = await pageAs(browser, "admin");
+
+  await requestDevice(browser, "Arlet", "Soler Vidal");
+  await admin.goto("/alumnat");
+  await admin.locator("tr", { hasText: "Arlet Soler Vidal" }).getByRole("button", { name: "Rebutja" }).click();
+  const dialog = admin.getByRole("dialog");
+  await dialog.getByLabel("Motiu (opcional)").fill("Ja en té un de casa");
+  await dialog.getByRole("button", { name: "Rebutja" }).click();
+  await expect(admin.getByText("Sol·licitud rebutjada")).toBeVisible();
+
+  await admin.reload();
+  const history = admin.locator('[data-slot="card"]', {
+    has: admin.getByText("Historial de sol·licituds", { exact: true }),
+  });
+  const arlet = history.locator("tr", { hasText: "Arlet Soler Vidal" });
+  await expect(arlet.getByText("Tutora E2E")).toBeVisible();
+  await expect(arlet.getByText("Rebutjada")).toBeVisible();
+  await expect(arlet.getByText("Ja en té un de casa")).toBeVisible();
+
+  // Rebutjada no és acceptada.
+  await history.getByRole("button", { name: /^Acceptades/ }).click();
+  await expect(arlet).toHaveCount(0);
+  await history.getByRole("button", { name: /^Rebutjades/ }).click();
+  await expect(arlet).toBeVisible();
+
+  // El cercador no distingeix accents ni majúscules.
+  await history.getByRole("button", { name: /^Totes/ }).click();
+  await history.getByLabel("Cerca sol·licituds").fill("arlet soler");
+  await expect(arlet).toBeVisible();
+  await history.getByLabel("Cerca sol·licituds").fill("ningú amb aquest nom");
+  await expect(history.getByText("Cap sol·licitud no coincideix amb la cerca.")).toBeVisible();
+});

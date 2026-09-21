@@ -14,7 +14,11 @@ async function main() {
   });
   const [plantaBaixa, primeraPlanta, segonaPlanta] = await Promise.all(
     ["Planta baixa", "1a planta", "2a planta"].map((name, order) =>
-      db.floor.upsert({ where: { name }, update: {}, create: { name, order } }),
+      db.floor.upsert({
+        where: { buildingId_name: { buildingId: edificiPrincipal.id, name } },
+        update: {},
+        create: { buildingId: edificiPrincipal.id, name, order },
+      }),
     ),
   );
   const aula203 = await db.space.upsert({

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { ACTIVE_STUDENT_REQUEST_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
@@ -42,17 +43,20 @@ export async function upsertCart(input: unknown): Promise<ActionResult> {
     imageUrl: imageUrl || null,
   };
 
+  let createdId: string | null = null;
   try {
     if (id) {
       await db.cart.update({ where: { id }, data: payload });
     } else {
-      await db.cart.create({ data: payload });
+      createdId = (await db.cart.create({ data: payload, select: { id: true } })).id;
     }
   } catch {
     return { success: false, error: "Ja existeix un carro amb aquest nom o número de sèrie" };
   }
 
   revalidatePath("/chromebooks");
+  // Un carro nou és buit: a la seva pàgina se n'importen o s'hi afegeixen els dispositius.
+  if (createdId) redirect(`/chromebooks/${createdId}`);
   return { success: true };
 }
 

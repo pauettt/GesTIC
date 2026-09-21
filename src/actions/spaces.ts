@@ -29,6 +29,13 @@ export async function upsertSpace(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
   const { id, number, roomName, buildingId, floorId } = parsed.data;
+  // La base de dades ja ho impedeix; així es diu per què.
+  if (floorId) {
+    const floor = await db.floor.findUnique({ where: { id: floorId }, select: { buildingId: true } });
+    if (floor && floor.buildingId !== buildingId) {
+      return { success: false, error: "Aquesta planta no és de l'edifici triat" };
+    }
+  }
   const data = {
     name: spaceName({ number, roomName }),
     number: number || null,
@@ -134,7 +141,8 @@ export async function deleteBuilding(input: unknown): Promise<ActionResult> {
   try {
     await db.building.delete({ where: { id: parsed.data.id } });
   } catch (error) {
-    // El diàleg ja no deixa eliminar-ne un amb espais; això és si n'hi han posat un mentrestant.
+    // El diàleg ja no deixa eliminar-ne un amb espais; això és si n'hi han posat un
+    // mentrestant. Les seves plantes sí que se'n van amb ell.
     if (prismaCode(error) === "P2003") {
       return { success: false, error: "No es pot eliminar: hi ha espais en aquest edifici" };
     }
@@ -151,19 +159,24 @@ export async function upsertFloor(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { id, name } = parsed.data;
+  const { id, name, buildingId } = parsed.data;
   const order = Number(parsed.data.order || 0);
   const data = { name, order: Number.isNaN(order) ? 0 : order };
 
   try {
     if (id) {
-      await db.floor.update({ where: { id }, data });
+      // Una planta no canvia d'edifici: els espais que hi ha quedarien en un altre.
+      await db.floor.update({ where: { id, buildingId }, data });
     } else {
-      await db.floor.create({ data });
+      await db.floor.create({ data: { ...data, buildingId } });
     }
   } catch (error) {
     if (prismaCode(error) === "P2002") {
-      return { success: false, error: "Ja hi ha una planta amb aquest nom" };
+      return { success: false, error: "Aquest edifici ja té una planta amb aquest nom" };
+    }
+    // P2003: l'edifici s'ha eliminat mentre el diàleg era obert. P2025: la planta.
+    if (prismaCode(error) === "P2003" || prismaCode(error) === "P2025") {
+      return { success: false, error: "L'edifici o la planta ja no existeixen: torna a obrir el diàleg" };
     }
     throw error;
   }
@@ -178,7 +191,11 @@ export async function reorderFloor(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
   const { id, direction } = parsed.data;
 
+  // Es reordena dins del seu edifici: les plantes dels altres no hi compten.
+  const current = await db.floor.findUnique({ where: { id }, select: { buildingId: true } });
+  if (!current) return { success: false, error: "La planta ja no existeix" };
   const floors = await db.floor.findMany({
+    where: { buildingId: current.buildingId },
     orderBy: [{ order: "asc" }, { name: "asc" }],
     select: { id: true },
   });

@@ -11,6 +11,7 @@ import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { deleteCart } from "@/actions/chromebooks";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
+import { CartImportDialog } from "@/components/chromebooks/cart-import-dialog";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
 import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
@@ -33,7 +34,7 @@ export default async function CartDetailPage({
     requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
   const weekEnd = addDays(weekStart, 7);
 
-  const [cart, spaces, carts] = await Promise.all([
+  const [cart, spaces, carts, existingChromebooks] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
@@ -60,6 +61,10 @@ export default async function CartDetailPage({
     admin
       ? db.cart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
       : Promise.resolve([]),
+    // Per a la vista prèvia de la importació: cap dispositiu es pot repetir, sigui del carro que sigui.
+    admin
+      ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
+      : Promise.resolve([]),
   ]);
 
   if (!cart) notFound();
@@ -68,6 +73,12 @@ export default async function CartDetailPage({
   const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA").length;
   const available = cart.chromebooks.filter((chromebook) => chromebook.status === "DISPONIBLE").length;
   const summary = deviceSummary(cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA"));
+  const existing = {
+    assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
+    serialNumbers: existingChromebooks.flatMap((chromebook) =>
+      chromebook.serialNumber ? [chromebook.serialNumber] : [],
+    ),
+  };
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -182,16 +193,35 @@ export default async function CartDetailPage({
         <>
           <Separator />
           <div>
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Dispositius del carro</h2>
-              <Link
-                href={`/chromebooks/${cart.id}/etiquetes`}
-                className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
-              >
-                <QrCodeIcon className="size-4" />
-                Imprimeix el QR del carro
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                {cart.chromebooks.length > 0 && (
+                  <CartImportDialog cartId={cart.id} cartName={cart.name} existing={existing} />
+                )}
+                <Link
+                  href={`/chromebooks/${cart.id}/etiquetes`}
+                  className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                >
+                  <QrCodeIcon className="size-4" />
+                  Imprimeix el QR del carro
+                </Link>
+              </div>
             </div>
+            {cart.chromebooks.length === 0 && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed p-4">
+                <p className="text-sm text-muted-foreground">
+                  Aquest carro encara no té dispositius. Importa&apos;ls del full on els teniu documentats, o
+                  afegeix-los un a un.
+                </p>
+                <CartImportDialog
+                  cartId={cart.id}
+                  cartName={cart.name}
+                  existing={existing}
+                  triggerVariant="default"
+                />
+              </div>
+            )}
             <div className="mb-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="size-3 rounded-sm border-2 border-green-400 bg-green-100" /> Disponible

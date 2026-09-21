@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { detectColumns, planChromebookImport, type ExistingInventory } from "@/lib/chromebook-import";
+import {
+  CART_SHEET_FIELDS,
+  detectColumns,
+  planCartImport,
+  planChromebookImport,
+  type ExistingInventory,
+} from "@/lib/chromebook-import";
 
 const HEADER = ["f", "Marca", "NS", "nº Carretó", "Nº aula", "NOM AULA", "INCIDÈNCIES"];
 const EMPTY: ExistingInventory = { spaces: [], cartNames: [], assetTags: [], serialNumbers: [] };
@@ -67,7 +73,7 @@ describe("planChromebookImport", () => {
     expect(result.carts).toEqual([
       { name: "Carro 1 (A.004)", spaceName: "A.004 · Rosalia", chromebooks: 1, exists: true },
     ]);
-    expect(result.duplicates).toEqual([{ row: 2, message: "Ja hi ha un Chromebook amb l'etiqueta C1-01" }]);
+    expect(result.duplicates).toEqual([{ row: 2, message: "Ja hi ha un dispositiu amb l'etiqueta C1-01" }]);
     expect(result.chromebooks.map((c) => c.assetTag)).toEqual(["C1-02"]);
   });
 
@@ -123,9 +129,97 @@ describe("planChromebookImport", () => {
     expect(result.chromebooks.map((c) => c.deviceType)).toEqual(["IPAD", "PORTATIL"]);
   });
 
+  it("sense triar el tipus, les files que no el diuen no s'importen: no se suposa que són Chromebooks", () => {
+    const rows = [
+      [...HEADER, "Tipus"],
+      ["1", "apple", "SN-I", "5", "", "", "", "iPad 9"],
+      ["2", "asus", "SN-C", "5", "", "", "", ""],
+    ];
+    const { headerRow, mapping } = detectColumns(rows);
+    const result = planChromebookImport(rows, { headerRow, mapping, withoutCart: "pool", defaultDeviceType: null }, EMPTY);
+    expect(result.chromebooks.map((c) => c.assetTag)).toEqual(["C5-01"]);
+    expect(result.withoutType).toBe(1);
+    expect(result.errors).toEqual([{ row: 3, message: expect.stringContaining("tipus de dispositiu") }]);
+  });
+
   it("un número de sèrie repetit al full és un error, i el primer sí que s'importa", () => {
     const result = plan([HEADER, ["1", "asus", "SN-A", "1", "", "", ""], ["2", "asus", "sn-a", "1", "", "", ""]]);
     expect(result.chromebooks.map((c) => c.assetTag)).toEqual(["C1-01"]);
     expect(result.errors).toEqual([{ row: 3, message: "El número de sèrie sn-a ja surt a la fila 2" }]);
+  });
+});
+
+describe("planCartImport", () => {
+  function cartPlan(rows: string[][], existing = EMPTY, defaultDeviceType: "CHROMEBOOK" | null = null) {
+    const { headerRow, mapping } = detectColumns(rows, CART_SHEET_FIELDS);
+    return planCartImport(rows, { headerRow, mapping, defaultDeviceType }, existing);
+  }
+
+  it("només mira les columnes d'un carro: un «N» no es pren per número dins del carro", () => {
+    expect(detectColumns([["N", "Etiqueta", "NS", "Marca"]], CART_SHEET_FIELDS).mapping).toEqual({
+      assetTag: 1,
+      serialNumber: 2,
+      brand: 3,
+    });
+  });
+
+  it("el «Nombre» del full és l'etiqueta", () => {
+    expect(detectColumns([["Nombre", "Número de serie", "Marca"]], CART_SHEET_FIELDS).mapping).toEqual({
+      assetTag: 0,
+      serialNumber: 1,
+      brand: 2,
+    });
+  });
+
+  it("importa cada fila amb la seva etiqueta, número de sèrie, marca i tipus", () => {
+    const rows = [
+      ["Etiqueta", "Número de sèrie", "Marca", "Tipus"],
+      ["C4-01", "SN1", "Lenovo", "Chromebook"],
+      ["C4-02", "", "Apple", "iPad"],
+      ["", "", "", ""],
+    ];
+    expect(cartPlan(rows).chromebooks).toEqual([
+      { row: 2, assetTag: "C4-01", serialNumber: "SN1", brand: "Lenovo", model: null, deviceType: "CHROMEBOOK" },
+      { row: 3, assetTag: "C4-02", serialNumber: null, brand: "Apple", model: null, deviceType: "IPAD" },
+    ]);
+  });
+
+  it("no crea mai un dispositiu dues vegades: ni si ja existeix ni si surt repetit al full", () => {
+    const rows = [
+      ["Etiqueta", "NS", "Tipus"],
+      ["C4-01", "SN1", "Chromebook"],
+      ["c4-02", "SN2", "Chromebook"],
+      ["C4-03", "sn9", "Chromebook"],
+      ["C4-04", "SN4", "Chromebook"],
+      ["C4-04", "SN5", "Chromebook"],
+      ["C4-06", "sn4", "Chromebook"],
+    ];
+    const result = cartPlan(rows, { ...EMPTY, assetTags: ["C4-02"], serialNumbers: ["SN9"] });
+    expect(result.chromebooks.map((c) => c.assetTag)).toEqual(["C4-01", "C4-04"]);
+    expect(result.duplicates).toEqual([
+      { row: 3, message: "Ja hi ha un dispositiu amb l'etiqueta c4-02" },
+      { row: 4, message: "Ja hi ha un dispositiu amb el número de sèrie sn9" },
+    ]);
+    expect(result.errors).toEqual([
+      { row: 6, message: "L'etiqueta C4-04 ja surt a la fila 5" },
+      { row: 7, message: "El número de sèrie sn4 ja surt a la fila 5" },
+    ]);
+  });
+
+  it("una fila sense etiqueta no s'importa", () => {
+    const result = cartPlan([["Etiqueta", "NS", "Tipus"], ["", "SN1", "Chromebook"]]);
+    expect(result.chromebooks).toEqual([]);
+    expect(result.errors).toEqual([{ row: 2, message: "No té etiqueta" }]);
+  });
+
+  it("les files sense tipus esperen que se'n triï un, i llavors el prenen", () => {
+    const rows = [
+      ["Etiqueta", "NS", "Marca"],
+      ["C4-01", "SN1", "Lenovo"],
+    ];
+    const pending = cartPlan(rows);
+    expect(pending.withoutType).toBe(1);
+    expect(pending.chromebooks).toEqual([]);
+    expect(cartPlan(rows, EMPTY, "CHROMEBOOK").chromebooks.map((c) => c.deviceType)).toEqual(["CHROMEBOOK"]);
   });
 });

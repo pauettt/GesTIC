@@ -39,6 +39,8 @@ export const upsertInventoryCategorySchema = z.object({
 });
 export type UpsertInventoryCategoryInput = z.infer<typeof upsertInventoryCategorySchema>;
 
+export const createInventoryCategorySchema = upsertInventoryCategorySchema.pick({ name: true });
+
 export const deleteInventoryCategorySchema = z.object({ id: z.string() });
 
 export const reorderInventoryCategorySchema = z.object({

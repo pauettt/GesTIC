@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCsv, toCsv } from "@/lib/csv";
+import { decodeCsvBytes, parseCsv, toCsv } from "@/lib/csv";
 
 describe("toCsv", () => {
   it("neutralitza les cel·les que un full de càlcul executaria com a fórmula", () => {
@@ -50,5 +50,14 @@ describe("parseCsv", () => {
 
   it("no retalla res: els espais poden ser part d'una contrasenya", () => {
     expect(parseCsv(" a , b ")).toEqual([[" a ", " b "]]);
+  });
+});
+
+describe("decodeCsvBytes", () => {
+  it("llegeix l'UTF-8 i també el CSV d'Excel en Windows-1252", () => {
+    expect(decodeCsvBytes(new TextEncoder().encode("Portàtil;Núm. sèrie").buffer)).toBe("Portàtil;Núm. sèrie");
+    // «Portàtil» en Windows-1252: la à és un sol byte, 0xE0.
+    const windows1252 = new Uint8Array([0x50, 0x6f, 0x72, 0x74, 0xe0, 0x74, 0x69, 0x6c]);
+    expect(decodeCsvBytes(windows1252.buffer)).toBe("Portàtil");
   });
 });

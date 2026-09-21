@@ -7,6 +7,10 @@ import {
   PendingStudentRequests,
   TutorStudentRequests,
 } from "@/components/chromebooks/student-requests";
+import {
+  StudentRequestHistory,
+  type StudentRequestHistoryRow,
+} from "@/components/chromebooks/student-request-history";
 
 export const metadata = { title: "Préstec a l'alumnat" };
 
@@ -23,7 +27,7 @@ export default async function StudentLoansPage() {
   // s'exclouen, cadascuna surt si toca.
   const requestsWithContext = { include: { tutor: true, chromebook: true } } as const;
 
-  const [studentChromebooks, myRequests, pendingRequests, awaitingDelivery, delivered] =
+  const [studentChromebooks, myRequests, pendingRequests, awaitingDelivery, delivered, answered] =
     await Promise.all([
       // El pool de préstec és inventari de la coordinació: al tutor no li surt,
       // i per això tampoc es demana.
@@ -73,7 +77,50 @@ export default async function StudentLoansPage() {
             orderBy: { deliveredAt: "desc" },
           })
         : Promise.resolve([]),
+      // L'historial: tot el que ja no espera resposta, el més nou primer. De
+      // les persones només en surt el nom, que va cap al navegador.
+      admin
+        ? db.studentDeviceRequest.findMany({
+            where: { status: { not: "PENDENT" } },
+            select: {
+              id: true,
+              studentFirstName: true,
+              studentLastName: true,
+              groupName: true,
+              reason: true,
+              reasonNote: true,
+              status: true,
+              responseNote: true,
+              createdAt: true,
+              respondedAt: true,
+              tutor: { select: { name: true, email: true } },
+              respondedBy: { select: { name: true, email: true } },
+              chromebook: { select: { id: true, assetTag: true, serialNumber: true } },
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : Promise.resolve([]),
     ]);
+
+  const history: StudentRequestHistoryRow[] = answered.map((request) => ({
+    id: request.id,
+    studentName: `${request.studentFirstName} ${request.studentLastName}`,
+    groupName: request.groupName,
+    reason: request.reason,
+    reasonNote: request.reasonNote,
+    status: request.status,
+    responseNote: request.responseNote,
+    tutorName: request.tutor.name ?? request.tutor.email,
+    respondedByName: request.respondedBy
+      ? (request.respondedBy.name ?? request.respondedBy.email)
+      : null,
+    chromebookId: request.chromebook?.id ?? null,
+    deviceLabel: request.chromebook
+      ? [request.chromebook.assetTag, request.chromebook.serialNumber].filter(Boolean).join(" · ")
+      : null,
+    createdAt: request.createdAt,
+    respondedAt: request.respondedAt,
+  }));
 
   const availableDevices = studentChromebooks.filter((cb) => cb.status === "DISPONIBLE");
 
@@ -93,6 +140,7 @@ export default async function StudentLoansPage() {
           <PendingStudentRequests requests={pendingRequests} available={availableDevices} />
           <AwaitingDeliveryStudentDevices requests={awaitingDelivery} />
           <DeliveredStudentDevices requests={delivered} />
+          <StudentRequestHistory rows={history} />
           <StudentChromebookPool chromebooks={studentChromebooks} />
         </>
       )}

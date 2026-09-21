@@ -24,6 +24,18 @@ export const CHROMEBOOK_FIELDS = [
 ] as const;
 export type ChromebookField = (typeof CHROMEBOOK_FIELDS)[number];
 
+/**
+ * Les dades d'un full d'un sol carro, importat des de la pàgina del carro: no
+ * cal dir de quin carro és ni a quina aula, i cada equip ja porta la seva etiqueta.
+ */
+export const CART_SHEET_FIELDS = [
+  "assetTag",
+  "deviceType",
+  "serialNumber",
+  "brand",
+  "model",
+] as const satisfies readonly ChromebookField[];
+
 /** Per a cada dada, l'índex de la columna del full on és. */
 export type ColumnMapping = Partial<Record<ChromebookField, number>>;
 
@@ -43,7 +55,18 @@ export const CHROMEBOOK_FIELD_LABELS: Record<ChromebookField, string> = {
 const ALIASES: Record<ChromebookField, string[]> = {
   cart: ["carro", "carreto", "n carro", "n carreto", "num carro", "numero carro", "carrito", "n carrito"],
   position: ["f", "n", "num", "numero", "posicio", "posicion", "n dins del carro", "numero dins del carro"],
-  assetTag: ["etiqueta", "identificador", "codi", "codigo", "asset tag"],
+  // «Nom» és com en diuen molts fulls: el nom de l'equip és la seva etiqueta.
+  assetTag: [
+    "etiqueta",
+    "identificador",
+    "codi",
+    "codigo",
+    "asset tag",
+    "nom",
+    "nombre",
+    "nom del dispositiu",
+    "nombre del dispositivo",
+  ],
   deviceType: ["tipus", "tipo", "dispositiu", "dispositivo", "tipus de dispositiu", "tipo de dispositivo"],
   serialNumber: ["ns", "n s", "sn", "s n", "serie", "n serie", "num serie", "numero de serie", "serial", "serial number"],
   brand: ["marca", "fabricant", "fabricante"],
@@ -63,13 +86,16 @@ export function normalizeHeader(text: string) {
 }
 
 /** La fila de títols i les columnes que s'hi reconeixen. Mira les primeres files: hi pot haver un títol a sobre. */
-export function detectColumns(rows: string[][]): { headerRow: number; mapping: ColumnMapping } {
+export function detectColumns(
+  rows: string[][],
+  fields: readonly ChromebookField[] = CHROMEBOOK_FIELDS,
+): { headerRow: number; mapping: ColumnMapping } {
   let best = { headerRow: 0, mapping: {} as ColumnMapping, found: 0 };
   for (let index = 0; index < Math.min(rows.length, 10); index += 1) {
     const headers = rows[index].map(normalizeHeader);
     const mapping: ColumnMapping = {};
     const used = new Set<number>();
-    for (const field of CHROMEBOOK_FIELDS) {
+    for (const field of fields) {
       const column = headers.findIndex((header, position) => !used.has(position) && ALIASES[field].includes(header));
       if (column !== -1) {
         mapping[field] = column;
@@ -115,6 +141,8 @@ export type ChromebookImportPlan = {
   /** No es poden importar tal com són. */
   errors: ImportIssue[];
   withoutCart: number;
+  /** Files que no diuen quin tipus de dispositiu són: prenen el que es tria per a tot el full. */
+  withoutType: number;
 };
 
 const POOL_PREFIX = "ALU-";
@@ -129,8 +157,11 @@ export function planChromebookImport(
     headerRow: number;
     mapping: ColumnMapping;
     withoutCart: RowsWithoutCart;
-    /** El tipus dels equips que el full no diu què són. */
-    defaultDeviceType: DeviceType;
+    /**
+     * El tipus dels equips que el full no diu què són. Sense triar-lo, aquestes
+     * files no s'importen: no se suposa que tot són Chromebooks.
+     */
+    defaultDeviceType: DeviceType | null;
   },
   existing: ExistingInventory,
 ): ChromebookImportPlan {
@@ -170,7 +201,8 @@ export function planChromebookImport(
     serialNumber: string;
     brand: string;
     model: string;
-    deviceType: DeviceType;
+    deviceType: DeviceType | null;
+    typed: boolean;
     space: string | null;
     spaceShort: string | null;
   };
@@ -179,6 +211,7 @@ export function planChromebookImport(
     if (CHROMEBOOK_FIELDS.every((field) => cell(values, field) === "")) return;
     const number = cell(values, "roomNumber");
     const roomName = cell(values, "roomName");
+    const sheetType = parseDeviceType(cell(values, "deviceType"));
     parsed.push({
       // Tal com surt al full de càlcul: la primera fila és l'1.
       row: headerRow + offset + 2,
@@ -189,7 +222,8 @@ export function planChromebookImport(
       serialNumber: cell(values, "serialNumber"),
       brand: cell(values, "brand"),
       model: cell(values, "model"),
-      deviceType: parseDeviceType(cell(values, "deviceType")) ?? options.defaultDeviceType,
+      deviceType: sheetType ?? options.defaultDeviceType,
+      typed: sheetType !== null,
       space: resolveSpace(number, roomName),
       spaceShort: number || roomName || null,
     });
@@ -236,6 +270,7 @@ export function planChromebookImport(
   const positionInCart = new Map<string, number>();
   const createdPerCart = new Map<string, number>();
   let withoutCart = 0;
+  const withoutType = parsed.filter((item) => !item.typed).length;
 
   for (const item of parsed) {
     let assetTag = item.assetTag;
@@ -270,11 +305,11 @@ export function planChromebookImport(
     }
 
     if (takenTags.has(lower(assetTag))) {
-      duplicates.push({ row: item.row, message: `Ja hi ha un Chromebook amb l'etiqueta ${assetTag}` });
+      duplicates.push({ row: item.row, message: `Ja hi ha un dispositiu amb l'etiqueta ${assetTag}` });
       continue;
     }
     if (item.serialNumber && takenSerials.has(lower(item.serialNumber))) {
-      duplicates.push({ row: item.row, message: `Ja hi ha un Chromebook amb el número de sèrie ${item.serialNumber}` });
+      duplicates.push({ row: item.row, message: `Ja hi ha un dispositiu amb el número de sèrie ${item.serialNumber}` });
       continue;
     }
     const repeatedTag = sheetTags.get(lower(assetTag));
@@ -285,6 +320,10 @@ export function planChromebookImport(
     const repeatedSerial = item.serialNumber ? sheetSerials.get(lower(item.serialNumber)) : undefined;
     if (repeatedSerial) {
       errors.push({ row: item.row, message: `El número de sèrie ${item.serialNumber} ja surt a la fila ${repeatedSerial}` });
+      continue;
+    }
+    if (!item.deviceType) {
+      errors.push({ row: item.row, message: NO_TYPE });
       continue;
     }
 
@@ -320,5 +359,76 @@ export function planChromebookImport(
     duplicates,
     errors,
     withoutCart,
+    withoutType,
   };
+}
+
+const NO_TYPE = "No diu quin tipus de dispositiu és: tria'n un per a tot el full";
+
+export type CartImportPlan = {
+  chromebooks: Omit<PlannedChromebook, "cartName">[];
+  duplicates: ImportIssue[];
+  errors: ImportIssue[];
+  withoutType: number;
+};
+
+/**
+ * Els dispositius d'un sol carro. Cada fila ha de portar l'etiqueta, que és com
+ * es coneix l'equip al carro. Un dispositiu no es crea mai dues vegades: ni si
+ * ja és a gesTIC (a qualsevol carro o al préstec a l'alumnat) ni si surt repetit
+ * al full, per etiqueta o per número de sèrie.
+ */
+export function planCartImport(
+  rows: string[][],
+  options: { headerRow: number; mapping: ColumnMapping; defaultDeviceType: DeviceType | null },
+  existing: Pick<ExistingInventory, "assetTags" | "serialNumbers">,
+): CartImportPlan {
+  const { headerRow, mapping } = options;
+  const cell = (values: string[], field: ChromebookField) => {
+    const column = mapping[field];
+    return column === undefined ? "" : (values[column] ?? "").trim();
+  };
+  const takenTags = new Set(existing.assetTags.map(lower));
+  const takenSerials = new Set(existing.serialNumbers.map(lower));
+  const sheetTags = new Map<string, number>();
+  const sheetSerials = new Map<string, number>();
+
+  const plan: CartImportPlan = { chromebooks: [], duplicates: [], errors: [], withoutType: 0 };
+  rows.slice(headerRow + 1).forEach((values, offset) => {
+    if (CART_SHEET_FIELDS.every((field) => cell(values, field) === "")) return;
+    const row = headerRow + offset + 2;
+    const assetTag = cell(values, "assetTag");
+    const serialNumber = cell(values, "serialNumber");
+    const sheetType = parseDeviceType(cell(values, "deviceType"));
+    if (!sheetType) plan.withoutType += 1;
+    const deviceType = sheetType ?? options.defaultDeviceType;
+
+    const repeatedTag = sheetTags.get(lower(assetTag));
+    const repeatedSerial = serialNumber ? sheetSerials.get(lower(serialNumber)) : undefined;
+    if (!assetTag) {
+      plan.errors.push({ row, message: "No té etiqueta" });
+    } else if (takenTags.has(lower(assetTag))) {
+      plan.duplicates.push({ row, message: `Ja hi ha un dispositiu amb l'etiqueta ${assetTag}` });
+    } else if (serialNumber && takenSerials.has(lower(serialNumber))) {
+      plan.duplicates.push({ row, message: `Ja hi ha un dispositiu amb el número de sèrie ${serialNumber}` });
+    } else if (repeatedTag) {
+      plan.errors.push({ row, message: `L'etiqueta ${assetTag} ja surt a la fila ${repeatedTag}` });
+    } else if (repeatedSerial) {
+      plan.errors.push({ row, message: `El número de sèrie ${serialNumber} ja surt a la fila ${repeatedSerial}` });
+    } else if (!deviceType) {
+      plan.errors.push({ row, message: NO_TYPE });
+    } else {
+      sheetTags.set(lower(assetTag), row);
+      if (serialNumber) sheetSerials.set(lower(serialNumber), row);
+      plan.chromebooks.push({
+        row,
+        assetTag,
+        serialNumber: serialNumber || null,
+        brand: cell(values, "brand") || null,
+        model: cell(values, "model") || null,
+        deviceType,
+      });
+    }
+  });
+  return plan;
 }

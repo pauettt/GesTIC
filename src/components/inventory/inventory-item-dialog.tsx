@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
+import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 
-import { upsertInventoryItem } from "@/actions/inventory";
+import { createInventoryCategory, upsertInventoryItem } from "@/actions/inventory";
 import { useServerAction } from "@/hooks/use-server-action";
 import { inventoryItemStatusLabels } from "@/lib/labels";
 import { toSelectItems } from "@/lib/utils";
@@ -25,7 +27,14 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 type Space = { id: string; name: string };
@@ -88,7 +97,7 @@ export function InventoryItemDialog({
           )
         }
       />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{item ? "Edita l'equip" : "Nou equip d'inventari"}</DialogTitle>
         </DialogHeader>
@@ -101,22 +110,7 @@ export function InventoryItemDialog({
                   control={control}
                   name="categoryId"
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      items={toSelectItems(categories, (c) => c.id, (c) => c.name)}
-                    >
-                      <SelectTrigger id="categoryId" className="w-full">
-                        <SelectValue placeholder="Selecciona una categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CategorySelect categories={categories} value={field.value} onChange={field.onChange} />
                   )}
                 />
                 <FieldError errors={errors.categoryId ? [errors.categoryId] : undefined} />
@@ -247,5 +241,109 @@ export function InventoryItemDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const NEW_CATEGORY = "__nova";
+
+/**
+ * La categoria de l'equip. Si no hi és, es crea des del mateix desplegable
+ * («Nova categoria…») i queda triada, sense perdre el que ja s'ha omplert.
+ */
+function CategorySelect({
+  categories,
+  value,
+  onChange,
+}: {
+  categories: Category[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  // Les creades aquí, fins que la pàgina les porti: la llista del servidor arriba després.
+  const [created, setCreated] = useState<Category[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const options = [...categories, ...created.filter((extra) => !categories.some((c) => c.id === extra.id))];
+
+  function create() {
+    if (!name.trim()) return;
+    startTransition(async () => {
+      try {
+        const result = await createInventoryCategory({ name });
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+        setCreated((current) => [...current, result.category]);
+        onChange(result.category.id);
+        setCreating(false);
+        setName("");
+        toast.success("Categoria creada");
+      } catch (error) {
+        unstable_rethrow(error);
+        toast.error("No s'ha pogut crear la categoria. Comprova la connexió i torna-ho a provar.");
+      }
+    });
+  }
+
+  if (creating) {
+    return (
+      <div className="flex gap-1">
+        <Input
+          id="categoryId"
+          autoFocus
+          value={name}
+          placeholder="Nova categoria"
+          aria-label="Nom de la nova categoria"
+          onChange={(event) => setName(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter crearia l'equip, no la categoria.
+            if (event.key === "Enter") {
+              event.preventDefault();
+              create();
+            }
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              setCreating(false);
+            }
+          }}
+        />
+        <Button type="button" size="sm" className="h-8" onClick={create} disabled={isPending || !name.trim()}>
+          Crea
+        </Button>
+        <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setCreating(false)}>
+          <XIcon className="size-4" />
+          <span className="sr-only">Cancel·la</span>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        if (next === NEW_CATEGORY) setCreating(true);
+        else if (next) onChange(next);
+      }}
+      items={{ ...toSelectItems(options, (c) => c.id, (c) => c.name), [NEW_CATEGORY]: "Nova categoria…" }}
+    >
+      <SelectTrigger id="categoryId" className="w-full">
+        <SelectValue placeholder="Selecciona una categoria" />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((category) => (
+          <SelectItem key={category.id} value={category.id}>
+            {category.name}
+          </SelectItem>
+        ))}
+        <SelectSeparator />
+        <SelectItem value={NEW_CATEGORY}>
+          <PlusIcon className="size-4" />
+          Nova categoria…
+        </SelectItem>
+      </SelectContent>
+    </Select>
   );
 }

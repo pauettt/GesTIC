@@ -61,3 +61,17 @@ export function parseCsv(text: string): string[][] {
   }
   return rows;
 }
+
+/**
+ * El text d'un CSV tal com arriba del disc. Google Sheets i el «CSV UTF-8»
+ * d'Excel són UTF-8, però el «CSV» de tota la vida d'Excel a Windows és
+ * Windows-1252: llegit com a UTF-8, «Portàtil» sortiria «Port�til». Si no és
+ * UTF-8 vàlid, és l'altre.
+ */
+export function decodeCsvBytes(bytes: ArrayBuffer): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}

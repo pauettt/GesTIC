@@ -144,7 +144,10 @@ model Space {
   floorId    String?
 
   building       Building?       @relation(fields: [buildingId], references: [id], onDelete: Restrict)
-  floor          Floor?          @relation(fields: [floorId], references: [id], onDelete: Restrict)
+  /// La planta ha de ser del mateix edifici: la clau forana porta l'edifici, i la
+  /// base de dades no deixa desar una planta d'un altre (ni una planta sense edifici,
+  /// amb un CHECK de la migració `20260921100000_plantes_per_edifici`).
+  floor          Floor?          @relation(fields: [floorId, buildingId], references: [id, buildingId], onDelete: Restrict)
   inventoryItems InventoryItem[]
   carts          Cart[]
   chromebooks    Chromebook[]
@@ -160,17 +163,24 @@ model Building {
   name  String @unique
   order Int    @default(0)
 
+  floors Floor[]
   spaces Space[]
 }
 
-/// Una sola llista per a tots els edificis: «1a planta» és la mateixa a tot arreu.
-/// L'ordre és el de l'edifici, de baix a dalt.
+/// Cada edifici té les seves plantes: l'Exterior no en té cap, i l'edifici
+/// principal en pot tenir quatre. L'ordre és el de l'edifici, de baix a dalt.
 model Floor {
-  id    String @id @default(cuid())
-  name  String @unique
-  order Int    @default(0)
+  id         String @id @default(cuid())
+  buildingId String
+  name       String
+  order      Int    @default(0)
 
-  spaces Space[]
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  spaces   Space[]
+
+  @@unique([buildingId, name])
+  /// El que referencia la clau forana de l'espai: planta i edifici alhora.
+  @@unique([id, buildingId])
 }
 
 // ---------------------------------------------------------------------------

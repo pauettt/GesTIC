@@ -2,24 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
-import { FileSpreadsheetIcon, UploadIcon } from "lucide-react";
+import { UploadIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { DeviceType } from "@prisma/client";
 
 import { importChromebooks } from "@/actions/chromebook-import";
 import {
   CHROMEBOOK_FIELDS,
-  CHROMEBOOK_FIELD_LABELS,
-  detectColumns,
   planChromebookImport,
-  type ChromebookField,
-  type ColumnMapping,
   type ExistingInventory,
   type RowsWithoutCart,
 } from "@/lib/chromebook-import";
-import { parseCsv } from "@/lib/csv";
-import { DEVICE_TYPES, deviceTypeLabels } from "@/lib/devices";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,30 +23,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-type Sheet = { fileName: string; rows: string[][]; headerRow: number; mapping: ColumnMapping };
-
-const NO_COLUMN = "none";
-
-function columnLetter(index: number) {
-  return index < 26 ? String.fromCharCode(65 + index) : String(index + 1);
-}
-
-function count(value: number, one: string, many: string) {
-  return `${value} ${value === 1 ? one : many}`;
-}
-
-function Stat({ label, value, muted }: { label: string; value: number; muted?: boolean }) {
-  return (
-    <div className="rounded-lg border bg-muted/30 px-3 py-2">
-      <p className={cn("text-2xl font-semibold tabular-nums", muted && "text-muted-foreground")}>{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
+import {
+  ColumnMappingFields,
+  count,
+  DefaultDeviceTypeField,
+  IssueList,
+  SheetFilePicker,
+  Stat,
+  useSheet,
+} from "@/components/chromebooks/import-sheet";
 
 /**
  * Importació de carros i Chromebooks des d'un full de càlcul. Les columnes es
@@ -62,40 +41,16 @@ function Stat({ label, value, muted }: { label: string; value: number; muted?: b
  */
 export function ChromebookImportDialog({ existing }: { existing: ExistingInventory }) {
   const [open, setOpen] = useState(false);
-  const [sheet, setSheet] = useState<Sheet | null>(null);
+  const { sheet, error, readFile, setColumn, clear } = useSheet(CHROMEBOOK_FIELDS);
   const [withoutCart, setWithoutCart] = useState<RowsWithoutCart>("pool");
-  const [defaultDeviceType, setDefaultDeviceType] = useState<DeviceType>("CHROMEBOOK");
-  const [error, setError] = useState<string | null>(null);
+  const [defaultDeviceType, setDefaultDeviceType] = useState<DeviceType | null>(null);
   const [isImporting, startImport] = useTransition();
 
   function handleOpenChange(next: boolean) {
-    setSheet(null);
-    setError(null);
+    clear();
     setWithoutCart("pool");
-    setDefaultDeviceType("CHROMEBOOK");
+    setDefaultDeviceType(null);
     setOpen(next);
-  }
-
-  async function readFile(file: File) {
-    const rows = parseCsv(await file.text());
-    if (rows.length < 2) {
-      setSheet(null);
-      setError("El fitxer no té cap fila de dades.");
-      return;
-    }
-    const { headerRow, mapping } = detectColumns(rows);
-    setError(null);
-    setSheet({ fileName: file.name, rows, headerRow, mapping });
-  }
-
-  function setColumn(field: ChromebookField, value: string) {
-    setSheet(
-      (current) =>
-        current && {
-          ...current,
-          mapping: { ...current.mapping, [field]: value === NO_COLUMN ? undefined : Number(value) },
-        },
-    );
   }
 
   const plan = sheet
@@ -105,13 +60,6 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
         existing,
       )
     : null;
-  const headers = sheet?.rows[sheet.headerRow] ?? [];
-  const columnItems: Record<string, string> = {
-    [NO_COLUMN]: "Cap columna",
-    ...Object.fromEntries(
-      headers.map((header, index) => [String(index), `${columnLetter(index)} · ${header.trim() || "(sense títol)"}`]),
-    ),
-  };
   const identifiable =
     sheet !== null &&
     (sheet.mapping.cart !== undefined ||
@@ -121,6 +69,8 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
   const poolCount = plan?.chromebooks.filter((chromebook) => chromebook.cartName === null).length ?? 0;
   const newCarts = plan?.carts.filter((cart) => !cart.exists && cart.chromebooks > 0).length ?? 0;
   const toImport = plan?.chromebooks.length ?? 0;
+  // Si no, s'importarien només les files que diuen el tipus, i les altres quedarien enrere sense adonar-se'n.
+  const typeMissing = (plan?.withoutType ?? 0) > 0 && defaultDeviceType === null;
 
   function submit() {
     if (!sheet) return;
@@ -171,26 +121,7 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
         </DialogHeader>
 
         {!sheet || !plan ? (
-          <div className="flex flex-col gap-3">
-            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground hover:bg-muted/40">
-              <FileSpreadsheetIcon className="size-8" />
-              <span>Tria el fitxer .csv</span>
-              <Input
-                type="file"
-                accept=".csv,text/csv"
-                className="sr-only"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void readFile(file);
-                }}
-              />
-            </label>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
-          </div>
+          <SheetFilePicker error={error} onFile={(file) => void readFile(file)} />
         ) : (
           <div className="flex min-w-0 flex-col gap-5">
             <section className="flex flex-col gap-2">
@@ -198,54 +129,12 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
                 Columnes de {sheet.fileName}{" "}
                 <span className="font-normal text-muted-foreground">(les que no surtin bé, tria-les)</span>
               </h3>
-              <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                {CHROMEBOOK_FIELDS.map((field) => (
-                  <div key={field} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-muted-foreground">{CHROMEBOOK_FIELD_LABELS[field]}</span>
-                    <Select
-                      value={String(sheet.mapping[field] ?? NO_COLUMN)}
-                      onValueChange={(value) => setColumn(field, String(value ?? NO_COLUMN))}
-                      items={columnItems}
-                    >
-                      <SelectTrigger className="w-56" aria-label={CHROMEBOOK_FIELD_LABELS[field]}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_COLUMN}>Cap columna</SelectItem>
-                        {headers.map((_, index) => (
-                          <SelectItem key={index} value={String(index)}>
-                            {columnItems[String(index)]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
+              <ColumnMappingFields sheet={sheet} fields={CHROMEBOOK_FIELDS} onChange={setColumn} />
               {!identifiable && (
                 <p role="alert" className="text-sm text-destructive">
                   Tria com a mínim la columna del carro o la del número de sèrie.
                 </p>
               )}
-              <div className="flex items-center justify-between gap-3 border-t pt-3 text-sm sm:max-w-[calc(50%-0.75rem)]">
-                <span className="text-muted-foreground">Tipus quan el full no ho diu</span>
-                <Select
-                  value={defaultDeviceType}
-                  onValueChange={(value) => setDefaultDeviceType((value ?? "CHROMEBOOK") as DeviceType)}
-                  items={deviceTypeLabels}
-                >
-                  <SelectTrigger className="w-56" aria-label="Tipus quan el full no ho diu">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEVICE_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {deviceTypeLabels[type]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </section>
 
             <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -254,6 +143,12 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
               <Stat label="Aules noves" value={plan.newSpaces.length} />
               <Stat label="Files que no s'importen" value={issues.length} muted={issues.length === 0} />
             </section>
+
+            <DefaultDeviceTypeField
+              withoutType={plan.withoutType}
+              value={defaultDeviceType}
+              onChange={setDefaultDeviceType}
+            />
 
             {plan.withoutCart > 0 && (
               <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
@@ -325,24 +220,13 @@ export function ChromebookImportDialog({ existing }: { existing: ExistingInvento
               </div>
             )}
 
-            {issues.length > 0 && (
-              <section className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
-                <h3 className="font-medium">{count(issues.length, "fila no s'importarà", "files no s'importaran")}</h3>
-                <ul className="max-h-40 overflow-auto text-muted-foreground">
-                  {issues.map((issue) => (
-                    <li key={`${issue.row}-${issue.message}`}>
-                      Fila {issue.row}: {issue.message}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <IssueList issues={issues} />
 
             <div className="flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setSheet(null)} disabled={isImporting}>
+              <Button type="button" variant="outline" onClick={clear} disabled={isImporting}>
                 Tria un altre fitxer
               </Button>
-              <Button type="button" onClick={submit} disabled={isImporting || !identifiable || toImport === 0}>
+              <Button type="button" onClick={submit} disabled={isImporting || !identifiable || toImport === 0 || typeMissing}>
                 {isImporting ? "Important…" : `Importa ${count(toImport, "dispositiu", "dispositius")}`}
               </Button>
             </div>

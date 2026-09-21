@@ -4,6 +4,8 @@ import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { inventorySearchFilter } from "@/lib/inventory-search";
+import { loadBuildingOptions } from "@/lib/location-data";
+import { resolveLocationFilter, spaceLocationWhere } from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { inventoryItemStatusLabels, inventoryItemStatusVariants } from "@/lib/labels";
 import {
@@ -16,6 +18,7 @@ import { CategoryManagerDialog } from "@/components/shared/category-manager-dial
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
 import { InventorySearch } from "@/components/inventory/inventory-search";
+import { LocationFilter } from "@/components/shared/location-filter";
 import { LoanableItemsView } from "@/components/inventory/loanable-items-view";
 import { ActiveLoans, PendingLoanRequests } from "@/components/inventory/loan-queues";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +62,10 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     return <LoanableItemsView items={items} myRequests={myRequests} />;
   }
 
-  const { category: categoryFilter, prestable } = await searchParams;
+  const { category: categoryFilter, prestable, edifici, planta } = await searchParams;
   const onlyLoanable = prestable === "1";
+  const buildings = await loadBuildingOptions();
+  const location = resolveLocationFilter(buildings, { edifici, planta });
 
   const [items, spaces, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount] =
     await Promise.all([
@@ -68,6 +73,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
       where: {
         ...(typeof categoryFilter === "string" ? { categoryId: categoryFilter } : {}),
         ...(onlyLoanable ? { isLoanable: true } : {}),
+        ...(location ? { space: spaceLocationWhere(location) } : {}),
         ...search,
       },
       include: { space: true, category: true },
@@ -99,6 +105,8 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     const nextPrestable = next.prestable !== undefined ? next.prestable : onlyLoanable;
     if (nextCategory) params.set("category", nextCategory);
     if (nextPrestable) params.set("prestable", "1");
+    if (location) params.set("edifici", location.building.id);
+    if (location?.floor) params.set("planta", location.floor.id);
     if (typeof q === "string" && q) params.set("q", q);
     const query = params.toString();
     return (query ? `/inventari?${query}` : "/inventari") as Route;
@@ -130,7 +138,10 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
         </Link>
       </p>
 
-      <InventorySearch placeholder="Cerca per marca, model, núm. de sèrie o aula…" />
+      <div className="flex flex-wrap items-center gap-3">
+        <InventorySearch placeholder="Cerca per marca, model, núm. de sèrie o aula…" />
+        <LocationFilter buildings={buildings} />
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">

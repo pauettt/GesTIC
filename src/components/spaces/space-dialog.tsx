@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon } from "lucide-react";
 
 import { upsertSpace } from "@/actions/spaces";
 import { useServerAction } from "@/hooks/use-server-action";
+import type { BuildingOption } from "@/lib/locations";
 import { upsertSpaceSchema, type UpsertSpaceInput } from "@/lib/validations/space";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +28,10 @@ const EMPTY: UpsertSpaceInput = { number: "", roomName: "", buildingId: "", floo
 
 export function SpaceDialog({
   buildings,
-  floors,
   space,
   trigger,
 }: {
-  buildings: ListOption[];
-  floors: ListOption[];
+  buildings: BuildingOption[];
   space?: UpsertSpaceInput;
   trigger?: React.ReactNode;
 }) {
@@ -42,11 +41,15 @@ export function SpaceDialog({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<UpsertSpaceInput>({
     resolver: zodResolver(upsertSpaceSchema),
     defaultValues: space ?? EMPTY,
   });
+
+  const buildingId = useWatch({ control, name: "buildingId" });
+  const floors = buildings.find((building) => building.id === buildingId)?.floors ?? [];
 
   const { run, isPending } = useServerAction(upsertSpace, {
     successMessage: space ? "Espai actualitzat" : "Espai creat",
@@ -105,7 +108,11 @@ export function SpaceDialog({
                     <ListSelect
                       id="space-building"
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(next) => {
+                        field.onChange(next);
+                        // Les plantes són de cada edifici: la de l'anterior ja no hi és.
+                        setValue("floorId", "");
+                      }}
                       options={buildings}
                       emptyLabel="Sense edifici"
                     />
@@ -115,7 +122,7 @@ export function SpaceDialog({
                   <FieldDescription>Es creen amb el botó «Edificis» de la pàgina.</FieldDescription>
                 )}
               </Field>
-              <Field>
+              <Field data-invalid={Boolean(errors.floorId)}>
                 <FieldLabel htmlFor="space-floor">Planta</FieldLabel>
                 <Controller
                   control={control}
@@ -127,12 +134,14 @@ export function SpaceDialog({
                       onChange={field.onChange}
                       options={floors}
                       emptyLabel="Sense planta"
+                      disabled={floors.length === 0}
                     />
                   )}
                 />
-                {floors.length === 0 && (
-                  <FieldDescription>Es creen amb el botó «Plantes» de la pàgina.</FieldDescription>
+                {buildingId && floors.length === 0 && (
+                  <FieldDescription>Aquest edifici no té plantes. Es creen amb el botó «Plantes».</FieldDescription>
                 )}
+                <FieldError errors={errors.floorId ? [errors.floorId] : undefined} />
               </Field>
             </div>
             <div className="flex justify-end gap-2">
@@ -157,12 +166,14 @@ function ListSelect({
   onChange,
   options,
   emptyLabel,
+  disabled,
 }: {
   id: string;
   value: string | undefined;
   onChange: (value: string) => void;
   options: ListOption[];
   emptyLabel: string;
+  disabled?: boolean;
 }) {
   const items = [
     { value: null, label: emptyLabel },
@@ -170,7 +181,7 @@ function ListSelect({
   ];
 
   return (
-    <Select value={value || null} onValueChange={(next) => onChange(next ?? "")} items={items}>
+    <Select value={value || null} onValueChange={(next) => onChange(next ?? "")} items={items} disabled={disabled}>
       <SelectTrigger id={id} className="w-full">
         <SelectValue />
       </SelectTrigger>

@@ -4,19 +4,25 @@ import { LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { deviceSummary } from "@/lib/devices";
+import { loadBuildingOptions } from "@/lib/location-data";
+import { locationLabel, resolveLocationFilter, spaceLocationWhere } from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
+import { LocationFilter } from "@/components/shared/location-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Carros" };
 
-export default async function ChromebooksPage() {
+export default async function ChromebooksPage({ searchParams }: PageProps<"/chromebooks">) {
   const user = await requireUser();
   const admin = isAdmin(user.role);
+  const buildings = await loadBuildingOptions();
+  const location = resolveLocationFilter(buildings, await searchParams);
 
   const [carts, spaces, existingChromebooks] = await Promise.all([
     db.cart.findMany({
+      where: location ? { space: spaceLocationWhere(location) } : {},
       include: { space: true, chromebooks: true },
       orderBy: { name: "asc" },
     }),
@@ -26,6 +32,12 @@ export default async function ChromebooksPage() {
       ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
       : Promise.resolve([]),
   ]);
+  // La importació ha de conèixer tots els carros, també els que el filtre amaga.
+  const allCartNames = admin
+    ? location
+      ? (await db.cart.findMany({ select: { name: true } })).map((cart) => cart.name)
+      : carts.map((cart) => cart.name)
+    : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +53,7 @@ export default async function ChromebooksPage() {
             <ChromebookImportDialog
               existing={{
                 spaces: spaces.map(({ name, number }) => ({ name, number })),
-                cartNames: carts.map((cart) => cart.name),
+                cartNames: allCartNames,
                 assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
                 serialNumbers: existingChromebooks.flatMap((chromebook) =>
                   chromebook.serialNumber ? [chromebook.serialNumber] : [],
@@ -52,6 +64,8 @@ export default async function ChromebooksPage() {
           </div>
         )}
       </div>
+
+      <LocationFilter buildings={buildings} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {carts.map((cart) => {
@@ -94,7 +108,9 @@ export default async function ChromebooksPage() {
           );
         })}
         {carts.length === 0 && (
-          <p className="text-muted-foreground">Encara no hi ha cap carro.</p>
+          <p className="text-muted-foreground">
+            {location ? `No hi ha cap carro a ${locationLabel(location)}.` : "Encara no hi ha cap carro."}
+          </p>
         )}
       </div>
     </div>

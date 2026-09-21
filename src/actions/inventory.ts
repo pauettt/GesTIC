@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/permissions";
 import {
+  createInventoryCategorySchema,
   deleteInventoryCategorySchema,
   deleteInventoryItemSchema,
   reorderInventoryCategorySchema,
@@ -103,6 +104,36 @@ export async function upsertInventoryCategory(input: unknown): Promise<ActionRes
 
   revalidatePath("/inventari");
   return { success: true };
+}
+
+export type CreateInventoryCategoryResult =
+  | { success: true; category: { id: string; name: string } }
+  | { success: false; error: string };
+
+/**
+ * Una categoria nova des del formulari d'un equip, sense sortir-ne: va al final
+ * de la llista i el formulari la deixa triada.
+ */
+export async function createInventoryCategory(input: unknown): Promise<CreateInventoryCategoryResult> {
+  await requireAdmin();
+  const parsed = createInventoryCategorySchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+
+  try {
+    const category = await db.inventoryCategory.create({
+      data: { name: parsed.data.name, order: await db.inventoryCategory.count() },
+      select: { id: true, name: true },
+    });
+    revalidatePath("/inventari");
+    return { success: true, category };
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      return { success: false, error: "Ja existeix una categoria amb aquest nom" };
+    }
+    throw error;
+  }
 }
 
 export async function reorderInventoryCategory(input: unknown): Promise<ActionResult> {
