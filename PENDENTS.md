@@ -228,6 +228,11 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Nova incidència, en dos passos**: primer es tria on és el problema (aula,
+  carro o dispositiu, entorn Google) i després només surt aquell formulari; els
+  tres seguits feien pensar que calia omplir-los tots. Des del QR d'un carro o
+  d'un equip, «Reporta'l amb més detall» obre el formulari amb el carro i
+  l'equip ja triats (`?tipus=carro&carro=…&equip=…`).
 - **Reservar des del mòbil**: la graella de la setmana no hi cabia (calia
   moure-la de costat). Al mòbil ara es mira un dia a la vegada, i les sessions
   lliures es toquen per triar-ne una o unes quantes seguides i reservar-les

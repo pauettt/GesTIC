@@ -78,7 +78,7 @@ export default async function QuickChromebookReportPage({
               </p>
               <QuickReportButtons chromebookId={chromebook.id} categories={QUICK_REPORT_CATEGORIES} />
               <Link
-                href="/incidencies/nova"
+                href={`/incidencies/nova?tipus=carro&equip=${chromebook.id}` as Route}
                 className="mt-2 text-center text-xs text-muted-foreground hover:underline"
               >
                 El problema no és cap d&apos;aquests? Reporta&apos;l amb més detall

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import type { ChromebookStatus, DeviceType } from "@prisma/client";
@@ -30,7 +31,7 @@ export type PickerDevice = {
  * estat i, en tocar-ne un, els botons per reportar-ne l'avaria. Tres tocs:
  * escanejar, triar el dispositiu i triar el problema.
  */
-export function CartQrPicker({ devices }: { devices: PickerDevice[] }) {
+export function CartQrPicker({ cartId, devices }: { cartId: string; devices: PickerDevice[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = devices.find((device) => device.id === selectedId) ?? null;
 
@@ -60,7 +61,7 @@ export function CartQrPicker({ devices }: { devices: PickerDevice[] }) {
         <p className="text-center text-sm text-muted-foreground">Quin problema té?</p>
         <QuickReportButtons chromebookId={selected.id} categories={QUICK_REPORT_CATEGORIES} />
         <Link
-          href="/incidencies/nova"
+          href={`/incidencies/nova?tipus=carro&equip=${selected.id}` as Route}
           className="mt-1 text-center text-xs text-muted-foreground hover:underline"
         >
           El problema no és cap d&apos;aquests? Reporta&apos;l amb més detall
@@ -102,7 +103,9 @@ export function CartQrPicker({ devices }: { devices: PickerDevice[] }) {
           ))}
         </ul>
       )}
-      <Link href="/incidencies/nova" className="mt-1 text-center text-xs text-muted-foreground hover:underline">
+      <Link
+        href={`/incidencies/nova?tipus=carro&carro=${cartId}` as Route}
+        className="mt-1 text-center text-xs text-muted-foreground hover:underline">
         El problema és del carro sencer (no carrega, la clau…)? Reporta&apos;l aquí
       </Link>
     </div>

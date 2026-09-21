@@ -48,7 +48,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
           </p>
         </CardHeader>
         <CardContent>
-          <CartQrPicker devices={cart.chromebooks} />
+          <CartQrPicker cartId={id} devices={cart.chromebooks} />
         </CardContent>
       </Card>
     </main>

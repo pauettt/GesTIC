@@ -40,16 +40,49 @@ const chromebookOption = (chromebook: ChromebookOption): ObjectOption => ({
   chromebookId: chromebook.id,
 });
 
+/**
+ * On comença el formulari quan s'hi arriba des del QR d'un carro o d'un equip:
+ * ja se sap de quin es tracta, i no cal tornar-lo a buscar als desplegables.
+ */
+function startingPoint(
+  initial: { cartId?: string; chromebookId?: string } | undefined,
+  carts: Cart[],
+  studentPool: ChromebookOption[],
+) {
+  const empty = { cartId: "", objectValue: "", targetType: "CART" as const, chromebookId: "" };
+  if (initial?.chromebookId) {
+    const inPool = studentPool.some((chromebook) => chromebook.id === initial.chromebookId);
+    const cart = carts.find((candidate) =>
+      candidate.chromebooks.some((chromebook) => chromebook.id === initial.chromebookId),
+    );
+    if (inPool || cart) {
+      return {
+        cartId: inPool ? STUDENT_POOL : cart!.id,
+        objectValue: `chromebook:${initial.chromebookId}`,
+        targetType: "CHROMEBOOK" as const,
+        chromebookId: initial.chromebookId,
+      };
+    }
+  }
+  if (initial?.cartId && carts.some((cart) => cart.id === initial.cartId)) {
+    return { ...empty, cartId: initial.cartId, objectValue: "cart" };
+  }
+  return empty;
+}
+
 export function CartIncidentForm({
   carts,
   studentPool,
+  initial,
 }: {
   carts: Cart[];
   /** Equips de préstec a l'alumnat. Només l'identificador: de qui és, no cal saber-ho. */
   studentPool: ChromebookOption[];
+  initial?: { cartId?: string; chromebookId?: string };
 }) {
   const router = useRouter();
-  const [objectValue, setObjectValue] = useState("");
+  const [start] = useState(() => startingPoint(initial, carts, studentPool));
+  const [objectValue, setObjectValue] = useState(start.objectValue);
   const {
     control,
     register,
@@ -59,12 +92,12 @@ export function CartIncidentForm({
   } = useForm<CreateIncidentInput>({
     resolver: zodResolver(createIncidentSchema),
     defaultValues: {
-      cartId: "",
-      chromebookId: "",
+      cartId: start.cartId,
+      chromebookId: start.chromebookId,
       description: "",
       photoUrls: [],
       priority: "MITJANA",
-      targetType: "CART",
+      targetType: start.targetType,
     },
   });
 

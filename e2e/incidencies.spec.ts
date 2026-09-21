@@ -8,7 +8,9 @@ test("una incidència de l'entorn Google va i torna entre el professorat i la co
   const professor = await pageAs(browser, "professor");
   await professor.goto("/incidencies/nova");
 
-  // A la pàgina hi ha tres formularis; aquest és el de l'entorn Google.
+  // Primer es tria on és el problema, i només surt aquell formulari.
+  await professor.getByRole("link", { name: /Incidència de l'entorn Google/ }).click();
+  await expect(professor.locator("#cart-cartId")).toHaveCount(0);
   const form = professor.locator("form", { has: professor.locator("#google-service") });
   await professor.locator("#google-service").click();
   await professor.getByRole("option", { name: "Classroom" }).click();
@@ -50,4 +52,17 @@ test("els filtres d'estat dins l'historial d'un equip continuen mirant aquell eq
   await expect(admin).toHaveURL(/chromebookId=.+&status=TANCADA/);
   // Sense cap incidència tancada, el títol encara diu de quin equip és.
   await expect(heading).toBeVisible();
+});
+
+test("des del QR d'un equip, «amb més detall» obre el formulari amb l'equip ja triat", async ({ browser }) => {
+  const { cartChromebooks } = readFixtures();
+  const professor = await pageAs(browser, "professor");
+  await professor.goto(`/q/chromebook/${cartChromebooks["E2E-03"]}`);
+  await professor.getByRole("link", { name: /Reporta'l amb més detall/ }).click();
+
+  await expect(professor.getByText("Incidència en un carro o un dispositiu")).toBeVisible();
+  await expect(professor.locator("#cart-cartId")).toHaveText(/Carro E2E/);
+  await expect(professor.locator("#cart-objectId")).toHaveText(/E2E-03/);
+  await professor.getByRole("link", { name: "Canvia el tipus d'incidència" }).click();
+  await expect(professor.getByText("On és el problema?")).toBeVisible();
 });
