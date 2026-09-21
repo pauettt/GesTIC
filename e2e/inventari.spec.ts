@@ -36,8 +36,42 @@ test("els carros es filtren per edifici", async ({ page }) => {
 
   await page.goto("/chromebooks");
   await expect(page.getByText("Carro E2E", { exact: true })).toBeVisible();
+
+  // Per l'aula on és, hi surt.
+  await page.getByLabel("Aula", { exact: true }).click();
+  await page.getByRole("option", { name: "Aula E2E" }).click();
+  await expect(page).toHaveURL(/aula=/);
+  await expect(page.getByText("Carro E2E", { exact: true })).toBeVisible();
+
+  // Triar un edifici treu l'aula, que no n'és.
   await page.getByLabel("Edifici", { exact: true }).click();
   await page.getByRole("option", { name: "Annex E2E" }).click();
   await expect(page.getByText("No hi ha cap carro a Annex E2E.")).toBeVisible();
   await expect(page.getByLabel("Planta", { exact: true })).toBeDisabled();
+  await expect(page).not.toHaveURL(/aula=/);
+});
+
+test("l'inventari es filtra per aula, i una aula que no existeix no filtra", async ({ page }) => {
+  await page.goto("/inventari");
+  await page.getByRole("button", { name: "Nou equip" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Categoria").click();
+  await page.getByRole("option", { name: "Portàtil" }).click();
+  await dialog.getByRole("textbox", { name: "Marca", exact: true }).fill("Epson");
+  await dialog.getByRole("textbox", { name: "Model", exact: true }).fill("Projector E2E");
+  await dialog.getByLabel("Ubicació").click();
+  await page.getByRole("option", { name: "Aula E2E" }).click();
+  await dialog.getByRole("button", { name: "Desa" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // Amb l'aula triada, només surt el que hi ha a dins.
+  await page.getByLabel("Aula", { exact: true }).click();
+  await page.getByRole("option", { name: "Aula E2E" }).click();
+  await expect(page).toHaveURL(/aula=/);
+  await expect(page.getByRole("link", { name: "Epson Projector E2E" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Lenovo ThinkPad E2E" })).toHaveCount(0);
+
+  // Un enllaç vell a una aula esborrada ensenya tot l'inventari, no una llista buida.
+  await page.goto("/inventari?aula=no-existeix");
+  await expect(page.getByRole("link", { name: "Lenovo ThinkPad E2E" })).toBeVisible();
 });

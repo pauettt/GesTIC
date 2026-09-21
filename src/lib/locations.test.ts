@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { locationLabel, resolveLocationFilter, spaceLocationWhere } from "@/lib/locations";
+import {
+  locationLabel,
+  resolveLocationFilter,
+  resolveSpaceFilter,
+  spaceLocationWhere,
+  spacesInLocation,
+} from "@/lib/locations";
 
 const principal = {
   id: "principal",
@@ -49,5 +55,33 @@ describe("spaceLocationWhere i locationLabel", () => {
     expect(spaceLocationWhere(filter)).toEqual({ buildingId: "principal", floorId: "p0" });
     expect(spaceLocationWhere(null)).toEqual({});
     expect(filter && locationLabel(filter)).toBe("Edifici principal, Planta 0");
+  });
+});
+
+describe("spacesInLocation i resolveSpaceFilter", () => {
+  const a004 = { id: "a004", name: "A.004 · Rosalia", buildingId: "principal", floorId: "p0" };
+  const a104 = { id: "a104", name: "A.104", buildingId: "principal", floorId: "p1" };
+  const pista = { id: "pista", name: "Pista", buildingId: "exterior", floorId: null };
+  const sala = { id: "sala", name: "Sala sense edifici", buildingId: null, floorId: null };
+  const spaces = [a004, a104, pista, sala];
+
+  it("ofereixen només les aules de l'edifici i la planta triats", () => {
+    expect(spacesInLocation(spaces, null)).toEqual(spaces);
+    expect(spacesInLocation(spaces, resolveLocationFilter(buildings, { edifici: "principal" }))).toEqual([
+      a004,
+      a104,
+    ]);
+    expect(
+      spacesInLocation(spaces, resolveLocationFilter(buildings, { edifici: "principal", planta: "p1" })),
+    ).toEqual([a104]);
+  });
+
+  it("una aula de fora de la planta triada, o que no existeix, no filtra", () => {
+    const p1 = resolveLocationFilter(buildings, { edifici: "principal", planta: "p1" });
+    expect(resolveSpaceFilter(spaces, p1, "a104")).toBe(a104);
+    expect(resolveSpaceFilter(spaces, p1, "a004")).toBeNull();
+    expect(resolveSpaceFilter(spaces, null, "sala")).toBe(sala);
+    expect(resolveSpaceFilter(spaces, null, "esborrada")).toBeNull();
+    expect(resolveSpaceFilter(spaces, null, undefined)).toBeNull();
   });
 });

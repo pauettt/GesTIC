@@ -43,3 +43,28 @@ export function spaceLocationWhere(filter: LocationFilter | null): Prisma.SpaceW
 export function locationLabel(filter: LocationFilter) {
   return filter.floor ? `${filter.building.name}, ${filter.floor.name}` : filter.building.name;
 }
+
+export type SpaceOption = { id: string; name: string; buildingId: string | null; floorId: string | null };
+
+/** Les aules que queden dins de l'edifici i la planta triats; sense filtre, totes. */
+export function spacesInLocation(spaces: SpaceOption[], filter: LocationFilter | null) {
+  if (!filter) return spaces;
+  return spaces.filter(
+    (space) =>
+      space.buildingId === filter.building.id && (!filter.floor || space.floorId === filter.floor.id),
+  );
+}
+
+/**
+ * L'aula que demana la URL, si és bona i cau dins de l'edifici i la planta
+ * triats: una aula d'una altra planta no compta, com una planta d'un altre edifici.
+ */
+export function resolveSpaceFilter(
+  spaces: SpaceOption[],
+  filter: LocationFilter | null,
+  aula: Param,
+): SpaceOption | null {
+  const spaceId = single(aula);
+  if (!spaceId) return null;
+  return spacesInLocation(spaces, filter).find((space) => space.id === spaceId) ?? null;
+}

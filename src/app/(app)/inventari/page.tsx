@@ -5,7 +5,7 @@ import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { inventorySearchFilter } from "@/lib/inventory-search";
 import { loadBuildingOptions } from "@/lib/location-data";
-import { resolveLocationFilter, spaceLocationWhere } from "@/lib/locations";
+import { resolveLocationFilter, resolveSpaceFilter, spaceLocationWhere } from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { inventoryItemStatusLabels, inventoryItemStatusVariants } from "@/lib/labels";
 import {
@@ -62,24 +62,31 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     return <LoanableItemsView items={items} myRequests={myRequests} />;
   }
 
-  const { category: categoryFilter, prestable, edifici, planta } = await searchParams;
+  const { category: categoryFilter, prestable, edifici, planta, aula } = await searchParams;
   const onlyLoanable = prestable === "1";
-  const buildings = await loadBuildingOptions();
+  const [buildings, spaces] = await Promise.all([
+    loadBuildingOptions(),
+    db.space.findMany({ orderBy: { name: "asc" } }),
+  ]);
   const location = resolveLocationFilter(buildings, { edifici, planta });
+  const space = resolveSpaceFilter(spaces, location, aula);
 
-  const [items, spaces, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount] =
+  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount] =
     await Promise.all([
     db.inventoryItem.findMany({
       where: {
         ...(typeof categoryFilter === "string" ? { categoryId: categoryFilter } : {}),
         ...(onlyLoanable ? { isLoanable: true } : {}),
-        ...(location ? { space: spaceLocationWhere(location) } : {}),
+        ...(space
+          ? { spaceId: space.id }
+          : location
+            ? { space: spaceLocationWhere(location) }
+            : {}),
         ...search,
       },
       include: { space: true, category: true },
       orderBy: [{ status: "asc" }, { brand: "asc" }],
     }),
-    db.space.findMany({ orderBy: { name: "asc" } }),
     db.inventoryCategory.findMany({
       orderBy: [{ order: "asc" }, { name: "asc" }],
       include: { _count: { select: { items: true } } },
@@ -107,6 +114,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     if (nextPrestable) params.set("prestable", "1");
     if (location) params.set("edifici", location.building.id);
     if (location?.floor) params.set("planta", location.floor.id);
+    if (space) params.set("aula", space.id);
     if (typeof q === "string" && q) params.set("q", q);
     const query = params.toString();
     return (query ? `/inventari?${query}` : "/inventari") as Route;
@@ -140,7 +148,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
 
       <div className="flex flex-wrap items-center gap-3">
         <InventorySearch placeholder="Cerca per marca, model, núm. de sèrie o aula…" />
-        <LocationFilter buildings={buildings} />
+        <LocationFilter buildings={buildings} spaces={spaces} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
