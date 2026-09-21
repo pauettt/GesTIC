@@ -22,5 +22,19 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Mantenint premuda la icona (Android; l'iPhone no en fa cas). Són els mateixos
+    // per a tothom: només hi va el que pot fer qualsevol persona del claustre.
+    shortcuts: [
+      {
+        name: "Nova incidència",
+        url: "/incidencies/nova",
+        icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Reserva un carro",
+        url: "/chromebooks",
+        icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ],
   };
 }

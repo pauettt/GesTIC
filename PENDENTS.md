@@ -225,6 +225,9 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **Accessos directes a la icona**: mantenint premuda la icona de gesTIC a la
+  pantalla d'inici d'un Android surten «Nova incidència» i «Reserva un carro».
+  L'iPhone no en fa cas.
 - **Xarxa** (tanca el §25): l'equip d'inventari porta la seva *Adreça IP*
   (única, validada i desada sense zeros davant) i el seu *Nom a la xarxa*. La
   secció *Xarxa*, per a la coordinació, en surt sola: totes les IP ordenades,

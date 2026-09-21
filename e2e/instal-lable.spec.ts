@@ -12,6 +12,11 @@ test("gesTIC es pot afegir a la pantalla d'inici abans d'haver entrat", async ({
   expect(response.status()).toBe(200);
   const manifest = await response.json();
   expect(manifest).toMatchObject({ name: "gesTIC", start_url: "/", display: "standalone" });
+  // Els accessos directes de la icona porten on diuen.
+  expect(manifest.shortcuts.map((shortcut: { url: string }) => shortcut.url)).toEqual([
+    "/incidencies/nova",
+    "/chromebooks",
+  ]);
 
   const iconHrefs = await page
     .locator('link[rel="icon"], link[rel="apple-touch-icon"]')
