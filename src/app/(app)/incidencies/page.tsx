@@ -125,28 +125,23 @@ export default async function IncidenciesPage({
     const nextStatus = next.status !== undefined ? next.status : statusFilter;
     const nextMine = next.mine !== undefined ? next.mine : onlyMine;
     const nextCurs = next.curs !== undefined ? next.curs : schoolYear;
+    // Dins l'historial d'un objecte, els filtres miren les d'aquell objecte: sense
+    // això, triar «Oberta» portava a les de tot el centre sense avisar.
+    if (objectFilter) {
+      const [key, value] = Object.entries(objectFilter)[0];
+      params.set(key, value);
+    }
     if (nextStatus && nextStatus !== "TOTES") params.set("status", nextStatus);
     if (nextMine) params.set("assignada", "jo");
-    if (nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
+    // L'historial d'un objecte ja és de tots els cursos: no cal dir-ho a la URL.
+    if (!objectFilter && nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
     const query = params.toString();
     return (query ? `/incidencies?${query}` : "/incidencies") as Route;
   }
 
-  const historyLabel = objectFilter
-    ? (incidents[0]
-        ? targetLabelStandalone(incidents[0])
-        : "aquest objecte")
-    : null;
-
-  function targetLabelStandalone(incident: (typeof incidents)[number]) {
-    return incident.inventoryItem
-      ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
-      : incident.chromebook
-        ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag} (carro ${incident.chromebook.cart?.name ?? "—"})`
-        : incident.cart
-          ? `Carro ${incident.cart.name}`
-          : "aquest objecte";
-  }
+  // El nom surt de l'objecte i no de la primera incidència: amb un filtre d'estat
+  // que no en deixa cap, el títol ha de continuar dient de quin equip és.
+  const historyLabel = objectFilter ? await objectLabel(objectFilter) : null;
 
   function targetLabel(incident: (typeof incidents)[number]) {
     const base = incident.inventoryItem
@@ -326,4 +321,27 @@ export default async function IncidenciesPage({
       </div>
     </div>
   );
+}
+
+async function objectLabel(
+  filter: { inventoryItemId: string } | { chromebookId: string } | { cartId: string },
+) {
+  if ("inventoryItemId" in filter) {
+    const item = await db.inventoryItem.findUnique({
+      where: { id: filter.inventoryItemId },
+      select: { brand: true, model: true },
+    });
+    return item ? `${item.brand} ${item.model}` : "aquest objecte";
+  }
+  if ("chromebookId" in filter) {
+    const chromebook = await db.chromebook.findUnique({
+      where: { id: filter.chromebookId },
+      select: { deviceType: true, assetTag: true, cart: { select: { name: true } } },
+    });
+    return chromebook
+      ? `${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag} (carro ${chromebook.cart?.name ?? "—"})`
+      : "aquest objecte";
+  }
+  const cart = await db.cart.findUnique({ where: { id: filter.cartId }, select: { name: true } });
+  return cart ? `Carro ${cart.name}` : "aquest objecte";
 }

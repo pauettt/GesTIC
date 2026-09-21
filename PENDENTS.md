@@ -75,13 +75,6 @@ canvis:
 
 ## 🧹 Per fer
 
-### 30. El `DIRECT_URL` del `.env` local apunta a producció
-Detectat el 2026-09-21: `DATABASE_URL` és `gestic_dev`, però `DIRECT_URL`
-continua sent el de Supabase, i és el que fa servir `prisma.config.ts`. Vol dir
-que `npm run db:migrate` en local **va contra producció**. Ara no hi entra
-perquè la contrasenya ja no és vàlida, però cal posar-hi el mateix que a
-`DATABASE_URL`.
-
 ### 29. Dades d'exemple a producció, per treure
 El 2026-09-17 s'hi van posar dades d'exemple perquè el claustre pugui provar
 l'aplicació plena —préstecs, reserves, incidències, claus i cites— en comptes de
@@ -245,6 +238,20 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-21
 
+- **El `DIRECT_URL` del `.env` local ja és `gestic_dev`** (era el §30): apuntava
+  a Supabase, i és el que fa servir `prisma.config.ts`, de manera que
+  `npm run db:migrate` en local anava contra producció.
+- **Els filtres d'estat dins l'historial d'un equip** ja no el perden: triar
+  «Obertes» a l'historial d'un Chromebook portava a les de tot el centre sense
+  avisar. El títol diu de quin equip és encara que el filtre no en deixi cap.
+- **Historial de sol·licituds de Chromebooks per a l'alumnat**, a *Préstec a
+  l'alumnat*: les ja respostes, amb el tutor/a que les va fer i qui les va
+  decidir, filtres (acceptades, rebutjades, cancel·lades) i cercador.
+- **Filtre per aula** després de l'edifici i la planta, a l'*Inventari TIC* i a
+  *Carros* (`?aula=…`). Només ofereix les aules de l'edifici i la planta triats.
+- **Duplicar un espai o un equip d'inventari**: obre el formulari d'alta amb
+  les dades de l'original. D'un espai en copia l'edifici, la planta i el número
+  (repetit no es desa), no el nom; d'un equip, tot menys el número de sèrie.
 - **Plantes per edifici**: hi havia una sola llista de plantes per a tots els
   edificis, i l'exterior no en té cap. Ara cada edifici té les seves (*Aules i
   espais → Plantes*, triant l'edifici), i en un espai només es poden triar les

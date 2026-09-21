@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { pageAs, resolveIncident } from "./helpers";
+import { pageAs, readFixtures, resolveIncident } from "./helpers";
 
 test("una incidència de l'entorn Google va i torna entre el professorat i la coordinació", async ({
   browser,
@@ -36,4 +36,18 @@ test("una incidència de l'entorn Google va i torna entre el professorat i la co
   await professor.reload();
   await expect(professor.getByText("Resolta", { exact: true }).first()).toBeVisible();
   await expect(professor.getByText(question)).toBeVisible();
+});
+
+test("els filtres d'estat dins l'historial d'un equip continuen mirant aquell equip", async ({ browser }) => {
+  const { cartChromebooks } = readFixtures();
+  const admin = await pageAs(browser, "admin");
+
+  await admin.goto(`/incidencies?chromebookId=${cartChromebooks["E2E-04"]}`);
+  const heading = admin.getByRole("heading", { name: /^Historial: .*E2E-04/ });
+  await expect(heading).toBeVisible();
+
+  await admin.getByRole("link", { name: "Tancades" }).click();
+  await expect(admin).toHaveURL(/chromebookId=.+&status=TANCADA/);
+  // Sense cap incidència tancada, el títol encara diu de quin equip és.
+  await expect(heading).toBeVisible();
 });
