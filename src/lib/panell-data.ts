@@ -38,6 +38,7 @@ function pendingWhere(now: Date) {
     overdueDevicesWhere: { status: "CONFIRMADA", endDate: { lt: now } } satisfies Prisma.DeviceReservationWhereInput,
     openQueriesWhere: { status: { in: ["OBERTA", "EN_CURS"] } } satisfies Prisma.QueryWhereInput,
     pendingStudentWhere: { status: "PENDENT" } as const,
+    pendingRecurringWhere: { status: "PENDENT" } satisfies Prisma.RecurringReservationWhereInput,
     awaitingStudentWhere: { status: "APROVADA" } as const,
     upcomingWhere: { slot: { endDate: { gt: now } } } satisfies Prisma.AppointmentWhereInput,
   };
@@ -58,6 +59,7 @@ export async function getPendingCounts(now: Date = new Date()) {
     openQueries,
     pendingStudent,
     awaitingStudent,
+    pendingRecurring,
   ] = await Promise.all([
     db.incident.count({ where: where.unassignedWhere }),
     db.incident.count({ where: where.stalledWhere }),
@@ -67,6 +69,7 @@ export async function getPendingCounts(now: Date = new Date()) {
     db.query.count({ where: where.openQueriesWhere }),
     db.studentDeviceRequest.count({ where: where.pendingStudentWhere }),
     db.studentDeviceRequest.count({ where: where.awaitingStudentWhere }),
+    db.recurringReservation.count({ where: where.pendingRecurringWhere }),
   ]);
   return {
     unassigned,
@@ -77,6 +80,7 @@ export async function getPendingCounts(now: Date = new Date()) {
     openQueries,
     pendingStudent,
     awaitingStudent,
+    pendingRecurring,
   };
 }
 
@@ -91,6 +95,7 @@ export async function getPendingWork(now: Date = new Date()) {
     openQueriesWhere,
     pendingStudentWhere,
     awaitingStudentWhere,
+    pendingRecurringWhere,
     upcomingWhere,
   } = pendingWhere(now);
 
@@ -103,6 +108,7 @@ export async function getPendingWork(now: Date = new Date()) {
     openQueries,
     pendingStudentRequests,
     awaitingStudentDeliveries,
+    pendingRecurring,
     upcomingAppointments,
   ] = await Promise.all([
     queue(
@@ -197,6 +203,23 @@ export async function getPendingWork(now: Date = new Date()) {
       }),
       db.studentDeviceRequest.count({ where: awaitingStudentWhere }),
     ),
+    // Reserves fixes per decidir: mentre no es decideixen, la sessió no és de ningú.
+    queue(
+      db.recurringReservation.findMany({
+        where: pendingRecurringWhere,
+        select: {
+          id: true,
+          weekday: true,
+          periodId: true,
+          createdAt: true,
+          user: { select: { name: true, email: true } },
+          cart: { select: { name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        take: QUEUE_LIMIT,
+      }),
+      db.recurringReservation.count({ where: pendingRecurringWhere }),
+    ),
     queue(
       db.appointment.findMany({
         where: upcomingWhere,
@@ -222,6 +245,7 @@ export async function getPendingWork(now: Date = new Date()) {
     openQueries,
     pendingStudentRequests,
     awaitingStudentDeliveries,
+    pendingRecurring,
     upcomingAppointments,
   };
 }

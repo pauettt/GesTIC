@@ -35,6 +35,12 @@ const ENTRIES: { key: keyof Counts; one: string; many: string; href: Route; urge
     href: "/panell",
     urgent: true,
   },
+  {
+    key: "pendingRecurring",
+    one: "reserva fixa per aprovar",
+    many: "reserves fixes per aprovar",
+    href: "/chromebooks/reserves-fixes",
+  },
   { key: "pendingLoans", one: "préstec per aprovar", many: "préstecs per aprovar", href: "/inventari" },
   { key: "openQueries", one: "petició o consulta oberta", many: "peticions i consultes obertes", href: "/consultes" },
   {

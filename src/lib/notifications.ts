@@ -17,6 +17,9 @@ import {
   buildQueryAnsweredEmail,
   buildQueryCreatedEmail,
   buildQueryRepliedEmail,
+  buildRecurringCancelledEmail,
+  buildRecurringDecisionEmail,
+  buildRecurringRequestedEmail,
   buildStudentDeviceDecisionEmail,
   buildStudentDeviceRequestedEmail,
   sendEmail,
@@ -27,6 +30,7 @@ import {
   incidentPriorityLabels,
   studentDeviceReasonLabels,
 } from "@/lib/labels";
+import { courseEndLabel, slotLabel } from "@/lib/recurring-reservations";
 import { COORDINATOR_ROLES } from "@/lib/roles";
 import { getBaseUrl } from "@/lib/url";
 
@@ -205,6 +209,87 @@ export async function sendDevicesNotReturnedReminders(now: Date = new Date()) {
   }
 
   return { overdue: overdue.length, sent: results.filter((result) => result.sent).length };
+}
+
+/** Les dades d'una reserva fixa que surten als correus. */
+async function recurringForEmail(recurringId: string) {
+  return db.recurringReservation.findUnique({
+    where: { id: recurringId },
+    select: {
+      weekday: true,
+      periodId: true,
+      schoolYear: true,
+      purpose: true,
+      responseNote: true,
+      userId: true,
+      user: { select: { name: true, email: true } },
+      cart: { select: { name: true } },
+    },
+  });
+}
+
+export async function notifyRecurringRequested(recurringId: string) {
+  await safely("reserva fixa demanada", async () => {
+    const recurring = await recurringForEmail(recurringId);
+    if (!recurring) return;
+
+    const to = await coordinatorEmails(recurring.userId);
+    if (to.length === 0) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to,
+      ...buildRecurringRequestedEmail({
+        who: recurring.user.name ?? recurring.user.email,
+        cartName: recurring.cart.name,
+        slot: slotLabel(recurring.weekday, recurring.periodId),
+        until: courseEndLabel(recurring.schoolYear),
+        purpose: recurring.purpose,
+        url: `${baseUrl}/chromebooks/reserves-fixes`,
+      }),
+    });
+  });
+}
+
+export async function notifyRecurringDecision(
+  recurringId: string,
+  outcome: { approved: boolean; weeks: number; skipped: string[] },
+) {
+  await safely("resposta a una reserva fixa", async () => {
+    const recurring = await recurringForEmail(recurringId);
+    if (!recurring) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to: recurring.user.email,
+      ...buildRecurringDecisionEmail({
+        ...outcome,
+        cartName: recurring.cart.name,
+        slot: slotLabel(recurring.weekday, recurring.periodId),
+        until: courseEndLabel(recurring.schoolYear),
+        responseNote: recurring.responseNote,
+        url: `${baseUrl}/chromebooks/reserves-fixes`,
+      }),
+    });
+  });
+}
+
+export async function notifyRecurringCancelled(recurringId: string, cancelledBy: string) {
+  await safely("reserva fixa anul·lada", async () => {
+    const recurring = await recurringForEmail(recurringId);
+    if (!recurring) return;
+
+    const baseUrl = await getBaseUrl();
+    await sendEmail({
+      to: recurring.user.email,
+      ...buildRecurringCancelledEmail({
+        cartName: recurring.cart.name,
+        slot: slotLabel(recurring.weekday, recurring.periodId),
+        cancelledBy,
+        url: `${baseUrl}/chromebooks/reserves-fixes`,
+      }),
+    });
+  });
 }
 
 /**

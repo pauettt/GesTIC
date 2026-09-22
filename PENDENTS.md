@@ -229,6 +229,27 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-22
 
+- **Reserves fixes de carros**: a la pàgina d'un carro, *Demana una reserva
+  fixa*: el mateix dia de la setmana i la mateixa sessió cada setmana, amb el
+  motiu (obligatori). La coordinació TIC l'aprova o la rebutja (amb una nota que
+  arriba per correu) des de *Carros → Reserves fixes*; la té al panell i a la
+  feina pendent de l'inici, i li arriba un correu quan algú en demana una.
+  Mentre no s'aprova, la sessió continua lliure per a tothom. En aprovar-la es
+  crea una reserva normal per a cada setmana que queda del curs, fins al 30 de
+  juny, i **les setmanes que algú ja tenia reservades es respecten**: la
+  coordinació veu quines són abans d'aprovar, i qui l'ha demanada les rep al
+  correu. A la graella surten com a *Reserva fixa*, i cada setmana es pot
+  alliberar sola; la reserva fixa sencera s'anul·la des de *Reserves fixes*
+  (qui la tenia rep un correu si ho fa la coordinació). No n'hi pot haver dues
+  d'aprovades per al mateix carro, dia i sessió en un curs.
+  **El curs surt de la data**: de setembre a juny, les peticions són per al curs
+  en marxa, i al juliol i a l'agost, per al següent (de l'1 de setembre al 30 de
+  juny). Cada curs es tornen a demanar. Els festius no hi són: l'aplicació no
+  té calendari escolar, i un carro reservat un dia de festa no molesta ningú.
+  La graella del carro ara té les columnes d'amplada fixa, perquè un motiu llarg
+  no eixamplés el dia. Migració `20260922140000_reserves_fixes`: una taula nova
+  i una columna nova (`Reservation.recurringId`), buides. Proves
+  `e2e/reserves-fixes.spec.ts` i `src/lib/recurring-reservations.test.ts`.
 - **Reservar un equip sol d'un carro**: a la pàgina del carro, clicant un
   dispositiu, *Reserva aquest equip*: un dia, de quina sessió a quina, i el
   motiu si cal. Des que comença la primera sessió i fins que es torna, l'equip

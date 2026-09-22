@@ -15,6 +15,7 @@ type Reservation = {
   id: string;
   purpose: string | null;
   userId: string;
+  recurringId: string | null;
   user: { name: string | null; email: string };
 };
 
@@ -55,8 +56,11 @@ export function ReservationCell({
       <div className="rounded-md bg-primary/10 p-1.5">
         <div className="flex items-center justify-between gap-1">
           <span className="truncate font-medium">{reservation.user.name ?? reservation.user.email}</span>
-          {canCancel && <CancelReservationButton reservationId={reservation.id} />}
+          {canCancel && (
+            <CancelReservationButton reservationId={reservation.id} fixed={reservation.recurringId !== null} />
+          )}
         </div>
+        {reservation.recurringId && <p className="text-muted-foreground">Reserva fixa</p>}
         {reservation.purpose && <p className="truncate text-muted-foreground">{reservation.purpose}</p>}
         {devicesOut > 0 && <p className="text-red-700">{missingDevicesLabel(devicesOut)}</p>}
       </div>

@@ -5,8 +5,9 @@ import { LaptopIcon, QrCodeIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
-import { addDays, startOfWeek } from "@/lib/date";
+import { addDays, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
+import { courseEndLabel, recurringCourse, slotLabel } from "@/lib/recurring-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
@@ -17,6 +18,7 @@ import { CartImportDialog } from "@/components/chromebooks/cart-import-dialog";
 import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
 import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
+import { RecurringRequestDialog } from "@/components/chromebooks/recurring-reservations";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { WeeklySchedule } from "@/components/chromebooks/weekly-schedule";
 import { Separator } from "@/components/ui/separator";
@@ -37,8 +39,9 @@ export default async function CartDetailPage({
     requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
   const weekEnd = addDays(weekStart, 7);
   const now = new Date();
+  const course = recurringCourse(now);
 
-  const [cart, spaces, carts, existingChromebooks] = await Promise.all([
+  const [cart, spaces, recurring, carts, existingChromebooks] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
@@ -63,6 +66,24 @@ export default async function CartDetailPage({
       },
     }),
     db.space.findMany({ orderBy: { name: "asc" } }),
+    // Les reserves fixes del carro aquest curs: les aprovades, per a tothom, i les
+    // pendents, per a qui les ha demanades i per a la coordinació, que les decideix.
+    db.recurringReservation.findMany({
+      where: {
+        cartId: id,
+        schoolYear: course.schoolYear,
+        OR: [{ status: "APROVADA" }, { status: "PENDENT", ...(admin ? {} : { userId: user.id }) }],
+      },
+      select: {
+        id: true,
+        weekday: true,
+        periodId: true,
+        status: true,
+        purpose: true,
+        user: { select: { name: true, email: true } },
+      },
+      orderBy: [{ weekday: "asc" }, { periodId: "asc" }],
+    }),
     admin
       ? db.cart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
       : Promise.resolve([]),
@@ -159,7 +180,14 @@ export default async function CartDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Horari d&apos;ocupació</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Horari d&apos;ocupació</h2>
+          <RecurringRequestDialog
+            cartId={cart.id}
+            cartName={cart.name}
+            period={`${course.firstDay > toDateParam(now) ? "de l'1 de setembre" : "des d'ara"} fins al ${courseEndLabel(course.schoolYear)}`}
+          />
+        </div>
         <p className="mb-3 text-sm text-muted-foreground">
           <span className={cn("font-medium", available < inService.length ? "text-red-700" : "text-foreground")}>
             {available} de {inService.length} dispositius disponibles.
@@ -177,6 +205,32 @@ export default async function CartDetailPage({
           currentUserId={user.id}
           isAdmin={admin}
         />
+        {recurring.length > 0 && (
+          <div className="mt-3 rounded-lg border p-3">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">Reserves fixes d&apos;aquest carro</p>
+              <Link href="/chromebooks/reserves-fixes" className="text-sm text-muted-foreground hover:underline">
+                {admin ? "Decideix-les i gestiona-les" : "Les teves reserves fixes"} &rarr;
+              </Link>
+            </div>
+            <ul className="flex flex-col gap-0.5 text-sm">
+              {recurring.map((fixed) => (
+                <li key={fixed.id}>
+                  <span className="font-medium">{slotLabel(fixed.weekday, fixed.periodId)}</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — {fixed.user.name ?? fixed.user.email} · {fixed.purpose}
+                  </span>
+                  {fixed.status === "PENDENT" && (
+                    <span className="ml-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                      Pendent d&apos;aprovar
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {!admin && inService.length > 0 && (

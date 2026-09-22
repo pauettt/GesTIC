@@ -9,11 +9,13 @@ import {
   LaptopIcon,
   MapPinIcon,
   MessageCircleQuestionIcon,
+  RepeatIcon,
   TicketIcon,
 } from "lucide-react";
 
 import { formatDate, formatDateTimeFull, isSameDay } from "@/lib/date";
 import { dueLabel } from "@/lib/device-reservations";
+import { slotLabel } from "@/lib/recurring-reservations";
 import { daysSinceActivity, STALLED_DAYS } from "@/lib/incidents";
 import { daysOverdue } from "@/lib/loans";
 import { getCourseStats, getPendingWork } from "@/lib/panell-data";
@@ -125,6 +127,21 @@ export default async function PanellPage() {
                 : { label: days === 1 ? "1 dia" : `${days} dies`, variant: "destructive" as const },
             };
           })}
+        />
+
+        <WorkQueue
+          title="Reserves fixes per aprovar"
+          icon={RepeatIcon}
+          empty="No hi ha cap reserva fixa pendent."
+          total={work.pendingRecurring.total}
+          allHref="/chromebooks/reserves-fixes"
+          items={work.pendingRecurring.items.map((recurring) => ({
+            id: recurring.id,
+            href: "/chromebooks/reserves-fixes" as Route,
+            main: `${recurring.cart.name} · ${slotLabel(recurring.weekday, recurring.periodId)}`,
+            meta: `${who(recurring.user)} · ${formatDate(recurring.createdAt)}`,
+            badge: null,
+          }))}
         />
 
         <WorkQueue

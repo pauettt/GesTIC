@@ -92,3 +92,20 @@ export const createDeviceReservationSchema = z.object({
 export type CreateDeviceReservationInput = z.infer<typeof createDeviceReservationSchema>;
 
 export const deviceReservationIdSchema = z.object({ id: z.string().min(1) });
+
+// Reserva fixa: un carro, un dia de la setmana (1 = dilluns) i una sessió, cada setmana del curs.
+export const requestRecurringReservationSchema = z.object({
+  cartId: z.string().min(1),
+  weekday: z.number().int().min(1, "Tria el dia").max(5, "Tria el dia"),
+  periodId: z.number().int(),
+  purpose: z.string().trim().min(3, "Explica per a què el necessites").max(300, "Com a molt 300 caràcters"),
+});
+export type RequestRecurringReservationInput = z.infer<typeof requestRecurringReservationSchema>;
+
+export const decideRecurringReservationSchema = z.object({
+  id: z.string().min(1),
+  approve: z.boolean(),
+  responseNote: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export const recurringReservationIdSchema = z.object({ id: z.string().min(1) });

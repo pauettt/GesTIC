@@ -1,7 +1,7 @@
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { LaptopIcon } from "lucide-react";
+import { LaptopIcon, RepeatIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
@@ -23,6 +23,7 @@ import { CartFinder, QuickReserveButton } from "@/components/chromebooks/cart-fi
 import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
 import { LocationFilter } from "@/components/shared/location-filter";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Carros" };
@@ -107,8 +108,12 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
             Carros de Chromebooks, portàtils i iPads del centre, i el seu estat.
           </p>
         </div>
-        {admin && (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink variant="outline" href="/chromebooks/reserves-fixes">
+            <RepeatIcon className="size-4" />
+            Reserves fixes
+          </ButtonLink>
+          {admin && (
             <ChromebookImportDialog
               existing={{
                 spaces: spaces.map(({ name, number }) => ({ name, number })),
@@ -119,9 +124,9 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                 ),
               }}
             />
-            <CartDialog spaces={spaces} />
-          </div>
-        )}
+          )}
+          {admin && <CartDialog spaces={spaces} />}
+        </div>
       </div>
 
       <LocationFilter buildings={buildings} spaces={spaces} />

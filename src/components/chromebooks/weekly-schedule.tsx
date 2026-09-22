@@ -22,6 +22,8 @@ type Reservation = {
   endDate: Date;
   purpose: string | null;
   userId: string;
+  /** La d'una setmana d'una reserva fixa. */
+  recurringId: string | null;
   user: { name: string | null; email: string };
 };
 
@@ -82,6 +84,7 @@ export function WeeklySchedule({
             id: reservation.id,
             who: reservation.user.name ?? reservation.user.email,
             purpose: reservation.purpose,
+            fixed: reservation.recurringId !== null,
             canCancel: canCancel(reservation),
             devicesOut: out,
           };
@@ -133,7 +136,8 @@ export function WeeklySchedule({
       </div>
 
       <div className="hidden overflow-x-auto rounded-lg border bg-background md:block">
-        <table className="w-full min-w-[720px] border-collapse text-xs">
+        {/* Columnes fixes: el motiu d'una reserva es talla en comptes d'eixamplar el dia. */}
+        <table className="w-full min-w-[720px] table-fixed border-collapse text-xs">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="w-28 p-2 text-left font-medium text-muted-foreground">Sessió</th>

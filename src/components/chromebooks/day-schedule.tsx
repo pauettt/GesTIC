@@ -15,7 +15,16 @@ import { cn } from "@/lib/utils";
 export type DaySlot =
   | { kind: "free"; devicesOut: number }
   | { kind: "past" }
-  | { kind: "reserved"; id: string; who: string; purpose: string | null; canCancel: boolean; devicesOut: number };
+  | {
+      kind: "reserved";
+      id: string;
+      who: string;
+      purpose: string | null;
+      /** La d'una setmana d'una reserva fixa. */
+      fixed: boolean;
+      canCancel: boolean;
+      devicesOut: number;
+    };
 
 export type ScheduleDay = {
   dayKey: string;
@@ -112,7 +121,10 @@ export function DaySchedule({
                 {slot.kind === "reserved" ? (
                   <div className="flex min-w-0 flex-1 items-center justify-between gap-1 rounded-md bg-primary/10 px-3 py-2 text-sm">
                     <span className="min-w-0">
-                      <span className="block truncate font-medium">{slot.who}</span>
+                      <span className="block truncate font-medium">
+                        {slot.who}
+                        {slot.fixed && <span className="ml-1.5 text-xs font-normal text-muted-foreground">· Fixa</span>}
+                      </span>
                       {slot.purpose && (
                         <span className="block truncate text-xs text-muted-foreground">{slot.purpose}</span>
                       )}
@@ -120,7 +132,7 @@ export function DaySchedule({
                         <span className="block text-xs text-red-700">{missingDevicesLabel(slot.devicesOut)}</span>
                       )}
                     </span>
-                    {slot.canCancel && <CancelReservationButton reservationId={slot.id} />}
+                    {slot.canCancel && <CancelReservationButton reservationId={slot.id} fixed={slot.fixed} />}
                   </div>
                 ) : slot.kind === "past" ? (
                   <div className="flex-1 px-3 py-2 text-sm text-muted-foreground/50">—</div>

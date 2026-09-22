@@ -62,6 +62,10 @@ export type Fixtures = {
   /** Carro a part per a les reserves d'equips sols. */
   reservationCartId: string;
   reservationDevices: Record<"RES-01" | "RES-02", string>;
+  /** Carro a part per a les reserves fixes. */
+  recurringCartId: string;
+  /** Dilluns de la primera setmana de la prova de reserves fixes, "YYYY-MM-DD". */
+  fixedWeek: string;
   poolChromebooks: Record<"ALU-01" | "ALU-02", string>;
   privateIncidentId: string;
   /** Dilluns de la setmana vinent, "YYYY-MM-DD": les graelles s'hi obren amb `?week=`. */

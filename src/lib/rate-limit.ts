@@ -19,6 +19,7 @@ const LIMITS = {
   loanRequest: 10,
   query: 10,
   studentDeviceRequest: 10,
+  recurringReservation: 10,
   credentialReveal: 100,
 } as const;
 
@@ -30,6 +31,8 @@ const MESSAGES: Record<RateLimitedAction, string> = {
   query: "Has obert massa consultes seguides. Espera una mica abans de fer-ne una altra.",
   studentDeviceRequest:
     "Has fet massa sol·licituds de Chromebook seguides. Espera una mica abans de fer-ne una altra.",
+  recurringReservation:
+    "Has demanat massa reserves fixes seguides. Espera una mica abans de demanar-ne una altra.",
   credentialReveal: "Has consultat moltes contrasenyes seguides. Espera una mica abans de continuar.",
 };
 
@@ -48,9 +51,11 @@ export async function checkRateLimit(
         ? await db.loanRequest.count({ where: { ...where, requesterId: userId } })
         : action === "studentDeviceRequest"
           ? await db.studentDeviceRequest.count({ where: { ...where, tutorId: userId } })
-          : action === "credentialReveal"
-            ? await db.auditEvent.count({ where: { ...where, actorId: userId, action: "credential.reveal" } })
-            : await db.query.count({ where: { ...where, authorId: userId } });
+          : action === "recurringReservation"
+            ? await db.recurringReservation.count({ where: { ...where, userId } })
+            : action === "credentialReveal"
+              ? await db.auditEvent.count({ where: { ...where, actorId: userId, action: "credential.reveal" } })
+              : await db.query.count({ where: { ...where, authorId: userId } });
 
   return recent >= LIMITS[action] ? MESSAGES[action] : null;
 }

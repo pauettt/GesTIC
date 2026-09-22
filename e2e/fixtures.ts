@@ -24,6 +24,7 @@ import { E2E_VAULT_KEY } from "./env";
 const FIRST_PERIOD = ["08:00", "08:55"] as const;
 const SECOND_PERIOD = ["08:55", "09:50"] as const;
 const THIRD_PERIOD = ["09:50", "10:45"] as const;
+const FOURTH_PERIOD = ["11:15", "12:10"] as const;
 
 /**
  * Omple una base de dades buida amb el mínim per recórrer l'aplicació amb cada
@@ -189,6 +190,24 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
+    // Reserves fixes, en un carro a part perquè les setmanes que s'hi reserven no
+    // toquin cap altra prova. La Professora Dos ja té el dijous a 4a hora de la
+    // primera setmana de la prova: en aprovar la fixa, s'ha de respectar. A
+    // l'estiu, les reserves fixes van al curs següent, i la prova ho segueix.
+    const recurringCart = await db.cart.create({ data: { name: "Carro Fix E2E" } });
+    const [year, month] = madridDateKey(now).split("-").map(Number);
+    const fixedMonday =
+      month === 7 || month === 8 ? startOfWeek(zonedDateTime(`${year}-09-08`, "12:00")) : nextMonday;
+    const fixedThursday = madridDateKey(addDays(fixedMonday, 3));
+    await db.reservation.create({
+      data: {
+        cartId: recurringCart.id,
+        userId: userIds.professor2,
+        startDate: zonedDateTime(fixedThursday, FOURTH_PERIOD[0]),
+        endDate: zonedDateTime(fixedThursday, FOURTH_PERIOD[1]),
+      },
+    });
+
     for (const [order, video] of TUTORIAL_VIDEOS.entries()) {
       const tutorialCategory = await db.tutorialCategory.create({ data: { name: video.category, order } });
       await db.tutorialVideo.create({
@@ -241,6 +260,8 @@ export async function seed(connectionString: string): Promise<{
         cartId: cart.id,
         cartChromebooks,
         reservationCartId: reservationCart.id,
+        recurringCartId: recurringCart.id,
+        fixedWeek: madridDateKey(fixedMonday),
         reservationDevices,
         poolChromebooks,
         privateIncidentId: privateIncident.id,

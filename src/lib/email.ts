@@ -377,6 +377,122 @@ export function buildDevicesNotReturnedSummaryEmail({
 }
 
 // ---------------------------------------------------------------------------
+// Reserves fixes de carros
+// ---------------------------------------------------------------------------
+
+/** A la coordinació: algú demana un carro cada setmana a la mateixa sessió. */
+export function buildRecurringRequestedEmail({
+  who,
+  cartName,
+  slot,
+  until,
+  purpose,
+  url,
+}: {
+  who: string;
+  cartName: string;
+  /** «Dimarts · 3a hora (09:50–10:45)». */
+  slot: string;
+  /** «30 de juny del 2027». */
+  until: string;
+  purpose: string;
+  url: string;
+}) {
+  return {
+    subject: `Reserva fixa per aprovar: ${cartName}, ${slot}`,
+    ...layout({
+      intro: `${who} demana ${cartName} cada setmana a la mateixa sessió, fins al ${until}. Mentre no l'aproveu, la sessió continua lliure per a tothom.`,
+      rows: [
+        ["Qui", who],
+        ["Carro", cartName],
+        ["Quan", slot],
+        ["Fins al", until],
+      ],
+      quote: { label: "Motiu", body: purpose },
+      cta: { label: "Revisa-la", url },
+    }),
+  };
+}
+
+/** A qui l'ha demanada: aprovada, amb les setmanes que ja tenia algú, o rebutjada. */
+export function buildRecurringDecisionEmail({
+  approved,
+  cartName,
+  slot,
+  until,
+  weeks,
+  skipped,
+  responseNote,
+  url,
+}: {
+  approved: boolean;
+  cartName: string;
+  slot: string;
+  until: string;
+  /** Quantes setmanes s'han reservat. */
+  weeks: number;
+  /** Les setmanes que ja tenia reservades algú altre i s'han respectat: «29 de set.». */
+  skipped: string[];
+  responseNote: string | null;
+  url: string;
+}) {
+  return {
+    subject: approved
+      ? `Reserva fixa aprovada: ${cartName}, ${slot}`
+      : `Reserva fixa no aprovada: ${cartName}, ${slot}`,
+    ...layout({
+      intro: approved
+        ? `La coordinació TIC ha aprovat la teva reserva fixa: tens ${cartName} cada setmana a la mateixa sessió, fins al ${until}.`
+        : `La coordinació TIC no ha aprovat la teva reserva fixa de ${cartName}.`,
+      rows: approved
+        ? [
+            ["Carro", cartName],
+            ["Quan", slot],
+            ["Setmanes reservades", String(weeks)],
+            ...(skipped.length > 0
+              ? ([["Ja les tenia algú altre", skipped.join(", ")]] as [string, string][])
+              : []),
+          ]
+        : [
+            ["Carro", cartName],
+            ["Quan", slot],
+          ],
+      quote: responseNote ? { label: "Nota de la coordinació", body: responseNote } : null,
+      cta: { label: "Veure les reserves fixes", url },
+      footer: approved
+        ? "Si alguna setmana no el necessites, allibera-la a la graella del carro perquè el pugui fer servir algú altre."
+        : undefined,
+    }),
+  };
+}
+
+/** A qui la tenia, quan la coordinació anul·la una reserva fixa aprovada. */
+export function buildRecurringCancelledEmail({
+  cartName,
+  slot,
+  cancelledBy,
+  url,
+}: {
+  cartName: string;
+  slot: string;
+  cancelledBy: string;
+  url: string;
+}) {
+  return {
+    subject: `Reserva fixa anul·lada: ${cartName}, ${slot}`,
+    ...layout({
+      intro: `${cancelledBy}, de la coordinació TIC, ha anul·lat la teva reserva fixa. Les setmanes que quedaven ja són lliures per a tothom.`,
+      rows: [
+        ["Carro", cartName],
+        ["Quan", slot],
+      ],
+      cta: { label: "Veure les reserves fixes", url },
+      footer: "Si és un error, parla amb la coordinació TIC.",
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Peticions i consultes
 // ---------------------------------------------------------------------------
 

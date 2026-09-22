@@ -52,6 +52,8 @@ model User {
   assignedIncidents     Incident[]        @relation("IncidentAssignee")
   incidentComments      IncidentComment[]
   reservations          Reservation[]
+  recurringReservations RecurringReservation[] @relation("RecurringRequester")
+  respondedRecurring    RecurringReservation[] @relation("RecurringResponder")
   deviceReservations    DeviceReservation[] @relation("DeviceReservationUser")
   returnedDevices       DeviceReservation[] @relation("DeviceReservationReturner")
   chromebookNotes       ChromebookNote[]
@@ -322,6 +324,7 @@ model Cart {
   space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   chromebooks  Chromebook[]
   reservations Reservation[]
+  recurring    RecurringReservation[]
   incidents    Incident[]
   keys         Key[]
 
@@ -384,21 +387,71 @@ enum ReservationStatus {
 }
 
 model Reservation {
-  id        String            @id @default(cuid())
-  cartId    String
-  userId    String
-  startDate DateTime
-  endDate   DateTime
-  purpose   String?
-  status    ReservationStatus @default(CONFIRMADA)
-  createdAt DateTime          @default(now())
+  id          String            @id @default(cuid())
+  cartId      String
+  userId      String
+  startDate   DateTime
+  endDate     DateTime
+  purpose     String?
+  status      ReservationStatus @default(CONFIRMADA)
+  createdAt   DateTime          @default(now())
+  // La reserva fixa de la qual surt, si és la d'una setmana d'una reserva fixa.
+  recurringId String?
 
-  cart     Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  keyLoans KeyLoan[]
+  cart      Cart                  @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurring RecurringReservation? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
+  keyLoans  KeyLoan[]
 
   @@index([cartId, startDate, endDate])
   @@index([userId])
+  @@index([recurringId])
+}
+
+/// El cicle d'una reserva fixa: PENDENT → APROVADA, o REBUTJADA. CANCELLADA és
+/// la que retira qui l'ha demanada abans que es decideixi, o la que s'anul·la
+/// un cop aprovada.
+enum RecurringReservationStatus {
+  PENDENT
+  APROVADA
+  REBUTJADA
+  CANCELLADA
+}
+
+/// Un carro el mateix dia de la setmana i a la mateixa sessió, cada setmana
+/// d'un curs, fins al 30 de juny. El motiu és obligatori i l'ha d'aprovar la
+/// coordinació TIC; mentre no ho fa, la sessió continua lliure per a tothom.
+///
+/// En aprovar-la es crea una `Reservation` normal per a cada setmana que queda
+/// del curs (`recurringId`): així surt a la graella, al cercador, a l'inici i a
+/// consergeria sense cap cas especial, i cada setmana es pot alliberar sola. Les
+/// setmanes que algú ja tenia reservades es respecten i se salten.
+///
+/// `weekday` és 1 (dilluns) a 5 (divendres) i `periodId`, una sessió de
+/// `SCHOOL_PERIODS`. `schoolYear` és el curs, «2026-2027»: de setembre a juny,
+/// el que està en marxa; al juliol i a l'agost, el següent.
+model RecurringReservation {
+  id            String                     @id @default(cuid())
+  cartId        String
+  userId        String
+  weekday       Int
+  periodId      Int
+  schoolYear    String
+  purpose       String                     @db.Text
+  status        RecurringReservationStatus @default(PENDENT)
+  responseNote  String?                    @db.Text
+  respondedById String?
+  respondedAt   DateTime?
+  createdAt     DateTime                   @default(now())
+
+  cart         Cart          @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  user         User          @relation("RecurringRequester", fields: [userId], references: [id], onDelete: Cascade)
+  respondedBy  User?         @relation("RecurringResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+
+  @@index([cartId, schoolYear, status])
+  @@index([userId])
+  @@index([status])
 }
 
 /// Reserva d'un sol equip d'un carro, per a unes sessions seguides d'un dia.
