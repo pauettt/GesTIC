@@ -6,6 +6,7 @@ import { LaptopIcon, QrCodeIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek } from "@/lib/date";
+import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
@@ -35,6 +36,7 @@ export default async function CartDetailPage({
   const weekStart =
     requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
   const weekEnd = addDays(weekStart, 7);
+  const now = new Date();
 
   const [cart, spaces, carts, existingChromebooks] = await Promise.all([
     db.cart.findUnique({
@@ -48,6 +50,7 @@ export default async function CartDetailPage({
               include: { author: { select: { name: true, email: true } } },
               orderBy: { createdAt: "desc" },
             },
+            reservations: openDeviceReservations,
           },
         },
         reservations: {
@@ -72,9 +75,13 @@ export default async function CartDetailPage({
   if (!cart) notFound();
 
   // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
-  const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA").length;
-  const available = cart.chromebooks.filter((chromebook) => chromebook.status === "DISPONIBLE").length;
-  const summary = deviceSummary(cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA"));
+  const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA");
+  // Els que algú té ara per una reserva d'equip, tampoc no hi són.
+  const available = inService.filter((chromebook) => isFreeNow(chromebook, now)).length;
+  const summary = deviceSummary(inService);
+  const viewer = { id: user.id, admin };
+  // Per a la graella: quants equips hi faltaran a cada sessió perquè algú els té reservats a part.
+  const deviceBookings = inService.flatMap((chromebook) => chromebook.reservations);
   const existing = {
     assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
     serialNumbers: existingChromebooks.flatMap((chromebook) =>
@@ -154,8 +161,8 @@ export default async function CartDetailPage({
       <div>
         <h2 className="mb-3 text-lg font-semibold">Horari d&apos;ocupació</h2>
         <p className="mb-3 text-sm text-muted-foreground">
-          <span className={cn("font-medium", available < inService ? "text-red-700" : "text-foreground")}>
-            {available} de {inService} dispositius disponibles.
+          <span className={cn("font-medium", available < inService.length ? "text-red-700" : "text-foreground")}>
+            {available} de {inService.length} dispositius disponibles.
           </span>{" "}
           <span className="hidden md:inline">Clica una sessió lliure per reservar-la a l&apos;instant.</span>
           <span className="md:hidden">
@@ -166,30 +173,30 @@ export default async function CartDetailPage({
           cartId={cart.id}
           weekStart={weekStart}
           reservations={cart.reservations}
+          deviceBookings={deviceBookings}
           currentUserId={user.id}
           isAdmin={admin}
         />
       </div>
 
-      {!admin && inService > 0 && (
+      {!admin && inService.length > 0 && (
         <>
           <Separator />
           <div>
             <h2 className="mb-1 text-lg font-semibold">Dispositius del carro</h2>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un dispositiu per saber si hi ha res a tenir en compte abans de fer-lo servir, o per
-              reportar-ne un problema.
+              Clica un dispositiu per saber si hi ha res a tenir en compte abans de fer-lo servir, per
+              reservar-lo sol o per reportar-ne un problema.
             </p>
             <ChromebookStatusGrid
-              chromebooks={cart.chromebooks
-                .filter((chromebook) => chromebook.status !== "BAIXA")
-                .map(({ id: chromebookId, assetTag, deviceType, status, unavailableReason }) => ({
-                  id: chromebookId,
-                  assetTag,
-                  deviceType,
-                  status,
-                  unavailableReason,
-                }))}
+              chromebooks={inService.map((chromebook) => ({
+                id: chromebook.id,
+                assetTag: chromebook.assetTag,
+                deviceType: chromebook.deviceType,
+                status: chromebook.status,
+                unavailableReason: chromebook.unavailableReason,
+                reservations: reservationViews(chromebook.reservations, viewer, now),
+              }))}
             />
           </div>
         </>
@@ -233,18 +240,25 @@ export default async function CartDetailPage({
                 <span className="size-3 rounded-sm border-2 border-green-400 bg-green-100" /> Disponible
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> En incidència o no
-                disponible
+                <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> En incidència,
+                reservat o no disponible
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="size-3 rounded-sm border-2 border-slate-300 bg-slate-100" /> Donat de baixa
               </span>
             </div>
             <p className="mb-3 text-sm text-muted-foreground">
-              Clica un dispositiu per veure&apos;n els detalls, marcar-lo com a no disponible, editar-lo,
-              moure&apos;l a un altre carro o donar-lo de baixa.
+              Clica un dispositiu per veure&apos;n els detalls, reservar-lo sol, marcar-lo com a no disponible,
+              editar-lo, moure&apos;l a un altre carro o donar-lo de baixa.
             </p>
-            <ChromebookManager cartId={cart.id} carts={carts} chromebooks={cart.chromebooks} />
+            <ChromebookManager
+              cartId={cart.id}
+              carts={carts}
+              chromebooks={cart.chromebooks.map((chromebook) => ({
+                ...chromebook,
+                reservations: reservationViews(chromebook.reservations, viewer, now),
+              }))}
+            />
           </div>
         </>
       )}

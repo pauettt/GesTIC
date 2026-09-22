@@ -28,6 +28,13 @@ const ENTRIES: { key: keyof Counts; one: string; many: string; href: Route; urge
     href: "/inventari",
     urgent: true,
   },
+  {
+    key: "overdueDevices",
+    one: "equip de carro sense tornar",
+    many: "equips de carro sense tornar",
+    href: "/panell",
+    urgent: true,
+  },
   { key: "pendingLoans", one: "préstec per aprovar", many: "préstecs per aprovar", href: "/inventari" },
   { key: "openQueries", one: "petició o consulta oberta", many: "peticions i consultes obertes", href: "/consultes" },
   {

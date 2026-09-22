@@ -8,12 +8,14 @@ import { CancelReservationButton } from "@/components/chromebooks/cancel-reserva
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServerAction } from "@/hooks/use-server-action";
+import { missingDevicesLabel } from "@/lib/device-reservations";
 import { cn } from "@/lib/utils";
 
+/** `devicesOut`: quants equips no hi seran perquè algú els té reservats a part. */
 export type DaySlot =
-  | { kind: "free" }
+  | { kind: "free"; devicesOut: number }
   | { kind: "past" }
-  | { kind: "reserved"; id: string; who: string; purpose: string | null; canCancel: boolean };
+  | { kind: "reserved"; id: string; who: string; purpose: string | null; canCancel: boolean; devicesOut: number };
 
 export type ScheduleDay = {
   dayKey: string;
@@ -114,6 +116,9 @@ export function DaySchedule({
                       {slot.purpose && (
                         <span className="block truncate text-xs text-muted-foreground">{slot.purpose}</span>
                       )}
+                      {slot.devicesOut > 0 && (
+                        <span className="block text-xs text-red-700">{missingDevicesLabel(slot.devicesOut)}</span>
+                      )}
                     </span>
                     {slot.canCancel && <CancelReservationButton reservationId={slot.id} />}
                   </div>
@@ -132,7 +137,14 @@ export function DaySchedule({
                         : "border-dashed text-muted-foreground hover:border-primary",
                     )}
                   >
-                    {isSelected ? "Triada" : "Lliure"}
+                    <span>
+                      {isSelected ? "Triada" : "Lliure"}
+                      {slot.devicesOut > 0 && (
+                        <span className="ml-2 text-xs font-normal text-red-700">
+                          {missingDevicesLabel(slot.devicesOut)}
+                        </span>
+                      )}
+                    </span>
                     {isSelected && <CheckIcon className="size-4 text-primary" />}
                   </button>
                 )}

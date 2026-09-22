@@ -140,7 +140,7 @@ npx playwright install chromium
 1. Importa el repositori a [Vercel](https://vercel.com/new).
 2. Configura les variables de `.env.example` a **Project Settings → Environment Variables**, totes excepte `ENABLE_DEV_LOGIN`. `DATABASE_URL` i `DIRECT_URL` són les de Supabase.
 3. Afegeix el domini definitiu a les URI de redirecció autoritzades de Google Cloud, i posa'l a `APP_URL` **abans d'imprimir cap etiqueta QR**.
-4. `vercel.json` ja programa els dos crons (`/api/cron/loan-reminders` i `/api/cron/keep-alive`); sense `CRON_SECRET` no s'executen.
+4. `vercel.json` ja programa els dos crons (`/api/cron/loan-reminders`, cada dia lectiu, i `/api/cron/keep-alive`, cada dia); sense `CRON_SECRET` no s'executen.
 5. Afegeix `VAULT_ENCRYPTION_KEY`, generada un sol cop, i guarda-la també fora del servidor: sense ella, les contrasenyes desades no es poden recuperar. En local se'n fa servir una altra.
 
 ## Rols
@@ -148,7 +148,7 @@ npx playwright install chromium
 - **Superadministrador/a (`SUPER_ADMIN`)**: tot el que fa la coordinació, i a més reparteix permisos i treu l'accés a qui deixa el centre (*Usuaris i permisos*), manté els noms dels conserges i té la pàgina *Administració*: estat de la configuració amb un correu de prova, quines dades personals es guarden, esborrat de les dades de prova i registre d'activitat. És qui gestiona les categories de contrasenyes, les importa i veu les marcades com a només seves. Es defineix a `ADMIN_EMAILS`.
 - **Coordinador/a TIC (`ADMIN`)**: incidències, inventari i préstecs, carros i pool de Chromebooks, cites, dubtes, tutorials, claus i contrasenyes (menys les reservades al superadministrador).
 - **Consergeria (`CONSERGERIA`)**: compte compartit del taulell; només veu el control de claus.
-- **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros, demana material i cites i fa consultes.
+- **Professorat (`PROFESSOR`)**: reporta incidències, reserva carros o equips sols d'un carro, demana material i cites i fa consultes.
 
 A banda del rol, qualsevol usuari que no sigui consergeria pot portar la marca de **tutor/a**, que li permet demanar Chromebooks en préstec per a l'alumnat del seu grup. La posa i la treu el superadministrador/a.
 

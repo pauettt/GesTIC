@@ -22,9 +22,18 @@ import {
   startOfWeek,
   toDateParam,
 } from "@/lib/date";
+import {
+  bookingSpanLabel,
+  dayLabel,
+  dueLabel,
+  openDeviceReservations,
+  reservationView,
+} from "@/lib/device-reservations";
+import { deviceTypeLabels } from "@/lib/devices";
 import { getPendingCounts } from "@/lib/panell-data";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { incidentStatusLabels, incidentStatusVariants } from "@/lib/labels";
+import { DeviceReservationAction } from "@/components/chromebooks/device-reservations";
 import { PendingSummary } from "@/components/panell/pending-summary";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -111,6 +120,7 @@ export default async function HomePage() {
     myKeys,
     myAppointments,
     myReservations,
+    myDeviceReservations,
     pendingStudentRequests,
     toCollectStudentDevices,
     deliveredStudentDevices,
@@ -153,6 +163,18 @@ export default async function HomePage() {
         orderBy: { startDate: "asc" },
         take: 4,
       }),
+      // Equips sols reservats: els que ja té, fins que els torni, i els que vindran.
+      db.deviceReservation.findMany({
+        where: { userId: user.id, status: "CONFIRMADA" },
+        select: {
+          ...openDeviceReservations.select,
+          chromebook: {
+            select: { assetTag: true, deviceType: true, cart: { select: { id: true, name: true } } },
+          },
+        },
+        orderBy: { startDate: "asc" },
+        take: 6,
+      }),
       user.isTutor
         ? db.studentDeviceRequest.count({ where: { tutorId: user.id, status: "PENDENT" } })
         : Promise.resolve(0),
@@ -173,6 +195,7 @@ export default async function HomePage() {
     myKeys.length > 0 ||
     myAppointments.length > 0 ||
     myReservations.length > 0 ||
+    myDeviceReservations.length > 0 ||
     hasStudentDevices;
 
   return (
@@ -301,6 +324,45 @@ export default async function HomePage() {
                     </Link>
                   </li>
                 ))}
+              </ul>
+            </Card>
+          )}
+
+          {myDeviceReservations.length > 0 && (
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="text-base">Els equips que tens reservats</CardTitle>
+                <CardDescription>Quan el tornis al carro, marca&apos;l com a tornat.</CardDescription>
+              </CardHeader>
+              <ul className="flex flex-col divide-y px-(--card-spacing)">
+                {myDeviceReservations.map(({ chromebook, ...row }) => {
+                  const view = reservationView(row, { id: user.id, admin: false }, now);
+                  return (
+                    <li key={view.id} className="flex items-center justify-between gap-3 py-2">
+                      <Link
+                        href={(chromebook.cart ? `/chromebooks/${chromebook.cart.id}` : "/chromebooks") as Route}
+                        className="min-w-0 hover:underline"
+                      >
+                        <span className="block truncate text-sm font-medium">
+                          {deviceTypeLabels[chromebook.deviceType]} {chromebook.assetTag}
+                          {chromebook.cart && ` · ${chromebook.cart.name}`}
+                        </span>
+                        <span
+                          className={
+                            view.overdue ? "block text-xs text-destructive" : "block text-xs text-muted-foreground"
+                          }
+                        >
+                          {view.held
+                            ? view.overdue
+                              ? `L'havies de tornar ${dueLabel(view.endDate, now)}`
+                              : `El tens tu, fins ${dueLabel(view.endDate, now)}`
+                            : `${dayLabel(view.startDate)} · ${bookingSpanLabel(view)}`}
+                        </span>
+                      </Link>
+                      <DeviceReservationAction reservation={view} />
+                    </li>
+                  );
+                })}
               </ul>
             </Card>
           )}

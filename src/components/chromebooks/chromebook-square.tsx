@@ -13,6 +13,7 @@ import {
 } from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
 import { formatDateTime } from "@/lib/date";
+import { canBeReserved, shownStatus, type DeviceReservationView } from "@/lib/device-reservations";
 import { deviceTypeLabels } from "@/lib/devices";
 import {
   chromebookStatusLabels,
@@ -23,6 +24,11 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChromebookDialog, type CartOption } from "@/components/chromebooks/chromebook-dialog";
+import {
+  DeviceReservationList,
+  ReserveDeviceButton,
+  ReserveDeviceDialog,
+} from "@/components/chromebooks/device-reservations";
 import { DeviceIcon } from "@/components/chromebooks/device-icon";
 import { RetireChromebookButton } from "@/components/chromebooks/retire-chromebook-button";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
@@ -47,6 +53,8 @@ type Chromebook = {
   deviceType: DeviceType;
   unavailableReason: string | null;
   notes: Note[];
+  /** Les reserves obertes d'aquest equip sol, començant per la de qui el té ara, si n'hi ha. */
+  reservations: DeviceReservationView[];
 };
 
 /** Per què no es pot canviar a mà: aquests estats surten dels fets. */
@@ -75,6 +83,10 @@ function ChromebookAvailability({ chromebook }: { chromebook: Chromebook }) {
 
   const hint = DERIVED_STATUS_HINTS[chromebook.status];
   if (hint) return <p className="text-xs text-muted-foreground">{hint}</p>;
+  // Mentre el té algú, no hi ha res a canviar a mà: torna a estar disponible quan el torna.
+  if (chromebook.status === "DISPONIBLE" && chromebook.reservations.some((reservation) => reservation.held)) {
+    return null;
+  }
 
   const showsUnavailable = unavailable || askingReason;
   const option = "rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-60";
@@ -192,105 +204,124 @@ export function ChromebookSquare({
   chromebook: Chromebook;
 }) {
   const [open, setOpen] = useState(false);
+  const [reserving, setReserving] = useState(false);
+  // Mentre el té algú per una reserva, surt com a no disponible, com el veu el professorat.
+  const shown = shownStatus(chromebook.status, chromebook.reservations.find((reservation) => reservation.held) ?? null);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              "flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border-2 p-1 text-center transition-colors",
-              chromebookStatusSquareClasses[chromebook.status],
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                "flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-lg border-2 p-1 text-center transition-colors",
+                chromebookStatusSquareClasses[shown],
+              )}
+            />
+          }
+        >
+          <DeviceIcon type={chromebook.deviceType} className="size-5" />
+          <span className="line-clamp-1 text-[11px] font-semibold">{chromebook.assetTag}</span>
+        </PopoverTrigger>
+        <PopoverContent className="w-72">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold">{chromebook.assetTag}</p>
+              <Badge variant={chromebookStatusVariants[shown]}>{chromebookStatusLabels[shown]}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {[deviceTypeLabels[chromebook.deviceType], [chromebook.brand, chromebook.model].filter(Boolean).join(" ")]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            {chromebook.serialNumber && (
+              <p className="text-xs text-muted-foreground">Núm. sèrie: {chromebook.serialNumber}</p>
             )}
-          />
-        }
-      >
-        <DeviceIcon type={chromebook.deviceType} className="size-5" />
-        <span className="line-clamp-1 text-[11px] font-semibold">{chromebook.assetTag}</span>
-      </PopoverTrigger>
-      <PopoverContent className="w-72">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold">{chromebook.assetTag}</p>
-            <Badge variant={chromebookStatusVariants[chromebook.status]}>
-              {chromebookStatusLabels[chromebook.status]}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {[deviceTypeLabels[chromebook.deviceType], [chromebook.brand, chromebook.model].filter(Boolean).join(" ")]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          {chromebook.serialNumber && (
-            <p className="text-xs text-muted-foreground">Núm. sèrie: {chromebook.serialNumber}</p>
-          )}
-          <ChromebookAvailability chromebook={chromebook} />
-          <Link
-            href={`/incidencies?chromebookId=${chromebook.id}`}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
-          >
-            <HistoryIcon className="size-3.5" />
-            Veure historial d&apos;incidències
-          </Link>
-          <div className="flex flex-wrap justify-end gap-2">
-            <RetireChromebookButton
-              chromebookId={chromebook.id}
-              retired={chromebook.status === "BAIXA"}
-            />
-            <ChromebookDialog
-              cartId={cartId}
-              carts={carts}
-              chromebook={{
-                id: chromebook.id,
-                cartId,
-                deviceType: chromebook.deviceType,
-                assetTag: chromebook.assetTag,
-                serialNumber: chromebook.serialNumber ?? "",
-                brand: chromebook.brand ?? "",
-                model: chromebook.model ?? "",
-              }}
-              trigger={
-                <button className="rounded-md border px-2 py-1 text-xs hover:bg-muted">Edita</button>
-              }
-            />
-            <ConfirmDeleteButton
-              action={deleteChromebook}
-              input={{ id: chromebook.id }}
-              title="Eliminar aquest dispositiu?"
-              description="Es perden també les seves notes, i les incidències queden sense equip. Si només ha deixat de funcionar, dona'l de baixa: així se'n conserva l'historial."
-            />
-          </div>
-
-          <Separator />
-
-          <p className="text-xs font-semibold text-muted-foreground">Historial de notes</p>
-          <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto">
-            {chromebook.notes.length === 0 && (
-              <p className="text-xs text-muted-foreground">Encara no hi ha cap nota.</p>
+            <ChromebookAvailability chromebook={chromebook} />
+            <DeviceReservationList reservations={chromebook.reservations} />
+            {canBeReserved(chromebook.status, chromebook.reservations) && (
+              <ReserveDeviceButton
+                onClick={() => {
+                  setOpen(false);
+                  setReserving(true);
+                }}
+              />
             )}
-            {chromebook.notes.map((note) => (
-              <div key={note.id} className="rounded-md bg-muted p-1.5 text-xs">
-                <div className="flex items-start justify-between gap-1">
-                  <div>
-                    <p>{note.body}</p>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {note.author.name ?? note.author.email} · {formatDateTime(note.createdAt)}
-                    </p>
+            <Link
+              href={`/incidencies?chromebookId=${chromebook.id}`}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+            >
+              <HistoryIcon className="size-3.5" />
+              Veure historial d&apos;incidències
+            </Link>
+            <div className="flex flex-wrap justify-end gap-2">
+              <RetireChromebookButton
+                chromebookId={chromebook.id}
+                retired={chromebook.status === "BAIXA"}
+              />
+              <ChromebookDialog
+                cartId={cartId}
+                carts={carts}
+                chromebook={{
+                  id: chromebook.id,
+                  cartId,
+                  deviceType: chromebook.deviceType,
+                  assetTag: chromebook.assetTag,
+                  serialNumber: chromebook.serialNumber ?? "",
+                  brand: chromebook.brand ?? "",
+                  model: chromebook.model ?? "",
+                }}
+                trigger={
+                  <button className="rounded-md border px-2 py-1 text-xs hover:bg-muted">Edita</button>
+                }
+              />
+              <ConfirmDeleteButton
+                action={deleteChromebook}
+                input={{ id: chromebook.id }}
+                title="Eliminar aquest dispositiu?"
+                description="Es perden també les seves notes, i les incidències queden sense equip. Si només ha deixat de funcionar, dona'l de baixa: així se'n conserva l'historial."
+              />
+            </div>
+
+            <Separator />
+
+            <p className="text-xs font-semibold text-muted-foreground">Historial de notes</p>
+            <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto">
+              {chromebook.notes.length === 0 && (
+                <p className="text-xs text-muted-foreground">Encara no hi ha cap nota.</p>
+              )}
+              {chromebook.notes.map((note) => (
+                <div key={note.id} className="rounded-md bg-muted p-1.5 text-xs">
+                  <div className="flex items-start justify-between gap-1">
+                    <div>
+                      <p>{note.body}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {note.author.name ?? note.author.email} · {formatDateTime(note.createdAt)}
+                      </p>
+                    </div>
+                    <ConfirmDeleteButton
+                      action={deleteChromebookNote}
+                      input={{ id: note.id }}
+                      title="Eliminar aquesta nota?"
+                    />
                   </div>
-                  <ConfirmDeleteButton
-                    action={deleteChromebookNote}
-                    input={{ id: note.id }}
-                    title="Eliminar aquesta nota?"
-                  />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <ChromebookNoteForm chromebookId={chromebook.id} />
           </div>
-          <ChromebookNoteForm chromebookId={chromebook.id} />
-        </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+      <ReserveDeviceDialog
+        chromebookId={chromebook.id}
+        deviceLabel={`${deviceTypeLabels[chromebook.deviceType]} ${chromebook.assetTag}`}
+        reservations={chromebook.reservations}
+        open={reserving}
+        onOpenChange={setReserving}
+      />
+    </>
   );
 }
 

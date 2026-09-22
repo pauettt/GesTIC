@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/permissions";
-import { deviceTypeLabels } from "@/lib/devices";
+import { currentHolder, openDeviceReservations, withHolder } from "@/lib/device-reservations";
+import { deviceStatusNote, deviceTypeLabels } from "@/lib/devices";
 import { QUICK_REPORT_CATEGORIES, chromebookStatusLabels, chromebookStatusVariants } from "@/lib/labels";
 import { QuickReportButtons } from "@/components/chromebooks/quick-report-buttons";
 import { CleanUrlParam } from "@/components/shared/clean-url-param";
@@ -21,12 +22,14 @@ export default async function QuickChromebookReportPage({
 
   const chromebook = await db.chromebook.findUnique({
     where: { id },
-    include: { cart: true },
+    include: { cart: true, reservations: openDeviceReservations },
   });
 
   if (!chromebook) notFound();
 
   const retired = chromebook.status === "BAIXA";
+  // Si ara el té algú per una reserva, no disponible i amb el seu nom, com al carro.
+  const shown = withHolder(chromebook, currentHolder(chromebook.reservations));
 
   return (
     <main className="flex min-h-screen flex-1 items-center justify-center bg-muted/40 p-4">
@@ -44,10 +47,11 @@ export default async function QuickChromebookReportPage({
               : (chromebook.cart?.name ?? "Sense carro assignat")}
           </CardDescription>
           <div className="mt-1 flex justify-center">
-            <Badge variant={chromebookStatusVariants[chromebook.status]}>
-              {chromebookStatusLabels[chromebook.status]}
-            </Badge>
+            <Badge variant={chromebookStatusVariants[shown.status]}>{chromebookStatusLabels[shown.status]}</Badge>
           </div>
+          {shown.status === "NO_DISPONIBLE" && (
+            <p className="text-sm text-muted-foreground">{deviceStatusNote(shown)}</p>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {avis === "limit" && (

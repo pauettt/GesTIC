@@ -1,10 +1,14 @@
 import "server-only";
 
 import { db } from "@/lib/db";
-import { formatDate, formatDateTimeFull } from "@/lib/date";
+import { formatDate, formatDateTimeFull, madridDateKey, zonedDateTime } from "@/lib/date";
+import { dueLabel } from "@/lib/device-reservations";
+import { deviceTypeLabels } from "@/lib/devices";
 import {
   buildAppointmentBookedEmail,
   buildAppointmentCancelledEmail,
+  buildDevicesNotReturnedEmail,
+  buildDevicesNotReturnedSummaryEmail,
   buildIncidentCommentedEmail,
   buildIncidentReportedEmail,
   buildLoanDecisionEmail,
@@ -149,6 +153,58 @@ export async function sendLoanOverdueReminder(loanRequestId: string) {
       url: `${baseUrl}/inventari`,
     }),
   });
+}
+
+/**
+ * Avisos dels equips de carro reservats a part que no han tornat en acabar el
+ * dia de la reserva: a cada persona que en té, un correu amb els seus, i a la
+ * coordinació, un amb tots i qui els té. El cron els envia cada dia lectiu fins
+ * que es tornen. Retorna quants equips hi havia i quants correus han sortit.
+ */
+export async function sendDevicesNotReturnedReminders(now: Date = new Date()) {
+  const overdue = await db.deviceReservation.findMany({
+    // Si el dia no ha passat, encara hi pot ser a temps: el primer avís és l'endemà.
+    where: { status: "CONFIRMADA", endDate: { lt: zonedDateTime(madridDateKey(now), "00:00") } },
+    select: {
+      endDate: true,
+      user: { select: { id: true, name: true, email: true } },
+      chromebook: { select: { assetTag: true, deviceType: true, cart: { select: { name: true } } } },
+    },
+    orderBy: { endDate: "asc" },
+  });
+  if (overdue.length === 0) return { overdue: 0, sent: 0 };
+
+  const baseUrl = await getBaseUrl();
+  const devices = overdue.map((reservation) => ({
+    userId: reservation.user.id,
+    email: reservation.user.email,
+    who: reservation.user.name ?? reservation.user.email,
+    label: `${deviceTypeLabels[reservation.chromebook.deviceType]} ${reservation.chromebook.assetTag}${
+      reservation.chromebook.cart ? ` (${reservation.chromebook.cart.name})` : ""
+    }`,
+    due: dueLabel(reservation.endDate, now),
+  }));
+
+  const byUser = new Map<string, typeof devices>();
+  for (const device of devices) byUser.set(device.userId, [...(byUser.get(device.userId) ?? []), device]);
+
+  // L'inici és on es marquen com a tornats, sense haver de buscar el carro.
+  const results = await Promise.all(
+    [...byUser.values()].map((own) =>
+      sendEmail({ to: own[0].email, ...buildDevicesNotReturnedEmail({ devices: own, url: `${baseUrl}/` }) }),
+    ),
+  );
+  const coordinators = await coordinatorEmails();
+  if (coordinators.length > 0) {
+    results.push(
+      await sendEmail({
+        to: coordinators,
+        ...buildDevicesNotReturnedSummaryEmail({ devices, url: `${baseUrl}/panell` }),
+      }),
+    );
+  }
+
+  return { overdue: overdue.length, sent: results.filter((result) => result.sent).length };
 }
 
 /**

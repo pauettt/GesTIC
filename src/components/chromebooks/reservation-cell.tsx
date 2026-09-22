@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useServerAction } from "@/hooks/use-server-action";
+import { missingDevicesLabel } from "@/lib/device-reservations";
 import type { SchoolPeriod } from "@/lib/schedule";
 
 type Reservation = {
@@ -25,6 +26,7 @@ export function ReservationCell({
   reservation,
   canCancel,
   isPast,
+  devicesOut,
 }: {
   cartId: string;
   dayKey: string;
@@ -34,6 +36,8 @@ export function ReservationCell({
   canCancel: boolean;
   /** Sessió que ja ha acabat: es mostra apagada i no es pot reservar. */
   isPast: boolean;
+  /** Quants equips no hi seran perquè algú els té reservats a part. */
+  devicesOut: number;
 }) {
   const [open, setOpen] = useState(false);
   const [purpose, setPurpose] = useState("");
@@ -54,6 +58,7 @@ export function ReservationCell({
           {canCancel && <CancelReservationButton reservationId={reservation.id} />}
         </div>
         {reservation.purpose && <p className="truncate text-muted-foreground">{reservation.purpose}</p>}
+        {devicesOut > 0 && <p className="text-red-700">{missingDevicesLabel(devicesOut)}</p>}
       </div>
     );
   }
@@ -77,6 +82,7 @@ export function ReservationCell({
         }
       >
         Lliure
+        {devicesOut > 0 && <span className="block text-red-700">{missingDevicesLabel(devicesOut)}</span>}
       </PopoverTrigger>
       <PopoverContent className="w-64">
         <form
@@ -92,6 +98,11 @@ export function ReservationCell({
           <p className="text-xs text-muted-foreground">
             {period.start}–{period.end}
           </p>
+          {devicesOut > 0 && (
+            <p className="text-xs text-red-700">
+              {missingDevicesLabel(devicesOut)} del carro: algú els té reservats a part.
+            </p>
+          )}
           <Input
             autoFocus
             placeholder="Motiu (opcional)"

@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
+import { occupies, type DeviceBooking } from "@/lib/device-reservations";
 import {
   isPastPeriod,
   RECESS,
@@ -28,15 +29,19 @@ export function WeeklySchedule({
   cartId,
   weekStart,
   reservations,
+  deviceBookings,
   currentUserId,
   isAdmin,
 }: {
   cartId: string;
   weekStart: Date;
   reservations: Reservation[];
+  /** Les reserves obertes d'equips sols del carro: aquelles hores hi faltaran. */
+  deviceBookings: DeviceBooking[];
   currentUserId: string;
   isAdmin: boolean;
 }) {
+  const now = new Date();
   const days = SCHOOL_WEEKDAYS.map((label, index) => ({ label, date: addDays(weekStart, index) }));
   const prevWeek = toDateParam(addDays(weekStart, -7));
   const nextWeek = toDateParam(addDays(weekStart, 7));
@@ -52,6 +57,13 @@ export function WeeklySchedule({
   const canCancel = (reservation: Reservation | undefined) =>
     Boolean(reservation && (isAdmin || reservation.userId === currentUserId));
 
+  /** Quants equips no seran al carro en aquesta sessió perquè algú els té reservats a part. */
+  function devicesOut(dayKey: string, period: { start: string; end: string }) {
+    const start = zonedDateTime(dayKey, period.start);
+    const end = zonedDateTime(dayKey, period.end);
+    return deviceBookings.filter((booking) => occupies(booking, start, end, now)).length;
+  }
+
   const scheduleDays: ScheduleDay[] = days.map((day, index) => {
     const dayKey = madridDateKey(day.date);
     return {
@@ -61,6 +73,9 @@ export function WeeklySchedule({
       dayOfMonth: Number(dayKey.split("-")[2]),
       slots: SCHOOL_PERIODS.map((period) => {
         const reservation = findReservation(dayKey, period.start);
+        const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
+        // De les sessions passades ja no cal saber-ho: no es poden planificar.
+        const out = isPast ? 0 : devicesOut(dayKey, period);
         if (reservation) {
           return {
             kind: "reserved" as const,
@@ -68,9 +83,10 @@ export function WeeklySchedule({
             who: reservation.user.name ?? reservation.user.email,
             purpose: reservation.purpose,
             canCancel: canCancel(reservation),
+            devicesOut: out,
           };
         }
-        return isPastPeriod(zonedDateTime(dayKey, period.end)) ? { kind: "past" as const } : { kind: "free" as const };
+        return isPast ? { kind: "past" as const } : { kind: "free" as const, devicesOut: out };
       }),
     };
   });
@@ -149,6 +165,7 @@ export function WeeklySchedule({
                   {days.map((day) => {
                     const dayKey = madridDateKey(day.date);
                     const reservation = findReservation(dayKey, period.start);
+                    const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
                     return (
                       <td key={day.label} className="p-1 align-top">
                         <ReservationCell
@@ -158,7 +175,8 @@ export function WeeklySchedule({
                           period={period}
                           reservation={reservation}
                           canCancel={canCancel(reservation)}
-                          isPast={isPastPeriod(zonedDateTime(dayKey, period.end))}
+                          isPast={isPast}
+                          devicesOut={isPast ? 0 : devicesOut(dayKey, period)}
                         />
                       </td>
                     );

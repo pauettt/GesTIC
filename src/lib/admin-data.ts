@@ -60,7 +60,7 @@ export function getConfigChecks(): ConfigCheck[] {
       label: "Tasques programades",
       ok: cron,
       detail: cron
-        ? "Recordatoris de préstecs vençuts i ping diari a la base de dades"
+        ? "Recordatoris de préstecs vençuts i d'equips de carro sense tornar, i ping diari a la base de dades"
         : "Sense CRON_SECRET: ni recordatoris ni el ping que evita que Supabase es pausi",
     },
     {
@@ -99,6 +99,7 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
     comments,
     loans,
     reservations,
+    deviceReservations,
     keyLoans,
     appointments,
     queries,
@@ -110,6 +111,7 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
     db.incidentComment.count({ where: { authorId: ids } }),
     db.loanRequest.count({ where: { requesterId: ids } }),
     db.reservation.count({ where: { userId: ids } }),
+    db.deviceReservation.count({ where: { userId: ids } }),
     db.keyLoan.count({ where: { borrowerId: ids } }),
     db.appointment.count({ where: { userId: ids } }),
     db.query.count({ where: { authorId: ids } }),
@@ -125,6 +127,7 @@ export async function getTestDataSummary(): Promise<TestDataSummary> {
       { count: comments, one: "comentari", many: "comentaris" },
       { count: loans, one: "préstec", many: "préstecs" },
       { count: reservations, one: "reserva de carro", many: "reserves de carro" },
+      { count: deviceReservations, one: "reserva d'equip de carro", many: "reserves d'equips de carro" },
       { count: keyLoans, one: "préstec de clau", many: "préstecs de claus" },
       { count: appointments, one: "cita", many: "cites" },
       { count: queries, one: "consulta", many: "consultes" },

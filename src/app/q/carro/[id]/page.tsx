@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { currentHolder, isFreeNow, openDeviceReservations, withHolder } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { requireUser } from "@/lib/permissions";
 import { CartQrPicker } from "@/components/chromebooks/cart-qr-picker";
@@ -27,13 +28,25 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
       chromebooks: {
         where: { status: { not: "BAIXA" } },
         orderBy: { assetTag: "asc" },
-        select: { id: true, assetTag: true, deviceType: true, status: true, unavailableReason: true },
+        select: {
+          id: true,
+          assetTag: true,
+          deviceType: true,
+          status: true,
+          unavailableReason: true,
+          reservations: openDeviceReservations,
+        },
       },
     },
   });
   if (!cart) notFound();
 
-  const available = cart.chromebooks.filter((device) => device.status === "DISPONIBLE").length;
+  const now = new Date();
+  const available = cart.chromebooks.filter((device) => isFreeNow(device, now)).length;
+  // Els que algú té reservats surten com a no disponibles, amb el seu nom.
+  const devices = cart.chromebooks.map(({ reservations, ...device }) =>
+    withHolder(device, currentHolder(reservations, now), now),
+  );
 
   return (
     <main className="flex min-h-screen flex-1 justify-center bg-muted/40 p-4 sm:items-center">
@@ -48,7 +61,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
           </p>
         </CardHeader>
         <CardContent>
-          <CartQrPicker cartId={id} devices={cart.chromebooks} />
+          <CartQrPicker cartId={id} devices={devices} />
         </CardContent>
       </Card>
     </main>

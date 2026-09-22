@@ -34,6 +34,8 @@ function pendingWhere(now: Date) {
     stalledWhere: incidentViewWhere("aturades", now),
     pendingLoansWhere: { status: "PENDENT" } as const,
     overdueLoansWhere: { status: "APROVADA", endDate: { lt: now } } satisfies Prisma.LoanRequestWhereInput,
+    // Equips sols d'un carro que ja havien de tornar i no consta que hagin tornat.
+    overdueDevicesWhere: { status: "CONFIRMADA", endDate: { lt: now } } satisfies Prisma.DeviceReservationWhereInput,
     openQueriesWhere: { status: { in: ["OBERTA", "EN_CURS"] } } satisfies Prisma.QueryWhereInput,
     pendingStudentWhere: { status: "PENDENT" } as const,
     awaitingStudentWhere: { status: "APROVADA" } as const,
@@ -47,17 +49,35 @@ function pendingWhere(now: Date) {
  */
 export async function getPendingCounts(now: Date = new Date()) {
   const where = pendingWhere(now);
-  const [unassigned, stalled, pendingLoans, overdueLoans, openQueries, pendingStudent, awaitingStudent] =
-    await Promise.all([
-      db.incident.count({ where: where.unassignedWhere }),
-      db.incident.count({ where: where.stalledWhere }),
-      db.loanRequest.count({ where: where.pendingLoansWhere }),
-      db.loanRequest.count({ where: where.overdueLoansWhere }),
-      db.query.count({ where: where.openQueriesWhere }),
-      db.studentDeviceRequest.count({ where: where.pendingStudentWhere }),
-      db.studentDeviceRequest.count({ where: where.awaitingStudentWhere }),
-    ]);
-  return { unassigned, stalled, pendingLoans, overdueLoans, openQueries, pendingStudent, awaitingStudent };
+  const [
+    unassigned,
+    stalled,
+    pendingLoans,
+    overdueLoans,
+    overdueDevices,
+    openQueries,
+    pendingStudent,
+    awaitingStudent,
+  ] = await Promise.all([
+    db.incident.count({ where: where.unassignedWhere }),
+    db.incident.count({ where: where.stalledWhere }),
+    db.loanRequest.count({ where: where.pendingLoansWhere }),
+    db.loanRequest.count({ where: where.overdueLoansWhere }),
+    db.deviceReservation.count({ where: where.overdueDevicesWhere }),
+    db.query.count({ where: where.openQueriesWhere }),
+    db.studentDeviceRequest.count({ where: where.pendingStudentWhere }),
+    db.studentDeviceRequest.count({ where: where.awaitingStudentWhere }),
+  ]);
+  return {
+    unassigned,
+    stalled,
+    pendingLoans,
+    overdueLoans,
+    overdueDevices,
+    openQueries,
+    pendingStudent,
+    awaitingStudent,
+  };
 }
 
 /** Tot allò que espera una decisió o una estona de la coordinació. */
@@ -67,6 +87,7 @@ export async function getPendingWork(now: Date = new Date()) {
     stalledWhere,
     pendingLoansWhere,
     overdueLoansWhere,
+    overdueDevicesWhere,
     openQueriesWhere,
     pendingStudentWhere,
     awaitingStudentWhere,
@@ -78,6 +99,7 @@ export async function getPendingWork(now: Date = new Date()) {
     stalledIncidents,
     pendingLoans,
     overdueLoans,
+    overdueDevices,
     openQueries,
     pendingStudentRequests,
     awaitingStudentDeliveries,
@@ -121,6 +143,17 @@ export async function getPendingWork(now: Date = new Date()) {
     db.loanRequest.findMany({
       where: overdueLoansWhere,
       include: { requester: true, item: true },
+      orderBy: { endDate: "asc" },
+    }),
+    // Tampoc cap límit: un equip que no torna falta al carro a la classe següent.
+    db.deviceReservation.findMany({
+      where: overdueDevicesWhere,
+      select: {
+        id: true,
+        endDate: true,
+        user: { select: { name: true, email: true } },
+        chromebook: { select: { assetTag: true, cart: { select: { id: true, name: true } } } },
+      },
       orderBy: { endDate: "asc" },
     }),
     queue(
@@ -185,6 +218,7 @@ export async function getPendingWork(now: Date = new Date()) {
     stalledIncidents,
     pendingLoans,
     overdueLoans,
+    overdueDevices,
     openQueries,
     pendingStudentRequests,
     awaitingStudentDeliveries,

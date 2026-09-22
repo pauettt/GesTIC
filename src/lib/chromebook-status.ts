@@ -30,8 +30,10 @@ export const ACTIVE_STUDENT_REQUEST_STATUSES: StudentDeviceRequestStatus[] = ["A
  *  4. Si està assignat a un alumne —apartat o ja a casa seva—, no és lliure.
  *  5. Si no, és lliure.
  *
- * RESERVAT no surt mai d'aquí: les reserves són del carro sencer, no de cada
- * equip.
+ * RESERVAT no surt mai d'aquí. Un equip reservat a part (`DeviceReservation`)
+ * continua DISPONIBLE, i es mostra com a no disponible mentre el té algú
+ * (`src/lib/device-reservations.ts`): la reserva comença i s'acaba a hores que
+ * cap acció no marca.
  */
 export function chromebookStatusFor({
   current,

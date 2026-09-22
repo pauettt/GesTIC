@@ -328,6 +328,55 @@ export function buildLoanOverdueEmail({
 }
 
 // ---------------------------------------------------------------------------
+// Equips de carro reservats a part
+// ---------------------------------------------------------------------------
+
+/** A qui té equips d'un carro que havien de tornar-hi un dia que ja ha passat. */
+export function buildDevicesNotReturnedEmail({
+  devices,
+  url,
+}: {
+  /** «Chromebook C1-07 (Carro 1)» i quan l'havia de tornar. */
+  devices: { label: string; due: string }[];
+  url: string;
+}) {
+  const one = devices.length === 1;
+  return {
+    subject: one ? `Recorda tornar ${devices[0].label} al carro` : `Recorda tornar ${devices.length} equips als carros`,
+    ...layout({
+      intro: one
+        ? "Tens un equip d'un carro que ja havia de tornar-hi i encara no consta que l'hagis tornat. Mentrestant, surt com a no disponible amb el teu nom."
+        : "Tens uns equips de carro que ja havien de tornar-hi i encara no consta que els hagis tornat. Mentrestant, surten com a no disponibles amb el teu nom.",
+      rows: devices.map(({ label, due }): [string, string] => [label, `Havia de tornar ${due}`]),
+      cta: { label: one ? "Marca'l com a tornat" : "Marca'ls com a tornats", url },
+      footer:
+        "Si ja és al carro, marca'l com a tornat a l'inici de gesTIC i no rebràs més avisos. La coordinació TIC també rep aquest avís.",
+    }),
+  };
+}
+
+/** A la coordinació: tots els equips de carro que no han tornat, i qui els té. */
+export function buildDevicesNotReturnedSummaryEmail({
+  devices,
+  url,
+}: {
+  devices: { label: string; who: string; due: string }[];
+  url: string;
+}) {
+  return {
+    subject:
+      devices.length === 1 ? "1 equip de carro sense tornar" : `${devices.length} equips de carro sense tornar`,
+    ...layout({
+      intro:
+        "Aquests equips es van reservar a part i havien de tornar al seu carro un dia que ja ha passat. Qui els té n'ha rebut un avís.",
+      rows: devices.map(({ label, who, due }): [string, string] => [label, `${who} · havia de tornar ${due}`]),
+      cta: { label: "Obre el panell", url },
+      footer: "Quan tornin al carro, qui els tenia o la coordinació els marca com a tornats i s'acaben els avisos.",
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Peticions i consultes
 // ---------------------------------------------------------------------------
 

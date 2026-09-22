@@ -59,6 +59,9 @@ export const CREDENTIALS = {
 export type Fixtures = {
   cartId: string;
   cartChromebooks: Record<"E2E-01" | "E2E-02" | "E2E-03" | "E2E-04", string>;
+  /** Carro a part per a les reserves d'equips sols. */
+  reservationCartId: string;
+  reservationDevices: Record<"RES-01" | "RES-02", string>;
   poolChromebooks: Record<"ALU-01" | "ALU-02", string>;
   privateIncidentId: string;
   /** Dilluns de la setmana vinent, "YYYY-MM-DD": les graelles s'hi obren amb `?week=`. */

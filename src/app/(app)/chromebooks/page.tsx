@@ -6,6 +6,7 @@ import { LaptopIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
 import { formatDateTimeFull, startOfWeek, toDateParam } from "@/lib/date";
+import { isFreeDuring, isFreeNow } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { loadBuildingOptions } from "@/lib/location-data";
 import {
@@ -45,7 +46,15 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
         : location
           ? { space: spaceLocationWhere(location) }
           : {},
-      include: { space: { select: placedSpaceSelect }, chromebooks: true },
+      include: {
+        space: { select: placedSpaceSelect },
+        chromebooks: {
+          include: {
+            // Els equips que algú té reservats a part no hi són, ara o a l'hora que es busca.
+            reservations: { where: { status: "CONFIRMADA" }, select: { startDate: true, endDate: true } },
+          },
+        },
+      },
       orderBy: { name: "asc" },
     }),
     // Per a la vista prèvia de la importació: què ja hi és i no s'ha de repetir.
@@ -56,6 +65,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
   const cartSearch = parseCartSearch(params);
+  const now = new Date();
   const busyCartIds =
     cartSearch.status === "ok"
       ? new Set(
@@ -140,7 +150,9 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                 id: cart.id,
                 name: cart.name,
                 space: cart.space,
-                available: cart.chromebooks.filter((cb) => cb.status === "DISPONIBLE").length,
+                available: cart.chromebooks.filter((cb) =>
+                  isFreeDuring(cb, cartSearch.search.startDate, cartSearch.search.endDate, now),
+                ).length,
                 busy: busyCartIds.has(cart.id),
               }))}
             />
@@ -150,7 +162,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {carts.map((cart) => {
-          const available = cart.chromebooks.filter((cb) => cb.status === "DISPONIBLE").length;
+          const available = cart.chromebooks.filter((cb) => isFreeNow(cb, now)).length;
           // Els donats de baixa segueixen al carro amb el seu historial, però ja
           // no compten com a equips que s'hi puguin fer servir.
           const inService = cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length;

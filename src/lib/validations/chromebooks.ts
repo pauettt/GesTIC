@@ -80,3 +80,15 @@ export const createReservationSchema = z.object({
 export type CreateReservationInput = z.infer<typeof createReservationSchema>;
 
 export const cancelReservationSchema = z.object({ id: z.string() });
+
+// Un equip sol d'un carro, de la sessió `fromPeriodId` a la `toPeriodId` d'un dia.
+export const createDeviceReservationSchema = z.object({
+  chromebookId: z.string().min(1),
+  date: z.string().min(1, "Indica el dia").refine(isDateKey, "La data no és vàlida"),
+  fromPeriodId: z.number().int(),
+  toPeriodId: z.number().int(),
+  purpose: z.string().trim().max(300).optional().or(z.literal("")),
+});
+export type CreateDeviceReservationInput = z.infer<typeof createDeviceReservationSchema>;
+
+export const deviceReservationIdSchema = z.object({ id: z.string().min(1) });

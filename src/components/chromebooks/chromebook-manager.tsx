@@ -1,5 +1,6 @@
 import type { ChromebookStatus, DeviceType } from "@prisma/client";
 
+import type { DeviceReservationView } from "@/lib/device-reservations";
 import type { CartOption } from "@/components/chromebooks/chromebook-dialog";
 import { AddChromebookSquare, ChromebookSquare } from "@/components/chromebooks/chromebook-square";
 
@@ -20,6 +21,7 @@ type Chromebook = {
   deviceType: DeviceType;
   unavailableReason: string | null;
   notes: Note[];
+  reservations: DeviceReservationView[];
 };
 
 export function ChromebookManager({

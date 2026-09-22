@@ -52,6 +52,8 @@ model User {
   assignedIncidents     Incident[]        @relation("IncidentAssignee")
   incidentComments      IncidentComment[]
   reservations          Reservation[]
+  deviceReservations    DeviceReservation[] @relation("DeviceReservationUser")
+  returnedDevices       DeviceReservation[] @relation("DeviceReservationReturner")
   chromebookNotes       ChromebookNote[]
   queries               Query[]
   queryComments         QueryComment[]
@@ -284,9 +286,11 @@ model LoanRequest {
 // treu a mà.
 // ASSIGNAT: equip del pool de préstec individual que ara té un alumne a casa.
 // Dura tot el curs i només el tanca la devolució.
-// RESERVAT: no el fa servir cap codi, perquè les reserves són del carro sencer i
-// no de cada equip. Es manté perquè treure un valor d'un enum de Postgres
-// demana recrear el tipus amb una migració, i no fa cap mal.
+// RESERVAT: no el fa servir cap codi. Un equip reservat a part (DeviceReservation)
+// continua DISPONIBLE a la base de dades i es mostra com a no disponible mentre
+// el té algú, perquè la reserva comença i s'acaba a hores que cap acció no
+// marca. Es manté perquè treure un valor d'un enum de Postgres demana recrear el
+// tipus amb una migració, i no fa cap mal.
 /// Què és cada equip d'un carro o del préstec. El model es diu Chromebook perquè al
 /// principi només n'hi havia; ara un carro pot portar portàtils, iPads o tauletes.
 enum DeviceType {
@@ -352,6 +356,7 @@ model Chromebook {
   incidents       Incident[]
   notes           ChromebookNote[]
   studentRequests StudentDeviceRequest[]
+  reservations    DeviceReservation[]
 
   @@index([cartId])
   @@index([spaceId])
@@ -394,6 +399,41 @@ model Reservation {
 
   @@index([cartId, startDate, endDate])
   @@index([userId])
+}
+
+/// Reserva d'un sol equip d'un carro, per a unes sessions seguides d'un dia.
+///
+/// Des que comença la primera sessió, l'equip és de qui l'ha reservat fins que
+/// el torna, encara que l'hora ja hagi passat: `endDate` és quan l'hauria de
+/// tornar, no quan el torna. Mentrestant surt com a no disponible, amb el seu
+/// nom. Si s'acaba el dia i no l'ha tornat, cada dia lectiu li arriba un avís, i
+/// un altre a la coordinació.
+///
+/// CONFIRMADA: reservat, o ja a les seves mans. CANCELLADA: anul·lada abans de
+/// començar. COMPLETADA: tornat al carro (`returnedAt`, `returnedById`).
+///
+/// Va a part de `Reservation` perquè aquella és del carro sencer, amb un índex
+/// que no en deixa dues a la mateixa sessió; d'aquestes n'hi pot haver una per
+/// equip.
+model DeviceReservation {
+  id           String            @id @default(cuid())
+  chromebookId String
+  userId       String
+  startDate    DateTime
+  endDate      DateTime
+  purpose      String?
+  status       ReservationStatus @default(CONFIRMADA)
+  returnedAt   DateTime?
+  returnedById String?
+  createdAt    DateTime          @default(now())
+
+  chromebook Chromebook @relation(fields: [chromebookId], references: [id], onDelete: Cascade)
+  user       User       @relation("DeviceReservationUser", fields: [userId], references: [id], onDelete: Cascade)
+  returnedBy User?      @relation("DeviceReservationReturner", fields: [returnedById], references: [id], onDelete: SetNull)
+
+  @@index([chromebookId, status])
+  @@index([userId, status])
+  @@index([status, endDate])
 }
 
 // ---------------------------------------------------------------------------

@@ -227,6 +227,34 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ## ✅ Fet
 
+### 2026-09-22
+
+- **Reservar un equip sol d'un carro**: a la pàgina del carro, clicant un
+  dispositiu, *Reserva aquest equip*: un dia, de quina sessió a quina, i el
+  motiu si cal. Des que comença la primera sessió i fins que es torna, l'equip
+  surt com a **no disponible amb «Reserva · nom»**, i deixa de comptar als
+  disponibles del carro, al cercador de carros lliures i al QR. Qui l'ha
+  reservat la pot cancel·lar mentre no ha començat; un cop començada, la tanca
+  amb «L'he tornat» (o la coordinació, «Marca com a tornat»), també des de
+  l'inici, on surten *Els equips que tens reservats*. Regles:
+  - no es pot reservar un equip que no funciona, que algú altre té en aquelles
+    hores o que encara no ha tornat;
+  - tampoc un equip d'un carro que una altra persona té reservat sencer aquelles
+    hores (els equips són a la seva classe). Al revés sí: la graella del carro
+    diu «Falta 1 equip» a cada sessió on n'hi faltarà algun;
+  - si passa l'hora i no s'ha tornat, continua ocupat fins que es torna, a totes
+    les sessions: no se sap quan tornarà al carro.
+  Si s'acaba el dia sense tornar-lo, **cada dia lectiu al matí** arriba un correu
+  a qui el té i un altre a la coordinació amb tots els que falten. Per això el
+  cron `/api/cron/loan-reminders` passa de cada dilluns a cada dia lectiu
+  (`0 7 * * 1-5`); els recordatoris de préstecs d'inventari continuen sortint
+  només els dilluns. La coordinació també els té al panell (*Equips de carro
+  sense tornar*) i a la feina pendent de l'inici. Migració
+  `20260922100000_reserves_d_equips`: una taula nova i buida
+  (`DeviceReservation`), que no toca cap reserva de carro ni l'estat de cap
+  equip. Proves `e2e/reserves-d-equips.spec.ts` i
+  `src/lib/device-reservations.test.ts`.
+
 ### 2026-09-21
 
 - **On és cada carro**: el cercador de carros lliures, les targetes de

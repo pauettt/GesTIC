@@ -2,6 +2,7 @@ import type { Route } from "next";
 import {
   AlertTriangleIcon,
   CalendarCheckIcon,
+  CalendarClockIcon,
   DownloadIcon,
   HandCoinsIcon,
   HourglassIcon,
@@ -11,7 +12,8 @@ import {
   TicketIcon,
 } from "lucide-react";
 
-import { formatDate, formatDateTimeFull } from "@/lib/date";
+import { formatDate, formatDateTimeFull, isSameDay } from "@/lib/date";
+import { dueLabel } from "@/lib/device-reservations";
 import { daysSinceActivity, STALLED_DAYS } from "@/lib/incidents";
 import { daysOverdue } from "@/lib/loans";
 import { getCourseStats, getPendingWork } from "@/lib/panell-data";
@@ -29,6 +31,7 @@ const who = (user: { name: string | null; email: string }) => user.name ?? user.
 export default async function PanellPage() {
   await requireAdmin();
   const [work, stats] = await Promise.all([getPendingWork(), getCourseStats()]);
+  const now = new Date();
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,6 +106,25 @@ export default async function PanellPage() {
             meta: `${who(loan.requester)} · havia de tornar el ${formatDate(loan.endDate)}`,
             badge: { label: `${daysOverdue(loan.endDate)} dies`, variant: "destructive" as const },
           }))}
+        />
+
+        <WorkQueue
+          title="Equips de carro sense tornar"
+          icon={CalendarClockIcon}
+          empty="Tots els equips reservats a part han tornat al carro."
+          items={work.overdueDevices.map((reservation) => {
+            const { chromebook } = reservation;
+            const days = Math.max(1, daysOverdue(reservation.endDate, now));
+            return {
+              id: reservation.id,
+              href: (chromebook.cart ? `/chromebooks/${chromebook.cart.id}` : "/chromebooks") as Route,
+              main: [chromebook.assetTag, chromebook.cart?.name].filter(Boolean).join(" · "),
+              meta: `${who(reservation.user)} · l'havia de tornar ${dueLabel(reservation.endDate, now)}`,
+              badge: isSameDay(reservation.endDate, now)
+                ? { label: "Avui", variant: "outline" as const }
+                : { label: days === 1 ? "1 dia" : `${days} dies`, variant: "destructive" as const },
+            };
+          })}
         />
 
         <WorkQueue

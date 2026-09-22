@@ -78,7 +78,8 @@ export function CartQrPicker({ cartId, devices }: { cartId: string; devices: Pic
           <span className="size-3 rounded-sm border-2 border-green-400 bg-green-100" /> Disponible
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> Ja té l&apos;avís posat
+          <span className="size-3 rounded-sm border-2 border-red-400 bg-red-100" /> Ja té l&apos;avís posat o
+          és reservat
         </span>
       </div>
       {devices.length === 0 ? (

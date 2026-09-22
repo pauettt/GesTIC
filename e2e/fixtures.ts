@@ -99,6 +99,24 @@ export async function seed(connectionString: string): Promise<{
       cartChromebooks[assetTag] = chromebook.id;
     }
 
+    // Un carro només per a les reserves d'equips sols, perquè el que s'hi reservi
+    // no canviï els recomptes que miren les altres proves al Carro E2E. La
+    // Professora Dos té el RES-02 d'ahir i encara no l'ha tornat.
+    const reservationCart = await db.cart.create({ data: { name: "Carro Reserves E2E" } });
+    const reservationDevices = {} as Fixtures["reservationDevices"];
+    for (const assetTag of ["RES-01", "RES-02"] as const) {
+      const chromebook = await db.chromebook.create({ data: { assetTag, cartId: reservationCart.id } });
+      reservationDevices[assetTag] = chromebook.id;
+    }
+    await db.deviceReservation.create({
+      data: {
+        chromebookId: reservationDevices["RES-02"],
+        userId: userIds.professor2,
+        startDate: zonedDateTime(dayKey(-1), FIRST_PERIOD[0]),
+        endDate: zonedDateTime(dayKey(-1), FIRST_PERIOD[1]),
+      },
+    });
+
     const poolChromebooks = {} as Fixtures["poolChromebooks"];
     for (const assetTag of ["ALU-01", "ALU-02"] as const) {
       const chromebook = await db.chromebook.create({
@@ -222,6 +240,8 @@ export async function seed(connectionString: string): Promise<{
       fixtures: {
         cartId: cart.id,
         cartChromebooks,
+        reservationCartId: reservationCart.id,
+        reservationDevices,
         poolChromebooks,
         privateIncidentId: privateIncident.id,
         nextWeek,

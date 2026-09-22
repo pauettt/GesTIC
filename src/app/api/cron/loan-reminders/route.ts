@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
-import { sendLoanOverdueReminder } from "@/lib/notifications";
+import { madridDateKey } from "@/lib/date";
+import { sendDevicesNotReturnedReminders, sendLoanOverdueReminder } from "@/lib/notifications";
 
 /**
- * Recordatori automàtic a qui té material del centre fora de termini.
- * Pensat per a Vercel Cron un cop per setmana (dilluns al matí).
+ * Recordatoris automàtics a qui té material del centre fora de termini. Vercel
+ * Cron la crida cada dia lectiu al matí (`vercel.json`):
+ *  - els equips de carro reservats a part que no han tornat, cada dia: n'hi ha
+ *    prou que un falti un dia perquè falti a la classe següent;
+ *  - els préstecs d'inventari vençuts, només els dilluns: duren setmanes, i un
+ *    correu cada dia seria soroll.
  *
  * La ruta és pública per força —Vercel la crida des de fora— així que es
  * protegeix amb `CRON_SECRET`: sense la capçalera correcta no fa res. Si el
@@ -21,8 +26,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No autoritzat" }, { status: 401 });
   }
 
+  const now = new Date();
+  const devices = await sendDevicesNotReturnedReminders(now);
+  console.info(`[cron] equips de carro sense tornar: ${devices.overdue}, correus enviats: ${devices.sent}`);
+
+  if (!isMonday(now)) return NextResponse.json({ devices });
+
   const overdue = await db.loanRequest.findMany({
-    where: { status: "APROVADA", endDate: { lt: new Date() } },
+    where: { status: "APROVADA", endDate: { lt: now } },
     select: { id: true },
   });
 
@@ -32,5 +43,11 @@ export async function GET(request: Request) {
   const sent = results.filter(Boolean).length;
 
   console.info(`[cron] recordatoris de préstec: ${sent}/${overdue.length} enviats`);
-  return NextResponse.json({ overdue: overdue.length, sent });
+  return NextResponse.json({ devices, loans: { overdue: overdue.length, sent } });
+}
+
+/** Dilluns a l'hora del centre, que és el que val, i no a la del servidor. */
+function isMonday(now: Date) {
+  const [year, month, day] = madridDateKey(now).split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay() === 1;
 }
