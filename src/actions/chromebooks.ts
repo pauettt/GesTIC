@@ -55,6 +55,8 @@ export async function upsertCart(input: unknown): Promise<ActionResult> {
   }
 
   revalidatePath("/chromebooks");
+  // Filtrat per aula, l'inventari també diu quins carros hi ha.
+  revalidatePath("/inventari");
   // Un carro nou és buit: a la seva pàgina se n'importen o s'hi afegeixen els dispositius.
   if (createdId) redirect(`/chromebooks/${createdId}`);
   return { success: true };
@@ -79,6 +81,7 @@ export async function deleteCart(input: unknown): Promise<ActionResult> {
 
   await db.cart.delete({ where: { id: parsed.data.id } });
   revalidatePath("/chromebooks");
+  revalidatePath("/inventari");
   return { success: true };
 }
 

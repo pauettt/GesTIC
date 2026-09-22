@@ -229,6 +229,12 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-22
 
+- **L'inventari diu quins carros hi ha a l'aula**: filtrant l'*Inventari TIC*
+  per edifici, planta o aula, a sota de la taula surten els carros que hi tenen
+  la *Ubicació habitual*, amb què porten i l'enllaç a la seva pàgina. Abans, un
+  carro posat a A.005 no sortia mirant què hi havia a A.005. La cerca també els
+  troba (pel nom, el número de sèrie o l'aula). No surten sense filtre, que ja
+  ho diu l'avís de dalt, ni amb una categoria o *Només prestable*.
 - **Historial de reserves fixes i anul·lar-les quan es vulgui**: a *Carros →
   Reserves fixes*, la coordinació té l'historial de totes les decidides, de
   qualsevol curs: qui la va demanar, qui la va aprovar o rebutjar (amb la nota),

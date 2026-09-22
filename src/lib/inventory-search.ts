@@ -21,3 +21,17 @@ export function inventorySearchFilter(query: string | undefined): Prisma.Invento
     ],
   };
 }
+
+/**
+ * La mateixa cerca sobre els carros que surten a l'inventari: el nom del carro,
+ * el número de sèrie o l'aula on és.
+ */
+export function cartSearchFilter(query: string | undefined): Prisma.CartWhereInput {
+  const q = query?.trim();
+  if (!q) return {};
+
+  const contains = { contains: q, mode: "insensitive" as const };
+  return {
+    OR: [{ name: contains }, { serialNumber: contains }, { space: { name: contains } }],
+  };
+}

@@ -4,9 +4,15 @@ import Link from "next/link";
 import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
-import { inventorySearchFilter } from "@/lib/inventory-search";
+import { deviceSummary } from "@/lib/devices";
+import { cartSearchFilter, inventorySearchFilter } from "@/lib/inventory-search";
 import { loadBuildingOptions } from "@/lib/location-data";
-import { resolveLocationFilter, resolveSpaceFilter, spaceLocationWhere } from "@/lib/locations";
+import {
+  locationLabel,
+  resolveLocationFilter,
+  resolveSpaceFilter,
+  spaceLocationWhere,
+} from "@/lib/locations";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { inventoryItemStatusLabels, inventoryItemStatusVariants } from "@/lib/labels";
 import {
@@ -18,6 +24,7 @@ import {
 import { CategoryManagerDialog } from "@/components/shared/category-manager-dialog";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { InventoryItemDialog } from "@/components/inventory/inventory-item-dialog";
+import { InventoryCarts } from "@/components/inventory/inventory-carts";
 import { InventorySearch } from "@/components/inventory/inventory-search";
 import { LocationFilter } from "@/components/shared/location-filter";
 import { LoanableItemsView } from "@/components/inventory/loanable-items-view";
@@ -71,18 +78,24 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
   ]);
   const location = resolveLocationFilter(buildings, { edifici, planta });
   const space = resolveSpaceFilter(spaces, location, aula);
+  const placeWhere = space
+    ? { spaceId: space.id }
+    : location
+      ? { space: spaceLocationWhere(location) }
+      : {};
+  const searchText = typeof q === "string" ? q.trim() : "";
+  // Mirant un lloc (o buscant), també hi surten els carros: qui vol saber què hi
+  // ha en una aula no ha de recordar que els carros van a part. Sense filtre ja
+  // ho diu l'avís de dalt; i un carro no és de cap categoria ni es presta.
+  const showCarts = Boolean(space || location || searchText) && !categoryFilter && !onlyLoanable;
 
-  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount] =
+  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount, carts] =
     await Promise.all([
     db.inventoryItem.findMany({
       where: {
         ...(typeof categoryFilter === "string" ? { categoryId: categoryFilter } : {}),
         ...(onlyLoanable ? { isLoanable: true } : {}),
-        ...(space
-          ? { spaceId: space.id }
-          : location
-            ? { space: spaceLocationWhere(location) }
-            : {}),
+        ...placeWhere,
         ...search,
       },
       include: { space: true, category: true },
@@ -105,6 +118,17 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     }),
     db.chromebook.count({ where: { status: { not: "BAIXA" } } }),
     db.cart.count(),
+    showCarts
+      ? db.cart.findMany({
+          where: { ...placeWhere, ...cartSearchFilter(searchText) },
+          include: {
+            space: { select: { name: true } },
+            // Els donats de baixa segueixen al carro, però ja no compten com a equips seus.
+            chromebooks: { where: { status: { not: "BAIXA" } }, select: { deviceType: true } },
+          },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   function filterHref(next: { category?: string; prestable?: boolean }): Route {
@@ -281,6 +305,25 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
           </TableBody>
         </Table>
       </div>
+
+      {carts.length > 0 && (
+        <InventoryCarts
+          title={
+            space
+              ? `Carros a ${space.name}`
+              : location
+                ? `Carros a ${locationLabel(location)}`
+                : "Carros que coincideixen amb la cerca"
+          }
+          carts={carts.map((cart) => ({
+            id: cart.id,
+            name: cart.name,
+            serialNumber: cart.serialNumber,
+            space: cart.space,
+            summary: deviceSummary(cart.chromebooks),
+          }))}
+        />
+      )}
 
       <PendingLoanRequests requests={pendingLoanRequests} />
       <ActiveLoans loans={activeLoanRequests} />

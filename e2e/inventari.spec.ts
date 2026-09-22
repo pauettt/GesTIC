@@ -71,6 +71,16 @@ test("l'inventari es filtra per aula, i una aula que no existeix no filtra", asy
   await expect(page.getByRole("link", { name: "Epson Projector E2E" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Lenovo ThinkPad E2E" })).toHaveCount(0);
 
+  // El carro que hi té la ubicació habitual també hi surt, i els d'altres llocs no.
+  await expect(page.getByRole("heading", { name: "Carros a Aula E2E" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Carro E2E", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Carro Reserves E2E" })).toHaveCount(0);
+
+  // Una categoria només ensenya equips d'aquella categoria: els carros no en són.
+  await page.getByRole("link", { name: "Portàtil", exact: true }).click();
+  await expect(page).toHaveURL(/category=/);
+  await expect(page.getByRole("link", { name: "Carro E2E", exact: true })).toHaveCount(0);
+
   // Un enllaç vell a una aula esborrada ensenya tot l'inventari, no una llista buida.
   await page.goto("/inventari?aula=no-existeix");
   await expect(page.getByRole("link", { name: "Lenovo ThinkPad E2E" })).toBeVisible();
