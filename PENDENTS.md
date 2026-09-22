@@ -229,6 +229,20 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-22
 
+- **Historial de reserves fixes i anul·lar-les quan es vulgui**: a *Carros →
+  Reserves fixes*, la coordinació té l'historial de totes les decidides, de
+  qualsevol curs: qui la va demanar, qui la va aprovar o rebutjar (amb la nota),
+  qui la va retirar o anul·lar i quan, i quantes setmanes s'han fet, en queden i
+  s'han alliberat. Filtra per curs i per estat, i busca per carro, professor/a o
+  motiu. Les aprovades amb setmanes per venir s'anul·len d'aquí mateix. Qui té
+  una reserva fixa l'anul·la des de *Reserves fixes* o des de la pàgina del
+  carro, on la coordinació també pot anul·lar la de qualsevol; si ho fa la
+  coordinació, a qui la tenia li arriba un correu i ho veu a la seva llista.
+  Migració `20260922180000_qui_anulla_reserves_fixes`: dues columnes noves i
+  buides (qui l'anul·la i quan).
+- **Prova del cercador de carros, estable**: escrivia el dia abans que la pàgina
+  estigués llesta i, de tant en tant, la cerca i la reserva anaven a avui. Ara
+  tria primer la sessió i comprova la data a l'adreça.
 - **Reserves fixes de carros**: a la pàgina d'un carro, *Demana una reserva
   fixa*: el mateix dia de la setmana i la mateixa sessió cada setmana, amb el
   motiu (obligatori). La coordinació TIC l'aprova o la rebutja (amb una nota que

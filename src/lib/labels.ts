@@ -19,6 +19,7 @@ import type {
   InventoryItemStatus,
   LoanRequestStatus,
   QueryStatus,
+  RecurringReservationStatus,
   ReservationStatus,
   Role,
 } from "@prisma/client";
@@ -217,6 +218,20 @@ export const studentDeviceRequestStatusVariants: Record<
   ENTREGADA: "secondary",
   REBUTJADA: "destructive",
   RETORNADA: "outline",
+  CANCELLADA: "outline",
+};
+
+export const recurringReservationStatusLabels: Record<RecurringReservationStatus, string> = {
+  PENDENT: "Pendent d'aprovar",
+  APROVADA: "Aprovada",
+  REBUTJADA: "No aprovada",
+  CANCELLADA: "Anul·lada",
+};
+
+export const recurringReservationStatusVariants: Record<RecurringReservationStatus, BadgeVariant> = {
+  PENDENT: "default",
+  APROVADA: "secondary",
+  REBUTJADA: "destructive",
   CANCELLADA: "outline",
 };
 

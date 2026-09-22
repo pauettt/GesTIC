@@ -18,7 +18,7 @@ import { CartImportDialog } from "@/components/chromebooks/cart-import-dialog";
 import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
 import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
-import { RecurringRequestDialog } from "@/components/chromebooks/recurring-reservations";
+import { CancelRecurringButton, RecurringRequestDialog } from "@/components/chromebooks/recurring-reservations";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { WeeklySchedule } from "@/components/chromebooks/weekly-schedule";
 import { Separator } from "@/components/ui/separator";
@@ -76,6 +76,7 @@ export default async function CartDetailPage({
       },
       select: {
         id: true,
+        userId: true,
         weekday: true,
         periodId: true,
         status: true,
@@ -213,21 +214,32 @@ export default async function CartDetailPage({
                 {admin ? "Decideix-les i gestiona-les" : "Les teves reserves fixes"} &rarr;
               </Link>
             </div>
-            <ul className="flex flex-col gap-0.5 text-sm">
-              {recurring.map((fixed) => (
-                <li key={fixed.id}>
-                  <span className="font-medium">{slotLabel(fixed.weekday, fixed.periodId)}</span>
-                  <span className="text-muted-foreground">
-                    {" "}
-                    — {fixed.user.name ?? fixed.user.email} · {fixed.purpose}
-                  </span>
-                  {fixed.status === "PENDENT" && (
-                    <span className="ml-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-                      Pendent d&apos;aprovar
+            <ul className="flex flex-col gap-0.5 text-sm" aria-label="Reserves fixes d'aquest carro">
+              {recurring.map((fixed) => {
+                const mine = fixed.userId === user.id;
+                const approved = fixed.status === "APROVADA";
+                return (
+                  <li key={fixed.id} className="flex flex-wrap items-center justify-between gap-x-3">
+                    <span>
+                      <span className="font-medium">{slotLabel(fixed.weekday, fixed.periodId)}</span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — {fixed.user.name ?? fixed.user.email} · {fixed.purpose}
+                      </span>
+                      {!approved && (
+                        <span className="ml-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                          Pendent d&apos;aprovar
+                        </span>
+                      )}
                     </span>
-                  )}
-                </li>
-              ))}
+                    {/* La pot anul·lar qui la té, i la coordinació quan vol; una de pendent,
+                        només qui l'ha demanada: la coordinació la rebutja. */}
+                    {(mine || (admin && approved)) && (
+                      <CancelRecurringButton id={fixed.id} approved={approved} mine={mine} />
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

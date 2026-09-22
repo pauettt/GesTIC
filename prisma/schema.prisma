@@ -54,6 +54,7 @@ model User {
   reservations          Reservation[]
   recurringReservations RecurringReservation[] @relation("RecurringRequester")
   respondedRecurring    RecurringReservation[] @relation("RecurringResponder")
+  cancelledRecurring    RecurringReservation[] @relation("RecurringCanceller")
   deviceReservations    DeviceReservation[] @relation("DeviceReservationUser")
   returnedDevices       DeviceReservation[] @relation("DeviceReservationReturner")
   chromebookNotes       ChromebookNote[]
@@ -430,6 +431,9 @@ enum RecurringReservationStatus {
 /// `weekday` és 1 (dilluns) a 5 (divendres) i `periodId`, una sessió de
 /// `SCHOOL_PERIODS`. `schoolYear` és el curs, «2026-2027»: de setembre a juny,
 /// el que està en marxa; al juliol i a l'agost, el següent.
+///
+/// No s'esborren mai: són l'historial de la coordinació, amb qui les va
+/// demanar, qui les va decidir i qui les va anul·lar i quan.
 model RecurringReservation {
   id            String                     @id @default(cuid())
   cartId        String
@@ -442,11 +446,15 @@ model RecurringReservation {
   responseNote  String?                    @db.Text
   respondedById String?
   respondedAt   DateTime?
+  // Qui la va retirar o anul·lar, i quan. Buit si no està CANCELLADA.
+  cancelledById String?
+  cancelledAt   DateTime?
   createdAt     DateTime                   @default(now())
 
   cart         Cart          @relation(fields: [cartId], references: [id], onDelete: Cascade)
   user         User          @relation("RecurringRequester", fields: [userId], references: [id], onDelete: Cascade)
   respondedBy  User?         @relation("RecurringResponder", fields: [respondedById], references: [id], onDelete: SetNull)
+  cancelledBy  User?         @relation("RecurringCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
   reservations Reservation[]
 
   @@index([cartId, schoolYear, status])

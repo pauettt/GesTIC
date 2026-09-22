@@ -181,10 +181,11 @@ export async function decideRecurringReservation(input: unknown): Promise<Action
 }
 
 /**
- * Retira una reserva fixa pendent, o anul·la una d'aprovada: les setmanes que
- * queden tornen a ser lliures, i les que ja han passat es queden com a
- * registre. Ho pot fer qui l'ha demanada o la coordinació; si és la
- * coordinació, a qui la tenia li arriba un correu.
+ * Retira una reserva fixa pendent, o anul·la una d'aprovada, en qualsevol
+ * moment del curs: les setmanes que queden tornen a ser lliures, i les que ja
+ * han passat es queden com a registre. Ho pot fer qui l'ha demanada o la
+ * coordinació; si és la coordinació, a qui la tenia li arriba un correu. Queda
+ * qui ho ha fet i quan, per a l'historial.
  */
 export async function cancelRecurringReservation(input: unknown): Promise<ActionResult> {
   const user = await requireUser();
@@ -205,7 +206,7 @@ export async function cancelRecurringReservation(input: unknown): Promise<Action
   const cancelled = await db.$transaction(async (tx) => {
     const { count } = await tx.recurringReservation.updateMany({
       where: { id, status: recurring.status },
-      data: { status: "CANCELLADA" },
+      data: { status: "CANCELLADA", cancelledById: user.id, cancelledAt: now },
     });
     if (count === 0) return false;
     // La d'avui, si ja ha començat, es queda: el carro ja pot ser a l'aula.

@@ -60,13 +60,15 @@ test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà
   const professor = await pageAs(browser, "professor");
   await professor.goto("/chromebooks");
 
-  await professor.getByLabel("Dia").fill(nextWeek);
+  // La sessió primer: el desplegable només s'obre quan la pàgina ja és viva. Un
+  // dia escrit abans d'hora es perdia, i la cerca (i la reserva) anaven a avui.
   await professor.getByLabel("Sessió").click();
   await professor.getByRole("option", { name: /^6a hora/ }).click();
+  await professor.getByLabel("Dia").fill(nextWeek);
   // Més equips dels que té cap carro: no n'hi ha cap que serveixi, i ho diu.
   await professor.getByLabel("Equips que calen").fill("500");
   await professor.getByRole("button", { name: "Busca" }).click();
-  await expect(professor).toHaveURL(/dia=.+&sessio=6&equips=500/);
+  await expect(professor).toHaveURL(new RegExp(`dia=${nextWeek}&sessio=6&equips=500`));
   await expect(professor.getByText("Cap carro lliure")).toBeVisible();
   await expect(professor.getByText(/menys equips dels que calen/)).toBeVisible();
 

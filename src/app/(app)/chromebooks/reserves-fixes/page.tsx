@@ -1,29 +1,59 @@
-import type { RecurringReservationStatus } from "@prisma/client";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
-import { formatDate } from "@/lib/date";
+import { formatDate, madridDateKey } from "@/lib/date";
+import { recurringReservationStatusLabels, recurringReservationStatusVariants } from "@/lib/labels";
 import { isAdmin, requireUser } from "@/lib/permissions";
-import { courseEndLabel, occurrences, recurringCourse, shortDay, slotLabel } from "@/lib/recurring-reservations";
+import {
+  courseDays,
+  courseEndLabel,
+  occurrences,
+  recurringCourse,
+  shortDay,
+  slotLabel,
+} from "@/lib/recurring-reservations";
+import { RecurringHistory, type RecurringHistoryRow } from "@/components/chromebooks/recurring-history";
 import { CancelRecurringButton, DecideRecurringButtons } from "@/components/chromebooks/recurring-reservations";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Reserves fixes" };
 
 const who = (user: { name: string | null; email: string }) => user.name ?? user.email;
 
-const statusBadges: Record<RecurringReservationStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  PENDENT: { label: "Pendent d'aprovar", variant: "default" },
-  APROVADA: { label: "Aprovada", variant: "secondary" },
-  REBUTJADA: { label: "No aprovada", variant: "destructive" },
-  CANCELLADA: { label: "Anul·lada", variant: "outline" },
-};
-
 const recurringInclude = {
   user: { select: { name: true, email: true } },
   cart: { select: { id: true, name: true } },
+  respondedBy: { select: { name: true, email: true } },
+  cancelledBy: { select: { name: true, email: true } },
 } as const;
+
+/**
+ * Quantes setmanes de cada reserva fixa ja s'han fet, quantes queden i quantes
+ * s'han alliberat, soles o en anul·lar-la sencera.
+ */
+async function weeksOf(ids: string[], now: Date) {
+  const reservations = await db.reservation.findMany({
+    where: { recurringId: { in: ids } },
+    select: { recurringId: true, status: true, endDate: true },
+  });
+  const weeks = new Map<string, RecurringHistoryRow["weeks"]>();
+  for (const reservation of reservations) {
+    if (!reservation.recurringId) continue;
+    const counts = weeks.get(reservation.recurringId) ?? { done: 0, upcoming: 0, freed: 0 };
+    if (reservation.status === "CANCELLADA") counts.freed += 1;
+    else if (reservation.endDate < now) counts.done += 1;
+    else counts.upcoming += 1;
+    weeks.set(reservation.recurringId, counts);
+  }
+  return weeks;
+}
+
+/** «12 setmanes fetes, 26 per venir». */
+function weekCountLabel(counts: RecurringHistoryRow["weeks"] | undefined) {
+  const { done, upcoming } = counts ?? { done: 0, upcoming: 0 };
+  return `${done} ${done === 1 ? "setmana feta" : "setmanes fetes"}, ${upcoming} per venir`;
+}
 
 /** Les setmanes que queden que ja té reservades algú altre: en aprovar-la, es respectaran. */
 async function weeksTakenByOthers(recurring: {
@@ -48,16 +78,18 @@ async function weeksTakenByOthers(recurring: {
 }
 
 /**
- * Les reserves fixes de carros: la coordinació hi decideix les pendents i hi
- * veu totes les aprovades del curs; el professorat, les seves. Es demanen des de
- * la pàgina de cada carro.
+ * Les reserves fixes de carros: la coordinació hi decideix les pendents i en té
+ * l'historial sencer, des d'on anul·la les aprovades quan vol; el professorat hi
+ * veu les seves i les pot retirar o anul·lar. Es demanen des de la pàgina de
+ * cada carro.
  */
 export default async function RecurringReservationsPage() {
   const user = await requireUser();
   const admin = isAdmin(user.role);
-  const course = recurringCourse();
+  const now = new Date();
+  const course = recurringCourse(now);
 
-  const [pending, approved, mine] = await Promise.all([
+  const [pending, decided, mine] = await Promise.all([
     admin
       ? db.recurringReservation.findMany({
           where: { status: "PENDENT" },
@@ -65,11 +97,12 @@ export default async function RecurringReservationsPage() {
           orderBy: { createdAt: "asc" },
         })
       : Promise.resolve([]),
+    // L'historial: totes les decidides, de tots els cursos. No se n'esborra cap.
     admin
       ? db.recurringReservation.findMany({
-          where: { status: "APROVADA", schoolYear: course.schoolYear },
+          where: { status: { not: "PENDENT" } },
           include: recurringInclude,
-          orderBy: [{ cart: { name: "asc" } }, { weekday: "asc" }, { periodId: "asc" }],
+          orderBy: { createdAt: "desc" },
         })
       : Promise.resolve([]),
     admin
@@ -80,6 +113,7 @@ export default async function RecurringReservationsPage() {
           orderBy: { createdAt: "desc" },
         }),
   ]);
+  const approved = decided.filter((recurring) => recurring.status === "APROVADA");
   const pendingWithConflicts = await Promise.all(
     pending.map(async (recurring) => ({
       recurring,
@@ -94,6 +128,31 @@ export default async function RecurringReservationsPage() {
       ),
     })),
   );
+  const weeks = await weeksOf([...decided, ...mine].map((recurring) => recurring.id), now);
+  const today = madridDateKey(now);
+  const history: RecurringHistoryRow[] = decided.map((recurring) => {
+    const counts = weeks.get(recurring.id) ?? { done: 0, upcoming: 0, freed: 0 };
+    return {
+      id: recurring.id,
+      cartId: recurring.cart.id,
+      cartName: recurring.cart.name,
+      slot: slotLabel(recurring.weekday, recurring.periodId),
+      who: who(recurring.user),
+      purpose: recurring.purpose,
+      status: recurring.status,
+      schoolYear: recurring.schoolYear,
+      createdAt: recurring.createdAt,
+      respondedAt: recurring.respondedAt,
+      respondedByName: recurring.respondedBy ? who(recurring.respondedBy) : null,
+      responseNote: recurring.responseNote,
+      cancelledAt: recurring.cancelledAt,
+      cancelledByName: recurring.cancelledBy ? who(recurring.cancelledBy) : null,
+      weeks: counts,
+      // Un cop passat el 30 de juny, ja no hi ha res a anul·lar.
+      cancellable: recurring.status === "APROVADA" && courseDays(recurring.schoolYear).lastDay >= today,
+      mine: recurring.userId === user.id,
+    };
+  });
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -151,36 +210,7 @@ export default async function RecurringReservationsPage() {
         </Card>
       )}
 
-      {admin && (
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle className="text-base">Aprovades del curs {course.schoolYear}</CardTitle>
-            <CardDescription>Cada setmana es pot alliberar sola des de la graella del carro.</CardDescription>
-          </CardHeader>
-          {approved.length === 0 ? (
-            <p className="px-(--card-spacing) text-sm text-muted-foreground">Encara no n&apos;hi ha cap.</p>
-          ) : (
-            <ul className="flex flex-col divide-y px-(--card-spacing)">
-              {approved.map((recurring) => (
-                <li key={recurring.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">
-                      <Link href={`/chromebooks/${recurring.cart.id}`} className="hover:underline">
-                        {recurring.cart.name}
-                      </Link>{" "}
-                      · {slotLabel(recurring.weekday, recurring.periodId)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {who(recurring.user)} · {recurring.purpose}
-                    </p>
-                  </div>
-                  <CancelRecurringButton id={recurring.id} approved mine={recurring.userId === user.id} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      )}
+      {admin && <RecurringHistory rows={history} currentSchoolYear={course.schoolYear} />}
 
       {!admin && (
         <Card>
@@ -203,16 +233,30 @@ export default async function RecurringReservationsPage() {
                         </Link>{" "}
                         · {slotLabel(recurring.weekday, recurring.periodId)}
                       </span>
-                      <Badge variant={statusBadges[recurring.status].variant}>
-                        {statusBadges[recurring.status].label}
+                      <Badge variant={recurringReservationStatusVariants[recurring.status]}>
+                        {recurringReservationStatusLabels[recurring.status]}
                       </Badge>
                     </p>
                     <p className="text-sm text-muted-foreground">{recurring.purpose}</p>
                     {recurring.responseNote && (
                       <p className="text-sm">Nota de la coordinació: {recurring.responseNote}</p>
                     )}
+                    {recurring.status === "APROVADA" && (
+                      <p className="text-xs text-muted-foreground">
+                        {weekCountLabel(weeks.get(recurring.id))}
+                      </p>
+                    )}
+                    {recurring.status === "CANCELLADA" && recurring.cancelledAt && (
+                      <p className="text-xs text-muted-foreground">
+                        {recurring.respondedAt ? "Anul·lada" : "Retirada"} el {formatDate(recurring.cancelledAt)}
+                        {recurring.cancelledBy && recurring.cancelledById !== user.id
+                          ? ` per ${who(recurring.cancelledBy)}, de la coordinació TIC`
+                          : ""}
+                      </p>
+                    )}
                   </div>
-                  {(recurring.status === "PENDENT" || recurring.status === "APROVADA") && (
+                  {(recurring.status === "PENDENT" ||
+                    (recurring.status === "APROVADA" && courseDays(recurring.schoolYear).lastDay >= today)) && (
                     <CancelRecurringButton id={recurring.id} approved={recurring.status === "APROVADA"} mine />
                   )}
                 </li>
