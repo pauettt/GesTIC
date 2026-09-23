@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { orderChromebooks } from "@/lib/chromebook-order";
 import { currentHolder, isFreeNow, openDeviceReservations, withHolder } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { requireUser } from "@/lib/permissions";
@@ -23,6 +24,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
     where: { id },
     select: {
       name: true,
+      chromebookOrder: true,
       space: { select: { name: true } },
       // Un equip donat de baixa ja no és al carro per a qui el vol fer servir.
       chromebooks: {
@@ -44,7 +46,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
   const now = new Date();
   const available = cart.chromebooks.filter((device) => isFreeNow(device, now)).length;
   // Els que algú té reservats surten com a no disponibles, amb el seu nom.
-  const devices = cart.chromebooks.map(({ reservations, ...device }) =>
+  const devices = orderChromebooks(cart.chromebooks, cart.chromebookOrder).map(({ reservations, ...device }) =>
     withHolder(device, currentHolder(reservations, now), now),
   );
 

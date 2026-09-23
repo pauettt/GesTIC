@@ -16,6 +16,7 @@ import {
   deleteChromebookNoteSchema,
   deleteChromebookSchema,
   setChromebookAvailabilitySchema,
+  setChromebookOrderSchema,
   setChromebookRetiredSchema,
   upsertCartSchema,
   upsertChromebookSchema,
@@ -23,6 +24,30 @@ import {
 } from "@/lib/validations/chromebooks";
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+export async function setChromebookOrder(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = setChromebookOrderSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { cartId, deviceIds } = parsed.data;
+
+  const cart = await db.cart.findUnique({
+    where: { id: cartId },
+    select: { chromebooks: { select: { id: true } } },
+  });
+  if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+  const members = new Set(cart.chromebooks.map(({ id }) => id));
+  if (deviceIds.length > 0 && (deviceIds.length !== members.size || deviceIds.some((id) => !members.has(id)))) {
+    return { success: false, error: "Els dispositius del carro han canviat. Recarrega la pàgina abans d'ordenar-los." };
+  }
+
+  // Una sola escriptura: mai no es desa només una part de l'ordre.
+  await db.cart.update({ where: { id: cartId }, data: { chromebookOrder: deviceIds } });
+  revalidatePath(`/chromebooks/${cartId}`);
+  revalidatePath(`/q/carro/${cartId}`);
+  revalidatePath(`/chromebooks/${cartId}/etiquetes`);
+  return { success: true };
+}
 
 /** On surt un equip: el d'un carro, a la pàgina del carro; el del pool, al préstec a l'alumnat. */
 function devicePage(cartId: string | null) {

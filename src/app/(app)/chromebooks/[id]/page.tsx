@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { LaptopIcon, QrCodeIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { orderChromebooks } from "@/lib/chromebook-order";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
@@ -97,7 +98,8 @@ export default async function CartDetailPage({
   if (!cart) notFound();
 
   // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
-  const inService = cart.chromebooks.filter((chromebook) => chromebook.status !== "BAIXA");
+  const orderedChromebooks = orderChromebooks(cart.chromebooks, cart.chromebookOrder);
+  const inService = orderedChromebooks.filter((chromebook) => chromebook.status !== "BAIXA");
   // Els que algú té ara per una reserva d'equip, tampoc no hi són.
   const available = inService.filter((chromebook) => isFreeNow(chromebook, now)).length;
   const summary = deviceSummary(inService);
@@ -320,7 +322,8 @@ export default async function CartDetailPage({
             <ChromebookManager
               cartId={cart.id}
               carts={carts}
-              chromebooks={cart.chromebooks.map((chromebook) => ({
+              customOrder={cart.chromebookOrder.length > 0}
+              chromebooks={orderedChromebooks.map((chromebook) => ({
                 ...chromebook,
                 reservations: reservationViews(chromebook.reservations, viewer, now),
               }))}

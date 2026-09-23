@@ -321,6 +321,8 @@ model Cart {
   serialNumber String? @unique
   spaceId      String?
   imageUrl     String?
+  // Buit: ordre alfanumèric. Els equips nous s'afegeixen al final de l'ordre desat.
+  chromebookOrder String[] @default([])
 
   space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   chromebooks  Chromebook[]

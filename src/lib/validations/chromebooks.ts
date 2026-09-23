@@ -19,6 +19,12 @@ export type UpsertCartInput = z.infer<typeof upsertCartSchema>;
 
 export const deleteCartSchema = z.object({ id: z.string() });
 
+export const setChromebookOrderSchema = z.object({
+  cartId: z.string().min(1),
+  // Una llista buida restaura l'ordre alfanumèric automàtic.
+  deviceIds: z.array(z.string().min(1)).refine((ids) => new Set(ids).size === ids.length),
+});
+
 export const upsertChromebookSchema = z.object({
   id: z.string().optional(),
   // En una edició, canviar-lo és moure l'equip a un altre carro.

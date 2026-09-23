@@ -1,0 +1,1 @@
+ALTER TABLE "Cart" ADD COLUMN "chromebookOrder" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

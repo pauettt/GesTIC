@@ -2,6 +2,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { orderChromebooks } from "@/lib/chromebook-order";
 import { requireAdmin } from "@/lib/permissions";
 import { CartQrLabel } from "@/components/chromebooks/cart-qr-label";
 import { QrLabelSheet } from "@/components/chromebooks/qr-label-sheet";
@@ -27,6 +28,7 @@ export default async function CartLabelsPage({
     select: {
       id: true,
       name: true,
+      chromebookOrder: true,
       space: { select: { name: true } },
       // Un equip donat de baixa ja no tornarà a classe: no cal etiqueta.
       chromebooks: perDevice
@@ -46,7 +48,7 @@ export default async function CartLabelsPage({
       backHref={`/chromebooks/${cart.id}/etiquetes` as Route}
       backLabel="Torna al QR del carro"
       caption={cart.name}
-      chromebooks={cart.chromebooks ?? []}
+      chromebooks={orderChromebooks(cart.chromebooks ?? [], cart.chromebookOrder)}
     />
   );
 }
