@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { StudentDeviceReason, StudentDeviceRequestStatus } from "@prisma/client";
 
 import { formatDate } from "@/lib/date";
+import { DeleteStudentRequestButton } from "@/components/chromebooks/delete-student-request-button";
 import {
   studentDeviceReasonLabels,
   studentDeviceRequestStatusLabels,
@@ -138,12 +139,13 @@ export function StudentRequestHistory({ rows }: { rows: StudentRequestHistoryRow
                     <TableHead>Equip</TableHead>
                     <TableHead>Demanada</TableHead>
                     <TableHead>Resposta</TableHead>
+                    <TableHead><span className="sr-only">Accions</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {visible.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                      <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                         Cap sol·licitud no coincideix amb la cerca.
                       </TableCell>
                     </TableRow>
@@ -190,6 +192,9 @@ export function StudentRequestHistory({ rows }: { rows: StudentRequestHistoryRow
                         {row.respondedByName && (
                           <span className="mt-0.5 block text-xs">{row.respondedByName}</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DeleteStudentRequestButton id={row.id} status={row.status} studentName={row.studentName} />
                       </TableCell>
                     </TableRow>
                   ))}

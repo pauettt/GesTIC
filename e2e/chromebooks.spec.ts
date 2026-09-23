@@ -24,7 +24,7 @@ async function requestDevice(browser: Browser, firstName: string, lastName: stri
 /** La coordinació aprova la sol·licitud i hi aparta un equip concret. */
 async function approveWith(admin: Page, student: string, device: string) {
   await admin.goto("/alumnat");
-  await admin.locator("tr", { hasText: student }).getByRole("button", { name: "Aprova" }).click();
+  await admin.locator("tr", { hasText: student }).getByRole("button", { name: "Aprova", exact: true }).click();
   const dialog = admin.getByRole("dialog");
   await dialog.locator('[id^="device-"]').click();
   await admin.getByRole("option", { name: device }).click();
@@ -234,4 +234,57 @@ test("l'historial de sol·licituds diu qui les va demanar, i es filtra i es cerc
   await expect(arlet).toBeVisible();
   await history.getByLabel("Cerca sol·licituds").fill("ningú amb aquest nom");
   await expect(history.getByText("Cap sol·licitud no coincideix amb la cerca.")).toBeVisible();
+});
+
+test("la coordinació elimina sol·licituds pendents i de l'historial, però el tutor no", async ({ browser }) => {
+  const tutor = await requestDevice(browser, "Prova Pendent", "Per Esborrar");
+  await expect(tutor.getByRole("button", { name: /^Elimina la sol·licitud/ })).toHaveCount(0);
+  const admin = await pageAs(browser, "admin");
+  await admin.goto("/alumnat");
+  const pending = admin.locator("tr", { hasText: "Prova Pendent Per Esborrar" });
+  await pending.getByRole("button", { name: /^Elimina la sol·licitud/ }).click();
+  await admin.getByRole("alertdialog").getByRole("button", { name: "Cancel·la" }).click();
+  await expect(pending).toBeVisible();
+  await pending.getByRole("button", { name: /^Elimina la sol·licitud/ }).click();
+  await admin.getByRole("alertdialog").getByRole("button", { name: "Elimina", exact: true }).click();
+  await expect(pending).toHaveCount(0);
+  await tutor.reload();
+  await expect(tutor.getByText("Prova Pendent Per Esborrar")).toHaveCount(0);
+
+  await requestDevice(browser, "Prova Rebutjada", "Per Esborrar");
+  await admin.reload();
+  await admin.locator("tr", { hasText: "Prova Rebutjada Per Esborrar" }).getByRole("button", { name: "Rebutja", exact: true }).click();
+  await admin.getByRole("dialog").getByRole("button", { name: "Rebutja" }).click();
+  await expect(admin.getByText("Sol·licitud rebutjada")).toBeVisible();
+  const history = admin.locator('[data-slot="card"]', { has: admin.getByText("Historial de sol·licituds", { exact: true }) });
+  await history.getByLabel("Cerca sol·licituds").fill("Prova Rebutjada");
+  const rejected = history.locator("tr", { hasText: "Prova Rebutjada Per Esborrar" });
+  await rejected.getByRole("button", { name: /^Elimina la sol·licitud/ }).click();
+  await admin.getByRole("alertdialog").getByRole("button", { name: "Elimina", exact: true }).click();
+  await expect(rejected).toHaveCount(0);
+  await admin.reload();
+  await expect(admin.getByText("Prova Rebutjada Per Esborrar")).toHaveCount(0);
+});
+
+test("eliminar una sol·licitud amb equip assignat l'allibera i treu l'historial de prova", async ({ browser }) => {
+  const { poolChromebooks } = readFixtures();
+  const admin = await pageAs(browser, "admin");
+  for (const delivered of [false, true]) {
+    const firstName = delivered ? "Prova Entregada" : "Prova Aprovada";
+    const student = `${firstName} Per Esborrar`;
+    await requestDevice(browser, firstName, "Per Esborrar");
+    await approveWith(admin, student, "ALU-02 · SN-ALU-02");
+    if (delivered) {
+      await confirmStep(admin, student, "Marca com entregat", "Registra l'entrega");
+      await expect(admin.getByText("Entrega registrada")).toBeVisible();
+    }
+    const history = admin.locator('[data-slot="card"]', { has: admin.getByText("Historial de sol·licituds", { exact: true }) });
+    await history.locator("tr", { hasText: student }).getByRole("button", { name: /^Elimina la sol·licitud/ }).click();
+    await expect(admin.getByRole("alertdialog")).toContainText(delivered ? "Consta que l'equip està entregat" : "L'equip deixarà d'estar apartat");
+    await admin.getByRole("alertdialog").getByRole("button", { name: "Elimina", exact: true }).click();
+    await expect(admin.locator("tr", { hasText: student })).toHaveCount(0);
+    await admin.goto(`/alumnat/${poolChromebooks["ALU-02"]}`);
+    await expect(admin.getByText(student)).toHaveCount(0);
+    await expect(admin.getByText("Disponible", { exact: true }).first()).toBeVisible();
+  }
 });

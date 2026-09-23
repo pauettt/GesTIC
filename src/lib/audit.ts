@@ -8,6 +8,7 @@ export type AuditAction =
   | "user.tutor"
   | "user.access"
   | "incident.delete"
+  | "student-request.delete"
   // Buidar les sol·licituds tancades d'alumnat. Ja no es fa des del 2026-09-14,
   // quan es va decidir guardar-les, però les entrades antigues s'han de llegir.
   | "student-requests.purge"
@@ -23,6 +24,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   "user.tutor": "Tutoria",
   "user.access": "Accés",
   "incident.delete": "Incidència esborrada",
+  "student-request.delete": "Sol·licitud d'alumnat esborrada",
   "student-requests.purge": "Dades de l'alumnat",
   "test-data.purge": "Dades de prova",
   "credential.reveal": "Contrasenya consultada",

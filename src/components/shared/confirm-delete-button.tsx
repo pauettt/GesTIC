@@ -23,11 +23,13 @@ export function ConfirmDeleteButton<TInput>({
   input,
   title = "Segur que vols eliminar-ho?",
   description = "Aquesta acció no es pot desfer.",
+  label = "Elimina",
 }: {
   action: (input: TInput) => Promise<ActionResult>;
   input: TInput;
   title?: string;
   description?: string;
+  label?: string;
 }) {
   const { run, isPending } = useServerAction(action);
 
@@ -35,7 +37,7 @@ export function ConfirmDeleteButton<TInput>({
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button variant="ghost" size="icon-sm">
+          <Button variant="ghost" size="icon-sm" aria-label={label}>
             <TrashIcon className="size-4" />
           </Button>
         }

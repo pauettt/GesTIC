@@ -11,9 +11,11 @@ import {
 } from "@/lib/notifications";
 import { isAdmin, requireAdmin, requireTutor, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { studentDeviceRequestStatusLabels } from "@/lib/labels";
 import {
   cancelStudentDeviceRequestSchema,
   createStudentDeviceRequestSchema,
+  deleteStudentDeviceRequestSchema,
   markStudentDeviceDeliveredSchema,
   markStudentDeviceReturnedSchema,
   respondStudentDeviceRequestSchema,
@@ -29,6 +31,54 @@ const DEVICE_TAKEN = "student-device/device-taken";
 /** La pantalla del préstec a l'alumnat i la fitxa d'historial de cada equip, que en penja. */
 function revalidateStudentDevices() {
   revalidatePath("/alumnat", "layout");
+}
+
+/** Esborrat explícit de coordinació, també per retirar sol·licituds de prova. */
+export async function deleteStudentDeviceRequest(input: unknown): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  const parsed = deleteStudentDeviceRequestSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { id, status } = parsed.data;
+
+  try {
+    await db.$transaction(async (tx) => {
+      const request = await tx.studentDeviceRequest.findUnique({
+        where: { id },
+        select: { status: true, chromebookId: true },
+      });
+      if (!request || request.status !== status) throw new Error(ALREADY_RESOLVED);
+
+      // La condició també cobreix una aprovació o entrega concurrent després de la lectura.
+      await tx.studentDeviceRequest.delete({
+        where: { id, status, chromebookId: request.chromebookId },
+      });
+      if (request.chromebookId) await syncChromebookStatus(tx, request.chromebookId);
+
+      // El registre conserva qui ho ha fet, sense tornar-hi a desar dades de l'alumne.
+      await tx.auditEvent.create({
+        data: {
+          actorId: admin.id,
+          action: "student-request.delete",
+          summary: `Sol·licitud de préstec a l'alumnat eliminada (estat: ${studentDeviceRequestStatusLabels[status]}).`,
+        },
+      });
+    });
+  } catch (error) {
+    if (
+      (error instanceof Error && error.message === ALREADY_RESOLVED) ||
+      (typeof error === "object" && error !== null && "code" in error && error.code === "P2025")
+    ) {
+      return { success: false, error: "La sol·licitud ha canviat o ja s'ha eliminat. Actualitza la pàgina i revisa-la abans d'esborrar-la." };
+    }
+    throw error;
+  }
+
+  revalidateStudentDevices();
+  revalidatePath("/espais");
+  revalidatePath("/panell");
+  revalidatePath("/");
+  revalidatePath("/administracio");
+  return { success: true };
 }
 
 export async function createStudentDeviceRequest(input: unknown): Promise<ActionResult> {

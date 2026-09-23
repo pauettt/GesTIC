@@ -159,7 +159,10 @@ diàries de les dades reals, no pas per tenir una base de dades de proves.
 ### 22. Els préstecs de Chromebooks a l'alumnat es guarden amb el nom, sense caducitat
 Decidit el 2026-09-14: cada equip del pool ha de poder dir quins alumnes l'han
 tingut curs rere curs, i per això les sol·licituds —amb el nom i el grup de
-l'alumne— ja no s'esborren. Substitueix la decisió del 2026-09-12 de buidar-les
+l'alumne— no es buiden automàticament. Des del 2026-09-23, la coordinació pot
+eliminar-ne una explícitament, amb confirmació, per corregir errors o treure
+dades de prova; queda al registre d'activitat sense dades de l'alumne.
+Substitueix la decisió del 2026-09-12 de buidar-les
 en acabar el curs: el botó «Buida-les», l'avís del panell i la línia
 d'*Administració* s'han tret. Són dades de menors: només les veuen el tutor/a que
 fa la sol·licitud i la coordinació TIC, i *Administració → Dades personals* diu
@@ -229,6 +232,12 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ### 2026-09-23
 
+- **Esborrar sol·licituds d'alumnat**: la coordinació té una paperera a les
+  pendents, als equips assignats i a l'historial. Es confirma cada esborrat;
+  si hi ha equip apartat o entregat, s'avisa que es traurà l'assignació.
+  L'esborrat, el recàlcul de l'estat de l'equip i el registre d'activitat es
+  desen junts. Les incidències, les baixes i altres assignacions es respecten.
+  Si la sol·licitud canvia mentre es confirma, cal revisar-la de nou.
 - **Etapes, cursos i grups** a *Aules i espais*: la coordinació els crea,
   reanomena i ordena, amb cursos per etapa i grups per curs. No es poden
   eliminar elements que tinguin cursos, grups o sol·licituds associats.

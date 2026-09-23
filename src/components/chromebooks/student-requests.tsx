@@ -17,6 +17,7 @@ import {
   type AvailableDevice,
 } from "@/components/chromebooks/student-request-actions";
 import { StudentRequestDialog } from "@/components/chromebooks/student-request-dialog";
+import { DeleteStudentRequestButton } from "@/components/chromebooks/delete-student-request-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -188,7 +189,10 @@ export function PendingStudentRequests({
                       {formatDate(request.createdAt)}
                     </TableCell>
                     <TableCell>
-                      <RespondStudentRequestButtons id={request.id} available={available} />
+                      <div className="flex items-center justify-end gap-1">
+                        <RespondStudentRequestButtons id={request.id} available={available} />
+                        <DeleteStudentRequestButton id={request.id} status={request.status} studentName={studentName(request)} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -253,6 +257,7 @@ export function AwaitingDeliveryStudentDevices({ requests }: { requests: Student
                         studentName={studentName(request)}
                         deviceLabel={device(request.chromebook)}
                       />
+                      <DeleteStudentRequestButton id={request.id} status={request.status} studentName={studentName(request)} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -305,11 +310,14 @@ export function DeliveredStudentDevices({ requests }: { requests: StudentRequest
                     {request.deliveredAt ? formatDateTime(request.deliveredAt) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <MarkStudentDeviceReturnedButton
-                      id={request.id}
-                      studentName={studentName(request)}
-                      deviceLabel={device(request.chromebook)}
-                    />
+                    <div className="flex items-center justify-end gap-1">
+                      <MarkStudentDeviceReturnedButton
+                        id={request.id}
+                        studentName={studentName(request)}
+                        deviceLabel={device(request.chromebook)}
+                      />
+                      <DeleteStudentRequestButton id={request.id} status={request.status} studentName={studentName(request)} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

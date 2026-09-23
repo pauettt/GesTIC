@@ -48,6 +48,12 @@ export type RespondStudentDeviceRequestInput = z.infer<typeof respondStudentDevi
 
 export const cancelStudentDeviceRequestSchema = z.object({ id: z.string().min(1) });
 
+// L'estat que el coordinador ha vist i confirmat: si canvia mentrestant, cal revisar-lo.
+export const deleteStudentDeviceRequestSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["PENDENT", "APROVADA", "ENTREGADA", "REBUTJADA", "RETORNADA", "CANCELLADA"]),
+});
+
 export const markStudentDeviceDeliveredSchema = z.object({ id: z.string().min(1) });
 
 export const markStudentDeviceReturnedSchema = z.object({ id: z.string().min(1) });
