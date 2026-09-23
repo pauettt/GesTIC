@@ -29,6 +29,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Carros" };
 
+type CartRoom = (PlacedSpace & { roomName: string | null }) | null;
+
+/** El professorat identifica el carro pel nom de l'aula, més que pel seu número. */
+function cartLabel(cart: { name: string; space: CartRoom }) {
+  const room = cart.space?.roomName?.trim() || cart.space?.name;
+  return room ? `${cart.name} · ${room}` : cart.name;
+}
+
 export default async function ChromebooksPage({ searchParams }: PageProps<"/chromebooks">) {
   const user = await requireUser();
   const admin = isAdmin(user.role);
@@ -48,7 +56,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
         ...(space ? { spaceId: space.id } : location ? { space: spaceLocationWhere(location) } : {}),
       },
       include: {
-        space: { select: placedSpaceSelect },
+        space: { select: { ...placedSpaceSelect, roomName: true } },
         chromebooks: {
           include: {
             // Els equips que algú té reservats a part no hi són, ara o a l'hora que es busca.
@@ -189,7 +197,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                   )}
                 </div>
                 <CardHeader>
-                  <CardTitle>{cart.name}</CardTitle>
+                  <CardTitle>{cartLabel(cart)}</CardTitle>
                   {!cart.isVisibleToTeachers && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Ocult al professorat · ús intern</p>}
                   <CartPlace space={cart.space} className="text-sm" />
                 </CardHeader>
@@ -223,7 +231,7 @@ function CartSearchResults({
   carts,
 }: {
   search: CartSearch;
-  carts: { id: string; name: string; space: PlacedSpace | null; available: number; busy: boolean }[];
+  carts: { id: string; name: string; space: CartRoom; available: number; busy: boolean }[];
 }) {
   const free = carts.filter((cart) => !cart.busy);
   const matching = free
@@ -253,7 +261,7 @@ function CartSearchResults({
                   href={`/chromebooks/${cart.id}?week=${toDateParam(startOfWeek(search.startDate))}` as Route}
                   className="font-medium hover:underline"
                 >
-                  {cart.name}
+                  {cartLabel(cart)}
                 </Link>
                 <CartPlace space={cart.space} className="text-sm" />
                 <p className="text-sm text-muted-foreground">
@@ -262,7 +270,7 @@ function CartSearchResults({
               </div>
               <QuickReserveButton
                 cartId={cart.id}
-                cartName={cart.name}
+                cartName={cartLabel(cart)}
                 dateKey={search.dateKey}
                 periodId={search.period.id}
                 when={when}

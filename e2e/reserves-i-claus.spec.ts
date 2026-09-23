@@ -74,7 +74,7 @@ test("el cercador troba els carros lliures d'una sessió i en reserva un d'allà
 
   await professor.getByLabel("Equips que calen").fill("");
   await professor.getByRole("button", { name: "Busca" }).click();
-  const result = professor.locator("li", { has: professor.getByRole("link", { name: "Carro E2E", exact: true }) });
+  const result = professor.locator("li", { has: professor.getByRole("link", { name: "Carro E2E · Aula E2E", exact: true }) });
   await expect(result).toBeVisible();
   // Diu on és, per triar el que queda més a prop.
   await expect(result).toContainText("Edifici Nord E2E, Planta 2 E2E, Aula E2E");
