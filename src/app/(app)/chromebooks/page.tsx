@@ -37,6 +37,16 @@ function cartLabel(cart: { name: string; space: CartRoom }) {
   return room ? `${cart.name} · ${room}` : cart.name;
 }
 
+function CartName({ cart }: { cart: { name: string; space: CartRoom } }) {
+  const room = cart.space?.roomName?.trim() || cart.space?.name;
+  return (
+    <>
+      {cart.name}
+      {room && <> · <span className="text-blue-700 dark:text-blue-400">{room}</span></>}
+    </>
+  );
+}
+
 export default async function ChromebooksPage({ searchParams }: PageProps<"/chromebooks">) {
   const user = await requireUser();
   const admin = isAdmin(user.role);
@@ -197,7 +207,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                   )}
                 </div>
                 <CardHeader>
-                  <CardTitle>{cartLabel(cart)}</CardTitle>
+                  <CardTitle><CartName cart={cart} /></CardTitle>
                   {!cart.isVisibleToTeachers && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Ocult al professorat · ús intern</p>}
                   <CartPlace space={cart.space} className="text-sm" />
                 </CardHeader>
@@ -261,7 +271,7 @@ function CartSearchResults({
                   href={`/chromebooks/${cart.id}?week=${toDateParam(startOfWeek(search.startDate))}` as Route}
                   className="font-medium hover:underline"
                 >
-                  {cartLabel(cart)}
+                  <CartName cart={cart} />
                 </Link>
                 <CartPlace space={cart.space} className="text-sm" />
                 <p className="text-sm text-muted-foreground">
