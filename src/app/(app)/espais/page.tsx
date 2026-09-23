@@ -8,6 +8,7 @@ import { CategoryManagerDialog } from "@/components/shared/category-manager-dial
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { LocationFilter } from "@/components/shared/location-filter";
 import { FloorManagerDialog } from "@/components/spaces/floor-manager-dialog";
+import { AcademicManagerDialog } from "@/components/spaces/academic-manager-dialog";
 import { SpaceDialog } from "@/components/spaces/space-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -26,6 +27,17 @@ function toManaged(items: ListItem[]) {
 
 export default async function EspaisPage({ searchParams }: PageProps<"/espais">) {
   await requireAdmin();
+
+  const academicStages = await db.academicStage.findMany({
+    orderBy: [{ order: "asc" }, { name: "asc" }],
+    include: { courses: {
+      orderBy: [{ order: "asc" }, { name: "asc" }],
+      include: { groups: {
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        include: { _count: { select: { requests: true } } },
+      } },
+    } },
+  });
 
   const listQuery = {
     orderBy: [{ order: "asc" as const }, { name: "asc" as const }],
@@ -74,10 +86,19 @@ export default async function EspaisPage({ searchParams }: PageProps<"/espais">)
           <h1 className="text-2xl font-semibold">Aules i espais</h1>
           <p className="text-muted-foreground">
             Aules, despatxos i altres espais del centre on hi ha equipament TIC i carros de
-            Chromebooks.
+            Chromebooks. Etapes, cursos i grups de l&apos;alumnat.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <AcademicManagerDialog stages={academicStages.map((stage) => ({
+            id: stage.id, name: stage.name, order: stage.order, usageCount: stage.courses.length,
+            courses: stage.courses.map((course) => ({
+              id: course.id, name: course.name, order: course.order, usageCount: course.groups.length,
+              groups: course.groups.map((group) => ({
+                id: group.id, name: group.name, order: group.order, usageCount: group._count.requests,
+              })),
+            })),
+          }))} />
           <CategoryManagerDialog
             categories={toManaged(buildings)}
             upsertAction={upsertBuilding}

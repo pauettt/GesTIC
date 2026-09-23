@@ -12,7 +12,7 @@ export const createStudentDeviceRequestSchema = z
   .object({
     studentFirstName: z.string().trim().min(1, "Indica el nom de l'alumne/a").max(80),
     studentLastName: z.string().trim().min(1, "Indica els cognoms de l'alumne/a").max(120),
-    groupName: z.string().trim().max(40).optional().or(z.literal("")),
+    groupId: z.string().trim().optional(),
     reason: z.enum([
       "SENSE_DISPOSITIU",
       "DISPOSITIU_AVARIAT",

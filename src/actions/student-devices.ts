@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { academicGroupLabel } from "@/lib/academic-structure";
 import { syncChromebookStatus } from "@/lib/chromebook-status";
 import {
   notifyStudentDeviceDecision,
@@ -36,10 +37,18 @@ export async function createStudentDeviceRequest(input: unknown): Promise<Action
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { studentFirstName, studentLastName, groupName, reason, reasonNote } = parsed.data;
+  const { studentFirstName, studentLastName, groupId, reason, reasonNote } = parsed.data;
 
   const limited = await checkRateLimit("studentDeviceRequest", tutor.id);
   if (limited) return { success: false, error: limited };
+
+  const group = groupId ? await db.academicGroup.findUnique({
+    where: { id: groupId },
+    include: { course: { include: { stage: true } } },
+  }) : null;
+  if (groupId && !group) {
+    return { success: false, error: "El grup triat ja no existeix. Torna a obrir el formulari i tria'n un altre." };
+  }
 
   // Un alumne, un equip: si ja en té una de viva, la següent no és una petició
   // nova sinó la mateixa dues vegades, i acabaria amb dos aparells a casa.
@@ -61,16 +70,26 @@ export async function createStudentDeviceRequest(input: unknown): Promise<Action
     };
   }
 
-  const created = await db.studentDeviceRequest.create({
-    data: {
-      tutorId: tutor.id,
-      studentFirstName,
-      studentLastName,
-      groupName: groupName || null,
-      reason,
-      reasonNote: reasonNote || null,
-    },
-  });
+  let created;
+  try {
+    created = await db.studentDeviceRequest.create({
+      data: {
+        tutorId: tutor.id,
+        studentFirstName,
+        studentLastName,
+        groupId: group?.id ?? null,
+        groupName: group ? academicGroupLabel(group) : null,
+        reason,
+        reasonNote: reasonNote || null,
+      },
+    });
+  } catch (error) {
+    // El grup es pot haver eliminat entre la consulta i l'alta.
+    if (groupId && typeof error === "object" && error !== null && "code" in error && error.code === "P2003") {
+      return { success: false, error: "No s'ha pogut desar la sol·licitud. Torna a obrir el formulari i comprova el grup." };
+    }
+    throw error;
+  }
 
   await notifyStudentDeviceRequested(created.id);
 

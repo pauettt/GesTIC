@@ -526,6 +526,36 @@ enum StudentDeviceRequestStatus {
   CANCELLADA
 }
 
+// Catàleg acadèmic del centre, gestionat des d'Aules i espais.
+model AcademicStage {
+  id      String @id @default(cuid())
+  name    String @unique
+  order   Int    @default(0)
+  courses AcademicCourse[]
+}
+
+model AcademicCourse {
+  id      String @id @default(cuid())
+  stageId String
+  name    String
+  order   Int    @default(0)
+  stage   AcademicStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  groups  AcademicGroup[]
+
+  @@unique([stageId, name])
+}
+
+model AcademicGroup {
+  id       String @id @default(cuid())
+  courseId String
+  name     String
+  order    Int    @default(0)
+  course   AcademicCourse @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  requests StudentDeviceRequest[]
+
+  @@unique([courseId, name])
+}
+
 /// Sol·licitud d'un tutor perquè un alumne del seu grup tingui un Chromebook
 /// durant el curs, i alhora l'historial de préstecs de l'equip. En aprovar-la
 /// s'hi aparta un equip del pool (`Chromebook.isStudentLoanable`), que passa a
@@ -545,7 +575,10 @@ model StudentDeviceRequest {
   tutorId          String
   studentFirstName String
   studentLastName  String
+  // El nom és una instantània: canviar el catàleg no reescriu l'historial.
+  // Les sol·licituds anteriors conserven el text lliure i no tenen groupId.
   groupName        String?
+  groupId          String?
   reason           StudentDeviceReason
   reasonNote       String?                    @db.Text
   status           StudentDeviceRequestStatus @default(PENDENT)
@@ -564,7 +597,9 @@ model StudentDeviceRequest {
   deliveredBy User?       @relation("StudentDeviceDeliverer", fields: [deliveredById], references: [id], onDelete: SetNull)
   returnedBy  User?       @relation("StudentDeviceReceiver", fields: [returnedById], references: [id], onDelete: SetNull)
   chromebook  Chromebook? @relation(fields: [chromebookId], references: [id], onDelete: SetNull)
+  group       AcademicGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
 
+  @@index([groupId])
   @@index([tutorId])
   @@index([status])
   @@index([chromebookId])

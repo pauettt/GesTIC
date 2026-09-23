@@ -27,8 +27,18 @@ export default async function StudentLoansPage() {
   // s'exclouen, cadascuna surt si toca.
   const requestsWithContext = { include: { tutor: true, chromebook: true } } as const;
 
-  const [studentChromebooks, myRequests, pendingRequests, awaitingDelivery, delivered, answered] =
+  const [academicStages, studentChromebooks, myRequests, pendingRequests, awaitingDelivery, delivered, answered] =
     await Promise.all([
+      user.isTutor ? db.academicStage.findMany({
+        orderBy: [{ order: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, courses: {
+          orderBy: [{ order: "asc" }, { name: "asc" }],
+          select: { id: true, name: true, groups: {
+            orderBy: [{ order: "asc" }, { name: "asc" }],
+            select: { id: true, name: true },
+          } },
+        } },
+      }) : Promise.resolve([]),
       // El pool de préstec és inventari de la coordinació: al tutor no li surt,
       // i per això tampoc es demana.
       admin
@@ -133,7 +143,7 @@ export default async function StudentLoansPage() {
         </p>
       </div>
 
-      {user.isTutor && <TutorStudentRequests requests={myRequests} />}
+      {user.isTutor && <TutorStudentRequests requests={myRequests} stages={academicStages} />}
 
       {admin && (
         <>

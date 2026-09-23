@@ -118,6 +118,9 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
+    await db.academicStage.create({
+      data: { name: "ESO", courses: { create: { name: "2n", groups: { create: { name: "B" } } } } },
+    });
     const poolChromebooks = {} as Fixtures["poolChromebooks"];
     for (const assetTag of ["ALU-01", "ALU-02"] as const) {
       const chromebook = await db.chromebook.create({

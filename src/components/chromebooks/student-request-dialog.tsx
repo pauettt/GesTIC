@@ -8,6 +8,7 @@ import { PlusIcon } from "lucide-react";
 import { createStudentDeviceRequest } from "@/actions/student-devices";
 import { useServerAction } from "@/hooks/use-server-action";
 import { studentDeviceReasonLabels } from "@/lib/labels";
+import type { AcademicStageOption } from "@/lib/academic-structure";
 import {
   createStudentDeviceRequestSchema,
   type CreateStudentDeviceRequestInput,
@@ -34,18 +35,23 @@ import { Textarea } from "@/components/ui/textarea";
 const EMPTY: CreateStudentDeviceRequestInput = {
   studentFirstName: "",
   studentLastName: "",
-  groupName: "",
+  groupId: "",
   reason: "SENSE_DISPOSITIU",
   reasonNote: "",
 };
 
-export function StudentRequestDialog() {
+export function StudentRequestDialog({ stages }: { stages: AcademicStageOption[] }) {
   const [open, setOpen] = useState(false);
+  const [stageId, setStageId] = useState("");
+  const [courseId, setCourseId] = useState("");
+  const stage = stages.find((item) => item.id === stageId);
+  const course = stage?.courses.find((item) => item.id === courseId);
   const {
     control,
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<CreateStudentDeviceRequestInput>({
     resolver: zodResolver(createStudentDeviceRequestSchema),
@@ -59,6 +65,8 @@ export function StudentRequestDialog() {
     onSuccess: () => {
       setOpen(false);
       reset(EMPTY);
+      setStageId("");
+      setCourseId("");
     },
   });
 
@@ -72,7 +80,7 @@ export function StudentRequestDialog() {
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chromebook per a un alumne/a</DialogTitle>
         </DialogHeader>
@@ -95,14 +103,55 @@ export function StudentRequestDialog() {
               </Field>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="groupName">Grup</FieldLabel>
-              <Input id="groupName" placeholder="Ex: 2n ESO B" {...register("groupName")} />
-              <p className="text-xs text-muted-foreground">
-                No cal, però ajuda la coordinació a saber a qui reclamar l&apos;equip a final de
-                curs.
-              </p>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field>
+                <FieldLabel htmlFor="student-stage">Etapa</FieldLabel>
+                <Select value={stageId} onValueChange={(value) => {
+                  setStageId(value ?? "");
+                  setCourseId("");
+                  setValue("groupId", "");
+                }} items={{ "": "Sense indicar", ...Object.fromEntries(stages.map((item) => [item.id, item.name])) }}>
+                  <SelectTrigger id="student-stage" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sense indicar</SelectItem>
+                    {stages.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="student-course">Curs</FieldLabel>
+                <Select value={courseId} disabled={!stage?.courses.length} onValueChange={(value) => {
+                  setCourseId(value ?? "");
+                  setValue("groupId", "");
+                }} items={{ "": "Tria el curs", ...Object.fromEntries((stage?.courses ?? []).map((item) => [item.id, item.name])) }}>
+                  <SelectTrigger id="student-course" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tria el curs</SelectItem>
+                    {stage?.courses.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field data-invalid={Boolean(errors.groupId)}>
+                <FieldLabel htmlFor="student-group">Grup (opcional)</FieldLabel>
+                <Controller control={control} name="groupId" render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={(value) => field.onChange(value ?? "")} disabled={!course?.groups.length}
+                    items={{ "": "Sense indicar", ...Object.fromEntries((course?.groups ?? []).map((item) => [item.id, item.name])) }}>
+                    <SelectTrigger id="student-group" className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sense indicar</SelectItem>
+                      {course?.groups.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
+                <FieldError errors={errors.groupId ? [errors.groupId] : undefined} />
+              </Field>
+            </div>
+            <p className="-mt-2 text-xs text-muted-foreground">
+              {!stages.length ? "La coordinació encara no ha definit les etapes, els cursos i els grups a «Aules i espais»."
+                : stage && !stage.courses.length ? "Aquesta etapa encara no té cursos. Demana a la coordinació que els afegeixi."
+                : course && !course.groups.length ? "Aquest curs encara no té grups. Demana a la coordinació que els afegeixi."
+                : "Tria l'etapa, el curs i el grup. Ajuda la coordinació a saber a qui reclamar l'equip a final de curs."}
+            </p>
 
             <Field data-invalid={Boolean(errors.reason)}>
               <FieldLabel htmlFor="reason">Motiu</FieldLabel>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Chromebook, StudentDeviceRequest, User } from "@prisma/client";
 
 import { formatDate, formatDateTime } from "@/lib/date";
+import type { AcademicStageOption } from "@/lib/academic-structure";
 import {
   studentDeviceReasonLabels,
   studentDeviceRequestStatusLabels,
@@ -60,7 +61,7 @@ function DeviceLink({ chromebook }: { chromebook: Chromebook | null }) {
  * El que veu un tutor: només les seves. Les dades d'un alumne no han de sortir
  * a la pantalla d'un altre tutor, encara que tots dos puguin demanar equips.
  */
-export function TutorStudentRequests({ requests }: { requests: StudentRequest[] }) {
+export function TutorStudentRequests({ requests, stages }: { requests: StudentRequest[]; stages: AcademicStageOption[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-wrap items-start justify-between gap-3">
@@ -71,7 +72,7 @@ export function TutorStudentRequests({ requests }: { requests: StudentRequest[] 
             decideix la coordinació TIC.
           </p>
         </div>
-        <StudentRequestDialog />
+        <StudentRequestDialog stages={stages} />
       </CardHeader>
       <CardContent>
         {requests.length === 0 ? (

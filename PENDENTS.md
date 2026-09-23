@@ -227,6 +227,18 @@ té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
 ## ✅ Fet
 
+### 2026-09-23
+
+- **Etapes, cursos i grups** a *Aules i espais*: la coordinació els crea,
+  reanomena i ordena, amb cursos per etapa i grups per curs. No es poden
+  eliminar elements que tinguin cursos, grups o sol·licituds associats.
+  El formulari de préstec a l'alumnat passa del text lliure a tres
+  desplegables dependents. El grup continua sent opcional; si es tria, el
+  servidor exigeix que existeixi al catàleg i desa el nom complet per
+  conservar l'historial encara que es reanomeni. La migració
+  `20260923100000_etapes_cursos_grups` conserva els noms de les sol·licituds
+  anteriors. En desplegar, cal omplir el catàleg amb les dades del centre.
+
 ### 2026-09-22
 
 - **L'inventari diu quins carros hi ha a l'aula**: filtrant l'*Inventari TIC*

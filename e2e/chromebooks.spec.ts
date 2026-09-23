@@ -10,7 +10,12 @@ async function requestDevice(browser: Browser, firstName: string, lastName: stri
   const dialog = tutor.getByRole("dialog");
   await dialog.locator("#studentFirstName").fill(firstName);
   await dialog.locator("#studentLastName").fill(lastName);
-  await dialog.locator("#groupName").fill("2n ESO B");
+  await dialog.getByLabel("Etapa", { exact: true }).click();
+  await tutor.getByRole("option", { name: "ESO", exact: true }).click();
+  await dialog.getByLabel("Curs", { exact: true }).click();
+  await tutor.getByRole("option", { name: "2n", exact: true }).click();
+  await dialog.getByLabel("Grup (opcional)").click();
+  await tutor.getByRole("option", { name: "B", exact: true }).click();
   await dialog.getByRole("button", { name: "Envia la sol·licitud" }).click();
   await expect(tutor.getByText(`${firstName} ${lastName}`)).toBeVisible();
   return tutor;
