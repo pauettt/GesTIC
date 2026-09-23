@@ -29,6 +29,41 @@ function devicePage(cartId: string | null) {
   return cartId ? `/chromebooks/${cartId}` : "/alumnat";
 }
 
+function prismaCode(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+}
+
+/** Només atribuïm l'error a un duplicat si trobem l'equip que hi coincideix. */
+async function deviceConflict(error: unknown, input: { id?: string; assetTag: string; serialNumber?: string | null }): Promise<ActionResult> {
+  if (prismaCode(error) !== "P2002") throw error;
+
+  const conflicts = await db.chromebook.findMany({
+    where: {
+      ...(input.id ? { id: { not: input.id } } : {}),
+      OR: [
+        { assetTag: input.assetTag },
+        ...(input.serialNumber ? [{ serialNumber: input.serialNumber }] : []),
+      ],
+    },
+    select: { assetTag: true, serialNumber: true, isStudentLoanable: true, status: true, cart: { select: { name: true } } },
+    orderBy: { assetTag: "asc" },
+  });
+  if (!conflicts.length) throw error;
+
+  const messages = conflicts.map((device) => {
+    const fields = [
+      ...(device.assetTag === input.assetTag ? [`l'identificador «${input.assetTag}»`] : []),
+      ...(input.serialNumber && device.serialNumber === input.serialNumber ? [`el número de sèrie «${input.serialNumber}»`] : []),
+    ];
+    const location = device.isStudentLoanable
+      ? "al préstec a l'alumnat"
+      : device.cart ? `al carro «${device.cart.name}»` : "sense carro assignat";
+    const retired = device.status === "BAIXA" ? ", donat de baixa" : "";
+    return `Ja existeix un dispositiu amb ${fields.join(" i ")}: «${device.assetTag}», ${location}${retired}.`;
+  });
+  return { success: false, error: messages.join(" ") };
+}
+
 export async function upsertCart(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = upsertCartSchema.safeParse(input);
@@ -50,8 +85,11 @@ export async function upsertCart(input: unknown): Promise<ActionResult> {
     } else {
       createdId = (await db.cart.create({ data: payload, select: { id: true } })).id;
     }
-  } catch {
-    return { success: false, error: "Ja existeix un carro amb aquest nom o número de sèrie" };
+  } catch (error) {
+    if (prismaCode(error) === "P2002") {
+      return { success: false, error: "Ja existeix un carro amb aquest nom o número de sèrie" };
+    }
+    throw error;
   }
 
   revalidatePath("/chromebooks");
@@ -121,8 +159,8 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
     } else {
       await db.chromebook.create({ data: payload });
     }
-  } catch {
-    return { success: false, error: "Ja existeix un dispositiu amb aquest identificador o número de sèrie" };
+  } catch (error) {
+    return deviceConflict(error, { id, assetTag, serialNumber: payload.serialNumber });
   }
 
   revalidatePath(`/chromebooks/${cartId}`);
@@ -167,8 +205,8 @@ export async function upsertStudentChromebook(input: unknown): Promise<ActionRes
     } else {
       await db.chromebook.create({ data: { ...payload, isStudentLoanable: true } });
     }
-  } catch {
-    return { success: false, error: "Ja existeix un dispositiu amb aquest identificador o número de sèrie" };
+  } catch (error) {
+    return deviceConflict(error, { id, assetTag, serialNumber });
   }
 
   revalidatePath("/alumnat");
