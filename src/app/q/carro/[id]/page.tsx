@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { canAccessCart } from "@/lib/cart-access";
 import { orderChromebooks } from "@/lib/chromebook-order";
 import { currentHolder, isFreeNow, openDeviceReservations, withHolder } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
@@ -17,7 +18,7 @@ export const metadata = { title: "Reporta una avaria" };
  * el seu número.
  */
 export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
 
   const cart = await db.cart.findUnique({
@@ -25,6 +26,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
     select: {
       name: true,
       chromebookOrder: true,
+      isVisibleToTeachers: true,
       space: { select: { name: true } },
       // Un equip donat de baixa ja no és al carro per a qui el vol fer servir.
       chromebooks: {
@@ -41,7 +43,7 @@ export default async function CartQrPage({ params }: PageProps<"/q/carro/[id]">)
       },
     },
   });
-  if (!cart) notFound();
+  if (!cart || !canAccessCart(user.role, cart)) notFound();
 
   const now = new Date();
   const available = cart.chromebooks.filter((device) => isFreeNow(device, now)).length;

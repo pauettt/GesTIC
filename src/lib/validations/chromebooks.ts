@@ -7,6 +7,7 @@ import { isDateKey } from "@/lib/validations/common";
 export const upsertCartSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1, "Indica un nom pel carro").max(100),
+  isVisibleToTeachers: z.boolean().optional(),
   serialNumber: z.string().trim().max(150).optional().or(z.literal("")),
   spaceId: z.string().optional().or(z.literal("")),
   imageUrl: z

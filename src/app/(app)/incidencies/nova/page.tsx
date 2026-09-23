@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, CloudIcon, LaptopIcon, MapPinIcon, type LucideIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { visibleCartsWhere } from "@/lib/cart-access";
 import { requireUser } from "@/lib/permissions";
 import { CartIncidentForm } from "@/components/incidents/cart-incident-form";
 import { GoogleIncidentForm } from "@/components/incidents/google-incident-form";
@@ -132,8 +133,10 @@ async function CartForm({ cartId, chromebookId }: { cartId?: string; chromebookI
   return <CartIncidentForm carts={carts} studentPool={studentPool} initial={{ cartId, chromebookId }} />;
 }
 
-function loadCarts() {
+async function loadCarts() {
+  const user = await requireUser();
   return db.cart.findMany({
+    where: visibleCartsWhere(user.role),
     orderBy: { name: "asc" },
     // Un equip donat de baixa ja no es fa servir: no s'hi han d'obrir incidències.
     include: {

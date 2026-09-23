@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import { ACTIVE_STUDENT_REQUEST_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { zonedDateTime } from "@/lib/date";
 import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
@@ -95,12 +96,13 @@ export async function upsertCart(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { id, name, serialNumber, spaceId, imageUrl } = parsed.data;
+  const { id, name, serialNumber, spaceId, imageUrl, isVisibleToTeachers } = parsed.data;
   const payload = {
     name,
     serialNumber: serialNumber || null,
     spaceId: spaceId || null,
     imageUrl: imageUrl || null,
+    ...(isVisibleToTeachers !== undefined ? { isVisibleToTeachers } : {}),
   };
 
   let createdId: string | null = null;
@@ -120,6 +122,11 @@ export async function upsertCart(input: unknown): Promise<ActionResult> {
   revalidatePath("/chromebooks");
   // Filtrat per aula, l'inventari també diu quins carros hi ha.
   revalidatePath("/inventari");
+  if (id) {
+    revalidatePath(`/chromebooks/${id}`);
+    revalidatePath(`/q/carro/${id}`);
+  }
+  revalidatePath("/incidencies/nova");
   // Un carro nou és buit: a la seva pàgina se n'importen o s'hi afegeixen els dispositius.
   if (createdId) redirect(`/chromebooks/${createdId}`);
   return { success: true };
@@ -413,8 +420,9 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
     return { success: false, error: "No es poden reservar sessions que ja han passat" };
   }
 
-  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true } });
+  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true, isVisibleToTeachers: true } });
   if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+  if (!canAccessCart(user.role, cart)) return { success: false, error: CART_ACCESS_DENIED };
 
   try {
     await db.$transaction(async (tx) => {

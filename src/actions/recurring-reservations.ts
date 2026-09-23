@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import {
   notifyRecurringCancelled,
   notifyRecurringDecision,
@@ -55,8 +56,9 @@ export async function requestRecurringReservation(input: unknown): Promise<Actio
     return { success: false, error: "Aquest curs ja no queda cap setmana amb aquesta sessió" };
   }
 
-  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true } });
+  const cart = await db.cart.findUnique({ where: { id: cartId }, select: { id: true, isVisibleToTeachers: true } });
   if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+  if (!canAccessCart(user.role, cart)) return { success: false, error: CART_ACCESS_DENIED };
 
   const slot = { cartId, weekday, periodId, schoolYear };
   const approved = await db.recurringReservation.findFirst({

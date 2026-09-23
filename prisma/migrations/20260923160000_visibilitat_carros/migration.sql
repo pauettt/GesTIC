@@ -1,0 +1,1 @@
+ALTER TABLE "Cart" ADD COLUMN "isVisibleToTeachers" BOOLEAN NOT NULL DEFAULT true;

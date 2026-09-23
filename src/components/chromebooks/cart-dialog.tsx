@@ -11,6 +11,7 @@ import { toSelectItems } from "@/lib/utils";
 import { upsertCartSchema, type UpsertCartInput } from "@/lib/validations/chromebooks";
 import { ImageUploadField } from "@/components/shared/image-upload-field";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +43,7 @@ export function CartDialog({
     formState: { errors },
   } = useForm<UpsertCartInput>({
     resolver: zodResolver(upsertCartSchema),
-    defaultValues: cart ?? { name: "", serialNumber: "", spaceId: "", imageUrl: "" },
+    values: { name: "", serialNumber: "", spaceId: "", imageUrl: "", isVisibleToTeachers: true, ...cart },
   });
 
   const { run, isPending } = useServerAction(upsertCart, {
@@ -67,7 +68,7 @@ export function CartDialog({
           )
         }
       />
-      <DialogContent>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{cart ? "Edita el carro" : "Nou carro"}</DialogTitle>
         </DialogHeader>
@@ -116,6 +117,22 @@ export function CartDialog({
                   <ImageUploadField value={field.value ?? ""} onChange={field.onChange} />
                 )}
               />
+            </Field>
+            <Field>
+              <div className="flex items-center gap-2">
+                <Controller
+                  control={control}
+                  name="isVisibleToTeachers"
+                  render={({ field }) => (
+                    <Checkbox id="cart-visible" checked={field.value ?? true} onCheckedChange={field.onChange} />
+                  )}
+                />
+                <FieldLabel htmlFor="cart-visible">Visible per al professorat</FieldLabel>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Si ho desactives, només la coordinació TIC veurà el carro i en podrà fer noves reserves,
+                també dels equips individuals. Les reserves existents es conserven.
+              </p>
             </Field>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>

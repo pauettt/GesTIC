@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ChromebookStatus } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import { zonedDateTime } from "@/lib/date";
 import { bookingSpanLabel, isHeld, isOverdue, occupyingWhere, sessionSpan } from "@/lib/device-reservations";
 import { isAdmin, requireUser } from "@/lib/permissions";
@@ -80,10 +81,13 @@ export async function createDeviceReservation(input: unknown): Promise<ActionRes
 
       const device = await tx.chromebook.findUnique({
         where: { id: chromebookId },
-        select: { status: true, cartId: true },
+        select: { status: true, cartId: true, cart: { select: { isVisibleToTeachers: true } } },
       });
       if (!device || device.cartId !== cartId) {
         throw new ReservationRefused("Aquest equip acaba de canviar de carro: torna-ho a provar");
+      }
+      if (!device.cart || !canAccessCart(user.role, device.cart)) {
+        throw new ReservationRefused(CART_ACCESS_DENIED);
       }
       const unreservable = UNRESERVABLE[device.status];
       if (unreservable) throw new ReservationRefused(unreservable);

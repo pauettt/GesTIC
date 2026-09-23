@@ -323,6 +323,7 @@ model Cart {
   imageUrl     String?
   // Buit: ordre alfanumèric. Els equips nous s'afegeixen al final de l'ordre desat.
   chromebookOrder String[] @default([])
+  isVisibleToTeachers Boolean @default(true)
 
   space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   chromebooks  Chromebook[]

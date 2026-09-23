@@ -6,6 +6,7 @@ import { del } from "@vercel/blob";
 
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import { deviceTypeLabels } from "@/lib/devices";
 import { OPEN_INCIDENT_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { sendIncidentResolvedEmail } from "@/lib/email";
@@ -57,10 +58,14 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
   } else if (data.targetType === "CART" && data.cartId) {
     const cart = await db.cart.findUnique({ where: { id: data.cartId } });
     if (!cart) return { success: false, error: "Aquest carro ja no existeix" };
+    if (!canAccessCart(user.role, cart)) return { success: false, error: CART_ACCESS_DENIED };
     title = `Carro ${cart.name}${spaceSuffix}`;
   } else if (data.targetType === "CHROMEBOOK" && data.chromebookId) {
-    const chromebook = await db.chromebook.findUnique({ where: { id: data.chromebookId } });
+    const chromebook = await db.chromebook.findUnique({ where: { id: data.chromebookId }, include: { cart: true } });
     if (!chromebook) return { success: false, error: "Aquest dispositiu ja no existeix" };
+    if (chromebook.cart && !canAccessCart(user.role, chromebook.cart)) {
+      return { success: false, error: CART_ACCESS_DENIED };
+    }
     if (chromebook.status === "BAIXA") {
       return { success: false, error: "Aquest dispositiu està donat de baixa" };
     }
@@ -113,10 +118,11 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
   }
   const { chromebookId, category } = parsed.data;
 
-  const chromebook = await db.chromebook.findUnique({ where: { id: chromebookId } });
+  const chromebook = await db.chromebook.findUnique({ where: { id: chromebookId }, include: { cart: true } });
   if (!chromebook) {
     throw new Error("Aquest dispositiu no existeix");
   }
+  if (chromebook.cart && !canAccessCart(user.role, chromebook.cart)) redirect("/chromebooks");
   // La pàgina del QR ja ho diu i no ensenya els botons: això és per si algú hi
   // arriba igualment.
   if (chromebook.status === "BAIXA") {

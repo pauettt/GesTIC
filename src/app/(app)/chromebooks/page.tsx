@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LaptopIcon, RepeatIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { visibleCartsWhere } from "@/lib/cart-access";
 import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
 import { formatDateTimeFull, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeDuring, isFreeNow } from "@/lib/device-reservations";
@@ -42,11 +43,10 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
 
   const [carts, existingChromebooks] = await Promise.all([
     db.cart.findMany({
-      where: space
-        ? { spaceId: space.id }
-        : location
-          ? { space: spaceLocationWhere(location) }
-          : {},
+      where: {
+        ...visibleCartsWhere(user.role),
+        ...(space ? { spaceId: space.id } : location ? { space: spaceLocationWhere(location) } : {}),
+      },
       include: {
         space: { select: placedSpaceSelect },
         chromebooks: {
@@ -190,6 +190,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
                 </div>
                 <CardHeader>
                   <CardTitle>{cart.name}</CardTitle>
+                  {!cart.isVisibleToTeachers && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Ocult al professorat · ús intern</p>}
                   <CartPlace space={cart.space} className="text-sm" />
                 </CardHeader>
                 <CardContent className="flex flex-col gap-0.5">

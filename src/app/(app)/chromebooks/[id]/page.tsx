@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { LaptopIcon, QrCodeIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { canAccessCart } from "@/lib/cart-access";
 import { orderChromebooks } from "@/lib/chromebook-order";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek, toDateParam } from "@/lib/date";
@@ -95,7 +96,7 @@ export default async function CartDetailPage({
       : Promise.resolve([]),
   ]);
 
-  if (!cart) notFound();
+  if (!cart || !canAccessCart(user.role, cart)) notFound();
 
   // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
   const orderedChromebooks = orderChromebooks(cart.chromebooks, cart.chromebookOrder);
@@ -130,6 +131,9 @@ export default async function CartDetailPage({
             </div>
             <div>
               <h1 className="text-2xl font-semibold">{cart.name}</h1>
+              {!cart.isVisibleToTeachers && (
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Ocult al professorat · ús intern</p>
+              )}
               <CartPlace space={cart.space} />
               {(summary || cart.serialNumber) && (
                 <p className="text-muted-foreground">
@@ -164,6 +168,7 @@ export default async function CartDetailPage({
                   serialNumber: cart.serialNumber ?? "",
                   spaceId: cart.spaceId ?? "",
                   imageUrl: cart.imageUrl ?? "",
+                  isVisibleToTeachers: cart.isVisibleToTeachers,
                 }}
                 trigger={
                   <button className="rounded-md border px-2 py-1.5 text-sm hover:bg-muted">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { canAccessCart } from "@/lib/cart-access";
 import { requireUser } from "@/lib/permissions";
 import { currentHolder, openDeviceReservations, withHolder } from "@/lib/device-reservations";
 import { deviceStatusNote, deviceTypeLabels } from "@/lib/devices";
@@ -16,7 +17,7 @@ export default async function QuickChromebookReportPage({
   params,
   searchParams,
 }: PageProps<"/q/chromebook/[id]">) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const { avis } = await searchParams;
 
@@ -25,7 +26,7 @@ export default async function QuickChromebookReportPage({
     include: { cart: true, reservations: openDeviceReservations },
   });
 
-  if (!chromebook) notFound();
+  if (!chromebook || (chromebook.cart && !canAccessCart(user.role, chromebook.cart))) notFound();
 
   const retired = chromebook.status === "BAIXA";
   // Si ara el té algú per una reserva, no disponible i amb el seu nom, com al carro.
