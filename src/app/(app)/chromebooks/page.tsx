@@ -1,11 +1,19 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { RepeatIcon } from "lucide-react";
+import { LayoutGridIcon, ListIcon, RepeatIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
 import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
-import { formatDateTimeFull, startOfWeek, toDateParam } from "@/lib/date";
+import {
+  addDays,
+  formatDateTimeFull,
+  formatTime,
+  madridDateKey,
+  startOfWeek,
+  toDateParam,
+  zonedDateTime,
+} from "@/lib/date";
 import { isFreeDuring, isFreeNow } from "@/lib/device-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { loadBuildingOptions } from "@/lib/location-data";
@@ -38,10 +46,33 @@ function cartLabel(cart: { name: string; space: CartRoom }) {
   return room ? `${cart.name} · ${room}` : cart.name;
 }
 
+function buildViewUrl(
+  params: Record<string, string | string[] | undefined>,
+  targetView: "targetes" | "llistat",
+): Route {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (key !== "vista" && typeof value === "string" && value) {
+      sp.set(key, value);
+    }
+  }
+  if (targetView === "llistat") {
+    sp.set("vista", "llistat");
+  }
+  const qs = sp.toString();
+  return (qs ? `/chromebooks?${qs}` : "/chromebooks") as Route;
+}
+
 export default async function ChromebooksPage({ searchParams }: PageProps<"/chromebooks">) {
   const user = await requireUser();
   const admin = isAdmin(user.role);
   const params = await searchParams;
+  const isListView = params.vista === "llistat";
+  const now = new Date();
+  const todayKey = madridDateKey(now);
+  const startOfToday = zonedDateTime(todayKey, "00:00");
+  const endOfToday = addDays(startOfToday, 1);
+
   const [buildings, spaces] = await Promise.all([
     loadBuildingOptions(),
     db.space.findMany({ orderBy: { name: "asc" } }),
@@ -58,11 +89,27 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       },
       include: {
         space: { select: { ...placedSpaceSelect, roomName: true } },
+        keys: { select: { id: true, number: true, name: true } },
         chromebooks: {
           include: {
             // Els equips que algú té reservats a part no hi són, ara o a l'hora que es busca.
             reservations: { where: { status: "CONFIRMADA" }, select: { startDate: true, endDate: true } },
           },
+        },
+        reservations: {
+          where: {
+            status: "CONFIRMADA",
+            startDate: { lt: endOfToday },
+            endDate: { gt: startOfToday },
+          },
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+          orderBy: { startDate: "asc" },
+        },
+        recurring: {
+          where: { status: "APROVADA" },
+          select: { id: true },
         },
       },
       orderBy: { name: "asc" },
@@ -85,7 +132,6 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
   const cartSearch = parseCartSearch(params);
-  const now = new Date();
   const busyCartIds =
     cartSearch.status === "ok"
       ? new Set(
@@ -118,17 +164,66 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       : orderedCarts.map((cart) => cart.name)
     : [];
 
-  const cartItems: CartItem[] = orderedCarts.map((cart) => ({
-    id: cart.id,
-    name: cart.name,
-    order: cart.order,
-    imageUrl: cart.imageUrl,
-    isVisibleToTeachers: cart.isVisibleToTeachers,
-    space: cart.space,
-    summary: deviceSummary(cart.chromebooks.filter((cb) => cb.status !== "BAIXA")),
-    available: cart.chromebooks.filter((cb) => isFreeNow(cb, now)).length,
-    inService: cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length,
-  }));
+  const cartItems: CartItem[] = orderedCarts.map((cart) => {
+    const inService = cart.chromebooks.filter((cb) => cb.status !== "BAIXA");
+    const available = inService.filter((cb) => isFreeNow(cb, now)).length;
+    const underRepair = inService.filter(
+      (cb) => cb.status === "EN_INCIDENCIA" || cb.status === "NO_DISPONIBLE",
+    ).length;
+
+    const keyLabel =
+      cart.keys.length > 0
+        ? cart.keys
+            .map((k) => k.number?.trim() || k.name.trim())
+            .filter(Boolean)
+            .join(", ")
+        : null;
+
+    const currentReservation = cart.reservations.find(
+      (r) => r.startDate <= now && r.endDate > now,
+    );
+    const nextReservation = cart.reservations.find((r) => r.startDate > now);
+
+    const currentBooking = currentReservation
+      ? {
+          userName: currentReservation.user.name?.trim() || currentReservation.user.email,
+          until: formatTime(currentReservation.endDate),
+        }
+      : null;
+
+    const nextBooking = nextReservation
+      ? {
+          userName: nextReservation.user.name?.trim() || nextReservation.user.email,
+          at: formatTime(nextReservation.startDate),
+        }
+      : null;
+
+    const modelSet = new Set<string>();
+    for (const cb of inService) {
+      const parts = [cb.brand, cb.model].filter(Boolean).join(" ");
+      if (parts) modelSet.add(parts);
+    }
+    const models = Array.from(modelSet).slice(0, 2).join(", ");
+
+    return {
+      id: cart.id,
+      name: cart.name,
+      order: cart.order,
+      imageUrl: cart.imageUrl,
+      isVisibleToTeachers: cart.isVisibleToTeachers,
+      space: cart.space,
+      summary: deviceSummary(inService),
+      models: models || null,
+      available,
+      inService: inService.length,
+      underRepair,
+      keyLabel,
+      currentBooking,
+      nextBooking,
+      allDayFree: !currentReservation && !nextReservation,
+      recurringCount: cart.recurring.length,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -140,6 +235,22 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ButtonLink
+            variant="outline"
+            href={isListView ? buildViewUrl(params, "targetes") : buildViewUrl(params, "llistat")}
+          >
+            {isListView ? (
+              <>
+                <LayoutGridIcon className="size-4" />
+                Vista de targetes
+              </>
+            ) : (
+              <>
+                <ListIcon className="size-4" />
+                Vista de llistat
+              </>
+            )}
+          </ButtonLink>
           <ButtonLink variant="outline" href="/chromebooks/reserves-fixes">
             <RepeatIcon className="size-4" />
             Reserves fixes
@@ -197,9 +308,11 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       </Card>
 
       <CartManager
+        key={isListView ? "list" : "cards"}
         carts={cartItems}
         customOrder={customOrder}
         canReorder={admin && !filtered}
+        initialView={isListView ? "list" : "cards"}
         emptyMessage={
           space
             ? `No hi ha cap carro a ${space.name}.`

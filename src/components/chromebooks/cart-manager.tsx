@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDownAZIcon, GripVerticalIcon, LaptopIcon } from "lucide-react";
+import { ArrowDownAZIcon, GripVerticalIcon, LaptopIcon, LayoutGridIcon, ListIcon } from "lucide-react";
 
 import { setCartOrder } from "@/actions/chromebooks";
 import { useServerAction } from "@/hooks/use-server-action";
@@ -11,6 +11,7 @@ import { moveCart, orderCarts } from "@/lib/cart-order";
 import type { PlacedSpace } from "@/lib/locations";
 import { cn } from "@/lib/utils";
 import { CartPlace } from "@/components/chromebooks/cart-place";
+import { CartListView } from "@/components/chromebooks/cart-list-view";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -22,8 +23,21 @@ export type CartItem = {
   isVisibleToTeachers: boolean;
   space: (PlacedSpace & { roomName: string | null }) | null;
   summary: string | null;
+  models?: string | null;
   available: number;
   inService: number;
+  underRepair?: number;
+  keyLabel?: string | null;
+  currentBooking?: {
+    userName: string;
+    until: string;
+  } | null;
+  nextBooking?: {
+    userName: string;
+    at: string;
+  } | null;
+  allDayFree?: boolean;
+  recurringCount?: number;
 };
 
 export function CartName({ cart }: { cart: { name: string; space: CartItem["space"] } }) {
@@ -83,16 +97,19 @@ export function CartManager({
   customOrder,
   canReorder,
   emptyMessage,
+  initialView = "cards",
 }: {
   carts: CartItem[];
   customOrder: boolean;
   canReorder: boolean;
   emptyMessage: string;
+  initialView?: "cards" | "list";
 }) {
   const [draft, setDraft] = useState<string[] | null>(null);
   const [alphabetical, setAlphabetical] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [view, setView] = useState<"cards" | "list">(initialView);
   const draggedId = useRef<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const editing = draft !== null;
@@ -136,55 +153,83 @@ export function CartManager({
 
   return (
     <div className="flex flex-col gap-4">
-      {canReorder && (editing || carts.length > 1 || customOrder) && (
-        <div className="flex flex-wrap items-center gap-2">
-          {editing ? (
-            <>
-              <Button disabled={isPending} onClick={() => run({ cartIds: alphabetical ? [] : draft })}>
-                {isPending ? "Desant…" : "Desa l'ordre"}
-              </Button>
-              <Button
-                variant="outline"
-                disabled={isPending}
-                onClick={() => {
-                  setDraft(null);
-                  setSelected(null);
-                }}
-              >
-                Cancel·la
-              </Button>
-              <Button
-                variant="outline"
-                disabled={isPending}
-                onClick={() => {
-                  setDraft(orderCarts(carts).map(({ id }) => id));
-                  setAlphabetical(true);
-                  setSelected(null);
-                  setAnnouncement("Ordre alfanumèric restaurat. Desa els canvis per aplicar-lo.");
-                }}
-              >
-                <ArrowDownAZIcon /> Ordre alfanumèric
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDraft(carts.map(({ id }) => id));
-                  setAlphabetical(!customOrder);
-                  setAnnouncement("");
-                }}
-              >
-                <GripVerticalIcon /> Ordena amb clics
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {customOrder ? "Ordre personalitzat" : "Ordre alfanumèric"}
-              </span>
-            </>
-          )}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {canReorder && (editing || carts.length > 1 || customOrder) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {editing ? (
+              <>
+                <Button disabled={isPending} onClick={() => run({ cartIds: alphabetical ? [] : draft })}>
+                  {isPending ? "Desant…" : "Desa l'ordre"}
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => {
+                    setDraft(null);
+                    setSelected(null);
+                  }}
+                >
+                  Cancel·la
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => {
+                    setDraft(orderCarts(carts).map(({ id }) => id));
+                    setAlphabetical(true);
+                    setSelected(null);
+                    setAnnouncement("Ordre alfanumèric restaurat. Desa els canvis per aplicar-lo.");
+                  }}
+                >
+                  <ArrowDownAZIcon /> Ordre alfanumèric
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDraft(carts.map(({ id }) => id));
+                    setAlphabetical(!customOrder);
+                    setAnnouncement("");
+                    setView("cards");
+                  }}
+                >
+                  <GripVerticalIcon /> Ordena amb clics
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {customOrder ? "Ordre personalitzat" : "Ordre alfanumèric"}
+                </span>
+              </>
+            )}
+          </div>
+        ) : <div />}
+
+        {!editing && carts.length > 0 && (
+          <div className="flex items-center rounded-lg border bg-muted/40 p-0.5">
+            <Button
+              type="button"
+              variant={view === "cards" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("cards")}
+              className="h-8 gap-1.5 px-3 text-xs font-medium"
+            >
+              <LayoutGridIcon className="size-3.5" />
+              Targetes
+            </Button>
+            <Button
+              type="button"
+              variant={view === "list" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setView("list")}
+              className="h-8 gap-1.5 px-3 text-xs font-medium"
+            >
+              <ListIcon className="size-3.5" />
+              Llistat
+            </Button>
+          </div>
+        )}
+      </div>
 
       {editing && (
         <p id="cart-order-help" className="text-sm text-muted-foreground">
@@ -192,7 +237,7 @@ export function CartManager({
           L&apos;ordre desat serà el mateix per a tothom.
         </p>
       )}
-      {!editing && canReorder && carts.length > 1 && (
+      {!editing && view === "cards" && canReorder && carts.length > 1 && (
         <p className="text-sm text-muted-foreground">
           Arrossega un carro per canviar-ne la posició, o usa «Ordena amb clics» per ordenar fent clics. Un clic n&apos;obre el contingut.
         </p>
@@ -203,9 +248,12 @@ export function CartManager({
           : announcement}
       </p>
 
-      <div
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        aria-label="Llista de carros"
+      {!editing && view === "list" ? (
+        <CartListView carts={displayedCarts} emptyMessage={emptyMessage} />
+      ) : (
+        <div
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Llista de carros"
         onDragOver={(event) => {
           if (!draggedId.current || isPending) return;
           event.preventDefault();
@@ -287,6 +335,7 @@ export function CartManager({
           <p className="text-muted-foreground col-span-full">{emptyMessage}</p>
         )}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }
