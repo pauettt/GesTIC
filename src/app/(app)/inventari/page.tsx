@@ -4,6 +4,7 @@ import Link from "next/link";
 import { HandCoinsIcon, LaptopIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
+import { orderCarts } from "@/lib/cart-order";
 import { deviceSummary } from "@/lib/devices";
 import { cartSearchFilter, inventorySearchFilter } from "@/lib/inventory-search";
 import { loadBuildingOptions } from "@/lib/location-data";
@@ -89,7 +90,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
   // ho diu l'avís de dalt; i un carro no és de cap categoria ni es presta.
   const showCarts = Boolean(space || location || searchText) && !categoryFilter && !onlyLoanable;
 
-  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount, carts] =
+  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount, rawCarts] =
     await Promise.all([
     db.inventoryItem.findMany({
       where: {
@@ -126,10 +127,15 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
             // Els donats de baixa segueixen al carro, però ja no compten com a equips seus.
             chromebooks: { where: { status: { not: "BAIXA" } }, select: { deviceType: true } },
           },
-          orderBy: { name: "asc" },
         })
       : Promise.resolve([]),
   ]);
+
+  const customCartOrder = rawCarts.some((c) => c.order !== null);
+  const savedCartOrder = customCartOrder
+    ? [...rawCarts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
+    : [];
+  const carts = orderCarts(rawCarts, savedCartOrder);
 
   function filterHref(next: { category?: string; prestable?: boolean }): Route {
     const params = new URLSearchParams();

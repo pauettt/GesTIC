@@ -1,7 +1,6 @@
 import type { Route } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { LaptopIcon, RepeatIcon } from "lucide-react";
+import { RepeatIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
@@ -21,11 +20,13 @@ import {
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { CartFinder, QuickReserveButton } from "@/components/chromebooks/cart-finder";
+import { CartManager, CartName, type CartItem } from "@/components/chromebooks/cart-manager";
 import { CartPlace } from "@/components/chromebooks/cart-place";
 import { ChromebookImportDialog } from "@/components/chromebooks/chromebook-import-dialog";
 import { LocationFilter } from "@/components/shared/location-filter";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { orderCarts } from "@/lib/cart-order";
 
 export const metadata = { title: "Carros" };
 
@@ -35,16 +36,6 @@ type CartRoom = (PlacedSpace & { roomName: string | null }) | null;
 function cartLabel(cart: { name: string; space: CartRoom }) {
   const room = cart.space?.roomName?.trim() || cart.space?.name;
   return room ? `${cart.name} · ${room}` : cart.name;
-}
-
-function CartName({ cart }: { cart: { name: string; space: CartRoom } }) {
-  const room = cart.space?.roomName?.trim() || cart.space?.name;
-  return (
-    <>
-      {cart.name}
-      {room && <> · <span className="text-blue-700 dark:text-blue-400">{room}</span></>}
-    </>
-  );
 }
 
 export default async function ChromebooksPage({ searchParams }: PageProps<"/chromebooks">) {
@@ -81,6 +72,16 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
       : Promise.resolve([]),
   ]);
+
+  const customOrder = carts.some((cart) => cart.order !== null);
+  const savedOrder = customOrder
+    ? [...carts]
+        .filter((cart) => cart.order !== null)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map((cart) => cart.id)
+    : [];
+  const orderedCarts = orderCarts(carts, savedOrder);
+
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
   const cartSearch = parseCartSearch(params);
@@ -91,7 +92,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           (
             await db.reservation.findMany({
               where: {
-                cartId: { in: carts.map((cart) => cart.id) },
+                cartId: { in: orderedCarts.map((cart) => cart.id) },
                 status: "CONFIRMADA",
                 startDate: { lt: cartSearch.search.endDate },
                 endDate: { gt: cartSearch.search.startDate },
@@ -114,8 +115,20 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   const allCartNames = admin
     ? filtered
       ? (await db.cart.findMany({ select: { name: true } })).map((cart) => cart.name)
-      : carts.map((cart) => cart.name)
+      : orderedCarts.map((cart) => cart.name)
     : [];
+
+  const cartItems: CartItem[] = orderedCarts.map((cart) => ({
+    id: cart.id,
+    name: cart.name,
+    order: cart.order,
+    imageUrl: cart.imageUrl,
+    isVisibleToTeachers: cart.isVisibleToTeachers,
+    space: cart.space,
+    summary: deviceSummary(cart.chromebooks.filter((cb) => cb.status !== "BAIXA")),
+    available: cart.chromebooks.filter((cb) => isFreeNow(cb, now)).length,
+    inService: cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,7 +182,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           {cartSearch.status === "ok" && (
             <CartSearchResults
               search={cartSearch.search}
-              carts={carts.map((cart) => ({
+              carts={orderedCarts.map((cart) => ({
                 id: cart.id,
                 name: cart.name,
                 space: cart.space,
@@ -183,55 +196,18 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {carts.map((cart) => {
-          const available = cart.chromebooks.filter((cb) => isFreeNow(cb, now)).length;
-          // Els donats de baixa segueixen al carro amb el seu historial, però ja
-          // no compten com a equips que s'hi puguin fer servir.
-          const inService = cart.chromebooks.filter((cb) => cb.status !== "BAIXA").length;
-          const summary = deviceSummary(cart.chromebooks.filter((cb) => cb.status !== "BAIXA"));
-          return (
-            <Link key={cart.id} href={`/chromebooks/${cart.id}`}>
-              <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/50 hover:bg-muted/40">
-                <div className="relative flex h-36 items-center justify-center border-b bg-muted">
-                  {cart.imageUrl ? (
-                    <Image
-                      src={cart.imageUrl}
-                      alt={cart.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <LaptopIcon className="size-8 text-muted-foreground" />
-                  )}
-                </div>
-                <CardHeader>
-                  <CardTitle><CartName cart={cart} /></CardTitle>
-                  {!cart.isVisibleToTeachers && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Ocult al professorat · ús intern</p>}
-                  <CartPlace space={cart.space} className="text-sm" />
-                </CardHeader>
-                <CardContent className="flex flex-col gap-0.5">
-                  {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
-                  <p className="text-sm">
-                    <span className="font-medium">{available}</span> / {inService}{" "}
-                    disponibles
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-        {carts.length === 0 && (
-          <p className="text-muted-foreground">
-            {space
-              ? `No hi ha cap carro a ${space.name}.`
-              : location
-                ? `No hi ha cap carro a ${locationLabel(location)}.`
-                : "Encara no hi ha cap carro."}
-          </p>
-        )}
-      </div>
+      <CartManager
+        carts={cartItems}
+        customOrder={customOrder}
+        canReorder={admin && !filtered}
+        emptyMessage={
+          space
+            ? `No hi ha cap carro a ${space.name}.`
+            : location
+              ? `No hi ha cap carro a ${locationLabel(location)}.`
+              : "Encara no hi ha cap carro."
+        }
+      />
     </div>
   );
 }

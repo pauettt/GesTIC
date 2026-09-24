@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, CloudIcon, LaptopIcon, MapPinIcon, t
 
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
+import { orderCarts } from "@/lib/cart-order";
 import { requireUser } from "@/lib/permissions";
 import { CartIncidentForm } from "@/components/incidents/cart-incident-form";
 import { GoogleIncidentForm } from "@/components/incidents/google-incident-form";
@@ -135,12 +136,16 @@ async function CartForm({ cartId, chromebookId }: { cartId?: string; chromebookI
 
 async function loadCarts() {
   const user = await requireUser();
-  return db.cart.findMany({
+  const carts = await db.cart.findMany({
     where: visibleCartsWhere(user.role),
-    orderBy: { name: "asc" },
     // Un equip donat de baixa ja no es fa servir: no s'hi han d'obrir incidències.
     include: {
       chromebooks: { where: { status: { not: "BAIXA" } }, orderBy: { assetTag: "asc" } },
     },
   });
+  const customOrder = carts.some((c) => c.order !== null);
+  const savedOrder = customOrder
+    ? [...carts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
+    : [];
+  return orderCarts(carts, savedOrder);
 }

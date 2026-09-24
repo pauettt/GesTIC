@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { db, requireAdmin, revalidatePath } = vi.hoisted(() => ({
   db: {
-    cart: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    $transaction: vi.fn((promises) => Promise.all(promises)),
+    cart: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     chromebook: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
   requireAdmin: vi.fn(),
@@ -14,7 +15,7 @@ vi.mock("@/lib/permissions", () => ({ requireAdmin, requireUser: vi.fn(), isAdmi
 vi.mock("next/cache", () => ({ revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
-import { setChromebookOrder, upsertCart, upsertChromebook, upsertStudentChromebook } from "@/actions/chromebooks";
+import { setCartOrder, setChromebookOrder, upsertCart, upsertChromebook, upsertStudentChromebook } from "@/actions/chromebooks";
 
 const input = { cartId: "cart-1", assetTag: "TEC-3", serialNumber: "SERIAL-3", deviceType: "CHROMEBOOK" };
 const duplicateError = { code: "P2002" };
@@ -141,3 +142,43 @@ describe("ordre compartit del carro", () => {
     expect(db.cart.update).not.toHaveBeenCalled();
   });
 });
+
+describe("ordre compartit dels carros", () => {
+  beforeEach(() => {
+    db.cart.findMany.mockResolvedValue([{ id: "one" }, { id: "two" }]);
+  });
+
+  it("només permet ordenar a administradors", async () => {
+    requireAdmin.mockRejectedValue(new Error("Forbidden"));
+    await expect(setCartOrder({ cartIds: [] })).rejects.toThrow("Forbidden");
+    expect(db.cart.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("desa tot l'ordre i actualitza les vistes dels carros", async () => {
+    expect(await setCartOrder({ cartIds: ["two", "one"] })).toEqual({ success: true });
+    expect(db.cart.update).toHaveBeenCalledWith({ where: { id: "two" }, data: { order: 0 } });
+    expect(db.cart.update).toHaveBeenCalledWith({ where: { id: "one" }, data: { order: 1 } });
+    expect(revalidatePath).toHaveBeenCalledWith("/chromebooks");
+  });
+
+  it("restaura l'ordre automàtic amb una llista buida", async () => {
+    expect(await setCartOrder({ cartIds: [] })).toEqual({ success: true });
+    expect(db.cart.updateMany).toHaveBeenCalledWith({ data: { order: null } });
+    expect(revalidatePath).toHaveBeenCalledWith("/chromebooks");
+  });
+
+  it.each([["one", "one"], ["one", "other-cart"], ["one"], ["one", "two", "removed"]])(
+    "rebutja duplicats, carros aliens i llistes desactualitzades: %j", async (...cartIds) => {
+      expect(await setCartOrder({ cartIds })).toMatchObject({ success: false });
+      expect(db.cart.update).not.toHaveBeenCalled();
+      expect(db.cart.updateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rebutja dades invàlides", async () => {
+    expect(await setCartOrder({ cartIds: "one" })).toMatchObject({ success: false });
+    expect(db.cart.update).not.toHaveBeenCalled();
+    expect(db.cart.updateMany).not.toHaveBeenCalled();
+  });
+});
+

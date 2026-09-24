@@ -6,6 +6,7 @@ import { LaptopIcon, QrCodeIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { canAccessCart } from "@/lib/cart-access";
 import { orderChromebooks } from "@/lib/chromebook-order";
+import { orderCarts } from "@/lib/cart-order";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
@@ -88,7 +89,7 @@ export default async function CartDetailPage({
       orderBy: [{ weekday: "asc" }, { periodId: "asc" }],
     }),
     admin
-      ? db.cart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      ? db.cart.findMany({ select: { id: true, name: true, order: true } })
       : Promise.resolve([]),
     // Per a la vista prèvia de la importació: cap dispositiu es pot repetir, sigui del carro que sigui.
     admin
@@ -97,6 +98,12 @@ export default async function CartDetailPage({
   ]);
 
   if (!cart || !canAccessCart(user.role, cart)) notFound();
+
+  const customCartOrder = carts.some((c) => c.order !== null);
+  const savedCartOrder = customCartOrder
+    ? [...carts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
+    : [];
+  const orderedCarts = orderCarts(carts, savedCartOrder);
 
   // Tothom ho veu abans de reservar: els donats de baixa ja no compten com a equips del carro.
   const orderedChromebooks = orderChromebooks(cart.chromebooks, cart.chromebookOrder);
@@ -326,7 +333,7 @@ export default async function CartDetailPage({
             </p>
             <ChromebookManager
               cartId={cart.id}
-              carts={carts}
+              carts={orderedCarts}
               customOrder={cart.chromebookOrder.length > 0}
               chromebooks={orderedChromebooks.map((chromebook) => ({
                 ...chromebook,

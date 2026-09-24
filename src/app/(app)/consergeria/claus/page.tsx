@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import { orderCarts } from "@/lib/cart-order";
 import { requireKeyAccess } from "@/lib/permissions";
 import { deleteKey } from "@/actions/keys";
 import { KeyDialog } from "@/components/keys/key-dialog";
@@ -14,7 +15,7 @@ export const metadata = { title: "Claus del centre" };
 export default async function ClausPage() {
   await requireKeyAccess();
 
-  const [keys, carts] = await Promise.all([
+  const [keys, rawCarts] = await Promise.all([
     db.key.findMany({
       include: {
         cart: true,
@@ -22,8 +23,14 @@ export default async function ClausPage() {
       },
       orderBy: { number: "asc" },
     }),
-    db.cart.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.cart.findMany({ select: { id: true, name: true, order: true } }),
   ]);
+
+  const customOrder = rawCarts.some((c) => c.order !== null);
+  const savedOrder = customOrder
+    ? [...rawCarts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
+    : [];
+  const carts = orderCarts(rawCarts, savedOrder);
 
   return (
     <div className="flex flex-col gap-6">

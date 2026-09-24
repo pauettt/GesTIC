@@ -16,6 +16,7 @@ import {
   deleteCartSchema,
   deleteChromebookNoteSchema,
   deleteChromebookSchema,
+  setCartOrderSchema,
   setChromebookAvailabilitySchema,
   setChromebookOrderSchema,
   setChromebookRetiredSchema,
@@ -25,6 +26,36 @@ import {
 } from "@/lib/validations/chromebooks";
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+export async function setCartOrder(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = setCartOrderSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { cartIds } = parsed.data;
+
+  const allCarts = await db.cart.findMany({ select: { id: true } });
+  const allIds = new Set(allCarts.map(({ id }) => id));
+  if (cartIds.length > 0 && (cartIds.length !== allIds.size || cartIds.some((id) => !allIds.has(id)))) {
+    return { success: false, error: "Els carros del centre han canviat. Recarrega la pàgina abans d'ordenar-los." };
+  }
+
+  if (cartIds.length === 0) {
+    await db.cart.updateMany({ data: { order: null } });
+  } else {
+    await db.$transaction(
+      cartIds.map((id, index) =>
+        db.cart.update({ where: { id }, data: { order: index } }),
+      ),
+    );
+  }
+
+  revalidatePath("/chromebooks");
+  revalidatePath("/chromebooks/reserves-fixes");
+  revalidatePath("/consergeria/claus");
+  revalidatePath("/incidencies/nova");
+  revalidatePath("/inventari");
+  return { success: true };
+}
 
 export async function setChromebookOrder(input: unknown): Promise<ActionResult> {
   await requireAdmin();
