@@ -176,7 +176,7 @@ export function CartManager({
                   setAnnouncement("");
                 }}
               >
-                <GripVerticalIcon /> Ordena els carros
+                <GripVerticalIcon /> Ordena amb clics
               </Button>
               <span className="text-xs text-muted-foreground">
                 {customOrder ? "Ordre personalitzat" : "Ordre alfanumèric"}
@@ -194,7 +194,7 @@ export function CartManager({
       )}
       {!editing && canReorder && carts.length > 1 && (
         <p className="text-sm text-muted-foreground">
-          Arrossega un carro a la posició que vulguis i desa l&apos;ordre. Un clic n&apos;obre el contingut.
+          Arrossega un carro per canviar-ne la posició, o usa «Ordena amb clics» per ordenar fent clics. Un clic n&apos;obre el contingut.
         </p>
       )}
       <p className="sr-only" role="status">
