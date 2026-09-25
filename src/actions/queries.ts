@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { notifyQueryComment, notifyQueryCreated } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -33,7 +34,7 @@ export async function createQuery(input: unknown): Promise<ActionResult> {
     },
   });
 
-  await notifyQueryCreated(query.id);
+  runAfterResponse(() => notifyQueryCreated(query.id));
 
   revalidatePath("/consultes");
   redirect(`/consultes/${query.id}?avis=creada`);
@@ -60,7 +61,7 @@ export async function addQueryComment(input: unknown): Promise<ActionResult> {
     },
   });
 
-  await notifyQueryComment(comment.id);
+  runAfterResponse(() => notifyQueryComment(comment.id));
 
   revalidatePath(`/consultes/${parsed.data.queryId}`);
   return { success: true };

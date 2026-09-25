@@ -9,6 +9,7 @@ import {
   notifyRecurringDecision,
   notifyRecurringRequested,
 } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { occurrences, recurringCourse, shortDay } from "@/lib/recurring-reservations";
@@ -81,7 +82,7 @@ export async function requestRecurringReservation(input: unknown): Promise<Actio
     data: { ...slot, userId: user.id, purpose },
     select: { id: true },
   });
-  await notifyRecurringRequested(created.id);
+  runAfterResponse(() => notifyRecurringRequested(created.id));
 
   revalidateRecurring(cartId);
   return { success: true };
@@ -112,7 +113,7 @@ export async function decideRecurringReservation(input: unknown): Promise<Action
       data: { status: "REBUTJADA", ...decision },
     });
     if (count === 0) return { success: false, error: "Aquesta reserva fixa ja s'ha resolt" };
-    await notifyRecurringDecision(id, { approved: false, weeks: 0, skipped: [] });
+    runAfterResponse(() => notifyRecurringDecision(id, { approved: false, weeks: 0, skipped: [] }));
     revalidateRecurring(recurring.cartId);
     return { success: true };
   }
@@ -177,7 +178,7 @@ export async function decideRecurringReservation(input: unknown): Promise<Action
     return { success: false, error: "No s'ha pogut aprovar la reserva fixa. Torna-ho a provar." };
   }
 
-  await notifyRecurringDecision(id, { approved: true, ...outcome });
+  runAfterResponse(() => notifyRecurringDecision(id, { approved: true, ...outcome }));
   revalidateRecurring(cartId);
   return { success: true };
 }
@@ -221,7 +222,7 @@ export async function cancelRecurringReservation(input: unknown): Promise<Action
   if (!cancelled) return { success: false, error: "Aquesta reserva fixa ja està tancada" };
 
   if (recurring.status === "APROVADA" && recurring.userId !== user.id) {
-    await notifyRecurringCancelled(id, user.name ?? user.email ?? "Algú");
+    runAfterResponse(() => notifyRecurringCancelled(id, user.name ?? user.email ?? "Algú"));
   }
   revalidateRecurring(recurring.cartId);
   return { success: true };

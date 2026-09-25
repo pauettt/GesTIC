@@ -20,7 +20,21 @@ export async function GET() {
   }
 
   const incidents = await db.incident.findMany({
-    include: { reporter: true, inventoryItem: true, chromebook: true, cart: true, space: true },
+    select: {
+      title: true,
+      targetType: true,
+      category: true,
+      priority: true,
+      status: true,
+      createdAt: true,
+      resolvedAt: true,
+      googleService: true,
+      reporter: { select: { name: true, email: true } },
+      inventoryItem: { select: { brand: true, model: true } },
+      chromebook: { select: { deviceType: true, assetTag: true } },
+      cart: { select: { name: true } },
+      space: { select: { name: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 

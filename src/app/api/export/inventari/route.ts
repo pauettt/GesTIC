@@ -13,7 +13,19 @@ export async function GET() {
   }
 
   const items = await db.inventoryItem.findMany({
-    include: { space: true, category: true },
+    select: {
+      brand: true,
+      model: true,
+      serialNumber: true,
+      ipAddress: true,
+      hostname: true,
+      isLoanable: true,
+      status: true,
+      purchaseDate: true,
+      warrantyUntil: true,
+      category: { select: { name: true } },
+      space: { select: { name: true } },
+    },
     orderBy: { brand: "asc" },
   });
 

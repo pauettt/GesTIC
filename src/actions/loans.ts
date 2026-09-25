@@ -10,6 +10,7 @@ import {
   notifyLoanRequested,
   sendLoanOverdueReminder,
 } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -61,7 +62,7 @@ export async function createLoanRequest(input: unknown): Promise<ActionResult> {
     data: { itemId, requesterId: user.id, startDate: start, endDate: end, purpose: purpose || null },
   });
 
-  await notifyLoanRequested(created.id);
+  runAfterResponse(() => notifyLoanRequested(created.id));
 
   revalidatePath("/inventari");
   return { success: true };
@@ -105,7 +106,7 @@ export async function respondLoanRequest(input: unknown): Promise<ActionResult> 
     return { success: false, error: "Algú altre acaba de respondre aquesta sol·licitud" };
   }
 
-  await notifyLoanDecision(id, status === "APROVADA");
+  runAfterResponse(() => notifyLoanDecision(id, status === "APROVADA"));
 
   revalidatePath("/inventari");
   return { success: true };

@@ -11,6 +11,7 @@ import { deviceTypeLabels } from "@/lib/devices";
 import { OPEN_INCIDENT_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { sendIncidentResolvedEmail } from "@/lib/email";
 import { notifyIncidentComment, notifyIncidentReported } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { getBaseUrl } from "@/lib/url";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAdmin, requireAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
@@ -104,7 +105,7 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
     await syncChromebookStatus(db, incident.chromebookId);
   }
 
-  await notifyIncidentReported(incident.id);
+  runAfterResponse(() => notifyIncidentReported(incident.id));
 
   revalidatePath("/incidencies");
   redirect(`/incidencies/${incident.id}?avis=creada`);
@@ -178,7 +179,7 @@ export async function quickReportChromebookIncident(input: unknown): Promise<voi
 
   await syncChromebookStatus(db, chromebookId);
 
-  await notifyIncidentReported(incident.id);
+  runAfterResponse(() => notifyIncidentReported(incident.id));
 
   revalidatePath("/incidencies");
   redirect(`/incidencies/${incident.id}?avis=creada`);
@@ -205,7 +206,7 @@ export async function addComment(input: unknown): Promise<ActionResult> {
     },
   });
 
-  await notifyIncidentComment(comment.id);
+  runAfterResponse(() => notifyIncidentComment(comment.id));
 
   revalidatePath(`/incidencies/${parsed.data.incidentId}`);
   return { success: true };

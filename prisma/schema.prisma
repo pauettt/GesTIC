@@ -917,6 +917,7 @@ model KeyLoan {
 
   @@index([keyId, returnedAt])
   @@index([borrowerId])
+  @@index([deliveredAt])
 }
 
 // ---------------------------------------------------------------------------

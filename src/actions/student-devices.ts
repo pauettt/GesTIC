@@ -9,6 +9,7 @@ import {
   notifyStudentDeviceDecision,
   notifyStudentDeviceRequested,
 } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { isAdmin, requireAdmin, requireTutor, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { studentDeviceRequestStatusLabels } from "@/lib/labels";
@@ -141,7 +142,7 @@ export async function createStudentDeviceRequest(input: unknown): Promise<Action
     throw error;
   }
 
-  await notifyStudentDeviceRequested(created.id);
+  runAfterResponse(() => notifyStudentDeviceRequested(created.id));
 
   revalidateStudentDevices();
   return { success: true };
@@ -177,7 +178,7 @@ export async function respondStudentDeviceRequest(input: unknown): Promise<Actio
       where: { id: data.id },
       data: { status: "REBUTJADA", ...decision },
     });
-    await notifyStudentDeviceDecision(data.id, false);
+    runAfterResponse(() => notifyStudentDeviceDecision(data.id, false));
     revalidateStudentDevices();
     return { success: true };
   }
@@ -221,7 +222,7 @@ export async function respondStudentDeviceRequest(input: unknown): Promise<Actio
     throw error;
   }
 
-  await notifyStudentDeviceDecision(data.id, true);
+  runAfterResponse(() => notifyStudentDeviceDecision(data.id, true));
   revalidateStudentDevices();
   return { success: true };
 }
