@@ -39,6 +39,7 @@ export default async function HistorialPage({
         key: { include: { cart: true } },
         borrower: true,
         deliveredBy: true,
+        returnedBy: true,
         reservation: true,
       },
       orderBy: { deliveredAt: "desc" },
@@ -132,13 +133,14 @@ export default async function HistorialPage({
               <TableHead>Tornada</TableHead>
               <TableHead>Fora</TableHead>
               <TableHead>Entregada per</TableHead>
+              <TableHead>Recollida per</TableHead>
               <TableHead>Reserva</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loans.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   Encara no hi ha cap préstec registrat amb aquest filtre.
                 </TableCell>
               </TableRow>
@@ -166,6 +168,9 @@ export default async function HistorialPage({
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{loan.deliveredBy.name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {loan.returnedBy?.name ?? "—"}
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {loan.reservation ? (
                     <>

@@ -51,4 +51,34 @@ describe("entrada amb Google", () => {
     // l'usuari d'un professor i hi entrava amb els seus permisos.
     expect(rejection({ userEmail: "ptarazona@iesjmthomas.eu" })).toBe("linked-to-another-user");
   });
+
+  it("un superadmin de la llista ADMIN_EMAILS pot entrar encara que sigui extern (@gmail.com)", () => {
+    expect(
+      checkGoogleSignIn({
+        googleEmail: "pauettt@gmail.com",
+        hostedDomain: undefined,
+        userEmail: "pauettt@gmail.com",
+        workspaceDomain: "iesjmthomas.eu",
+        adminEmails: ["pauettt@gmail.com"],
+      }),
+    ).toEqual({
+      allowed: true,
+      email: "pauettt@gmail.com",
+    });
+  });
+
+  it("un compte de Gmail que no és a ADMIN_EMAILS és rebutjat", () => {
+    expect(
+      checkGoogleSignIn({
+        googleEmail: "altre@gmail.com",
+        hostedDomain: undefined,
+        userEmail: "altre@gmail.com",
+        workspaceDomain: "iesjmthomas.eu",
+        adminEmails: ["pauettt@gmail.com"],
+      }),
+    ).toEqual({
+      allowed: false,
+      reason: "outside-domain",
+    });
+  });
 });

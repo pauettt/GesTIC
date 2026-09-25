@@ -866,6 +866,7 @@ model Concierge {
   createdAt DateTime @default(now())
 
   deliveredLoans KeyLoan[] @relation("KeyDeliveredBy")
+  returnedLoans  KeyLoan[] @relation("KeyReturnedBy")
   sentReminders  KeyLoan[] @relation("KeyReminderBy")
 }
 
@@ -896,6 +897,7 @@ model KeyLoan {
   deliveredById String
   deliveredAt   DateTime  @default(now())
   returnedAt    DateTime?
+  returnedById  String?
   // Reserva que justifica el préstec. Absent quan es dona la clau sense
   // reserva: una urgència, un substitut... Es registra igualment, perquè si el
   // sistema no ho permetés el conserge donaria la clau i no ho apuntaria.
@@ -909,6 +911,7 @@ model KeyLoan {
   key         Key          @relation(fields: [keyId], references: [id], onDelete: Cascade)
   borrower    User         @relation("KeyBorrower", fields: [borrowerId], references: [id], onDelete: Cascade)
   deliveredBy Concierge    @relation("KeyDeliveredBy", fields: [deliveredById], references: [id])
+  returnedBy  Concierge?   @relation("KeyReturnedBy", fields: [returnedById], references: [id], onDelete: SetNull)
   remindedBy  Concierge?   @relation("KeyReminderBy", fields: [remindedById], references: [id], onDelete: SetNull)
   reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
 

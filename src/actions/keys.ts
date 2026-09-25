@@ -196,22 +196,32 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
   return { success: true };
 }
 
-/** La torna qualsevol conserge, així que no cal registrar qui la rep. */
+/** Registra el retorn de la clau i quin conserge l'ha recollida. */
 export async function returnKey(input: unknown): Promise<ActionResult> {
   await requireKeyAccess();
   const parsed = returnKeySchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
 
-  const loan = await db.keyLoan.findUnique({ where: { id: parsed.data.loanId } });
+  const [loan, concierge] = await Promise.all([
+    db.keyLoan.findUnique({ where: { id: parsed.data.loanId } }),
+    db.concierge.findUnique({ where: { id: parsed.data.returnedById }, select: { active: true } }),
+  ]);
   if (!loan) return { success: false, error: "Aquest préstec no existeix" };
   if (loan.returnedAt) return { success: false, error: "Aquesta clau ja consta tornada" };
+  if (!concierge?.active) return { success: false, error: "Tria quin conserge recull la clau" };
 
   await db.keyLoan.update({
     where: { id: loan.id },
-    data: { returnedAt: new Date() },
+    data: {
+      returnedAt: new Date(),
+      returnedById: parsed.data.returnedById,
+    },
   });
 
   revalidatePath("/consergeria");
+  revalidatePath("/consergeria/historial");
   return { success: true };
 }
 

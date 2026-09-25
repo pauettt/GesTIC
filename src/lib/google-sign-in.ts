@@ -18,6 +18,7 @@ export function checkGoogleSignIn({
   hostedDomain,
   userEmail,
   workspaceDomain,
+  adminEmails = [],
 }: {
   /** Correu del compte de Google amb què s'entra. */
   googleEmail: string | null | undefined;
@@ -30,6 +31,8 @@ export function checkGoogleSignIn({
   userEmail: string | null | undefined;
   /** `GOOGLE_WORKSPACE_DOMAIN`, en minúscules. */
   workspaceDomain: string | undefined;
+  /** Correus de superadministradors (`ADMIN_EMAILS`), en minúscules. */
+  adminEmails?: string[];
 }): GoogleSignInVerdict {
   // Sense domini configurat no entra ningú. Abans, si la variable faltava,
   // el filtre se saltava i qualsevol compte de Google entrava com a
@@ -38,15 +41,22 @@ export function checkGoogleSignIn({
   if (!workspaceDomain) return { allowed: false, reason: "domain-not-configured" };
 
   const email = googleEmail?.toLowerCase();
-  if (!email || !email.endsWith(`@${workspaceDomain}`)) {
-    return { allowed: false, reason: "outside-domain" };
-  }
+  if (!email) return { allowed: false, reason: "outside-domain" };
 
-  // Google només posa `hd` als comptes gestionats per una organització de
-  // Workspace. Un compte personal de Google creat amb una adreça del centre
-  // passaria el filtre del correu, però no porta `hd`.
-  if (typeof hostedDomain !== "string" || !hostedDomain) {
-    return { allowed: false, reason: "not-workspace-account" };
+  // Els superadministradors designats a ADMIN_EMAILS poden tenir compte extern (p. ex. @gmail.com)
+  const isSuperAdmin = adminEmails?.includes(email);
+
+  if (!isSuperAdmin) {
+    if (!email.endsWith(`@${workspaceDomain}`)) {
+      return { allowed: false, reason: "outside-domain" };
+    }
+
+    // Google només posa `hd` als comptes gestionats per una organització de
+    // Workspace. Un compte personal de Google creat amb una adreça del centre
+    // passaria el filtre del correu, però no porta `hd`.
+    if (typeof hostedDomain !== "string" || !hostedDomain) {
+      return { allowed: false, reason: "not-workspace-account" };
+    }
   }
 
   // Un compte de Google només entra com l'usuari del seu mateix correu. Si ha

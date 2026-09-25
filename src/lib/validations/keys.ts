@@ -35,7 +35,13 @@ export const deliverKeySchema = z.object({
 });
 export type DeliverKeyInput = z.infer<typeof deliverKeySchema>;
 
-export const returnKeySchema = z.object({ loanId: z.string().min(1) });
+export const returnKeySchema = z.object({
+  loanId: z.string().min(1),
+  returnedById: z
+    .string({ message: "Tria quin conserge recull la clau" })
+    .min(1, "Tria quin conserge recull la clau"),
+});
+export type ReturnKeyInput = z.infer<typeof returnKeySchema>;
 
 export const remindKeySchema = z.object({
   loanId: z.string().min(1),

@@ -186,7 +186,12 @@ export default async function ConsergeriaPage() {
                               borrowerName={loan.borrower.name ?? loan.borrower.email}
                             />
                           )}
-                          <ReturnKeyButton loanId={loan.id} />
+                          <ReturnKeyButton
+                            loanId={loan.id}
+                            concierges={concierges}
+                            borrowerName={loan.borrower.name ?? loan.borrower.email}
+                            keyLabel={`${loan.key.number} — ${loan.key.name}`}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

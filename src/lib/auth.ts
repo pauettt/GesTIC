@@ -13,6 +13,8 @@ const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
+const hasExternalAdmin = adminEmails.some((email) => !email.endsWith(`@${workspaceDomain}`));
+
 // Quan el navegador ja té la sessió d'algú i el compte de Google encara no és de
 // ningú, Auth.js no crea cap usuari: vincula el compte a l'usuari d'aquella
 // sessió, i des de llavors aquell compte entra amb els permisos de l'altre. Va
@@ -45,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       authorization: {
         params: {
-          hd: workspaceDomain,
+          ...(workspaceDomain && !hasExternalAdmin ? { hd: workspaceDomain } : {}),
           prompt: "select_account",
         },
       },
@@ -59,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         hostedDomain: (profile as { hd?: unknown } | undefined)?.hd,
         userEmail: user.email,
         workspaceDomain,
+        adminEmails,
       });
       if (!verdict.allowed) {
         if (verdict.reason === "domain-not-configured") {

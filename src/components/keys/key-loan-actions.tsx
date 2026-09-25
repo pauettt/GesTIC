@@ -16,14 +16,67 @@ import {
 
 type Option = { id: string; name: string };
 
-export function ReturnKeyButton({ loanId }: { loanId: string }) {
-  const { run, isPending } = useServerAction(returnKey, { successMessage: "Clau tornada" });
+/**
+ * Retorn d'una clau. Demana quin conserge la recull al taulell per deixar-ne
+ * constància al registre i a l'historial.
+ */
+export function ReturnKeyButton({
+  loanId,
+  concierges,
+  borrowerName,
+  keyLabel,
+}: {
+  loanId: string;
+  concierges: Option[];
+  borrowerName?: string;
+  keyLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const { run, isPending } = useServerAction(returnKey, {
+    successMessage: "Clau tornada",
+    onSuccess: () => setOpen(false),
+  });
 
   return (
-    <Button size="sm" variant="outline" disabled={isPending} onClick={() => run({ loanId })}>
-      <CheckIcon className="size-4" />
-      Tornada
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button size="sm" variant="outline">
+            <CheckIcon className="size-4" />
+            Tornada
+          </Button>
+        }
+      />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {keyLabel ? `Retornar clau: ${keyLabel}` : "Retornar la clau"}
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          {borrowerName
+            ? `Es registrarà el retorn de la clau que tenia ${borrowerName}. Quin conserge la recull?`
+            : "Quin conserge recull la clau?"}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {concierges.map((c) => (
+            <Button
+              key={c.id}
+              type="button"
+              disabled={isPending}
+              onClick={() => run({ loanId, returnedById: c.id })}
+            >
+              {c.name}
+            </Button>
+          ))}
+        </div>
+        {concierges.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No hi ha cap conserge donat d&apos;alta.
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

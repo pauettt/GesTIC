@@ -30,7 +30,7 @@ export function ConciergeManager({ concierges }: { concierges: Concierge[] }) {
       <h2 className="font-semibold">Conserges</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Consergeria comparteix un sol compte, i al taulell hi poden ser tots alhora. Aquests noms
-        són els que surten perquè triïn qui entrega cada clau.
+        són els que surten perquè triïn qui entrega o recull cada clau.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
