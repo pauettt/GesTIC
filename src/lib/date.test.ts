@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   addDays,
+  formatDayDateLong,
+  formatWeekday,
+  formatWeekdayShort,
   madridDateKey,
   schoolYearOf,
   schoolYearRange,
@@ -75,5 +78,26 @@ describe("curs escolar", () => {
     expect(
       schoolYearsBetween(new Date("2024-10-01T10:00:00Z"), new Date("2026-09-13T10:00:00Z")),
     ).toEqual(["2026-2027", "2025-2026", "2024-2025"]);
+  });
+});
+
+describe("dies de la setmana en català", () => {
+  it("retorna els noms i abreviatures correctes per a cada dia", () => {
+    // 2026-09-14 és dilluns
+    const dilluns = new Date("2026-09-14T10:00:00Z");
+    expect(formatWeekday(dilluns)).toBe("Dilluns");
+    expect(formatWeekdayShort(dilluns)).toBe("Dl");
+
+    // 2026-09-20 és diumenge
+    const diumenge = new Date("2026-09-20T10:00:00Z");
+    expect(formatWeekday(diumenge)).toBe("Diumenge");
+    expect(formatWeekdayShort(diumenge)).toBe("Dg");
+  });
+
+  it("formata el dia complet amb majúscula inicial", () => {
+    const d = new Date("2026-09-21T10:00:00Z");
+    expect(formatDayDateLong(d)).toContain("Dilluns");
+    expect(formatDayDateLong(d)).toContain("21");
+    expect(formatDayDateLong(d)).toContain("2026");
   });
 });

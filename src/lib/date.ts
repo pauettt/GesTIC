@@ -147,3 +147,55 @@ export function formatDateTimeFull(date: Date): string {
     timeZone: SCHOOL_TIME_ZONE,
   });
 }
+
+export const CATALAN_WEEKDAYS = [
+  "Dilluns",
+  "Dimarts",
+  "Dimecres",
+  "Dijous",
+  "Divendres",
+  "Dissabte",
+  "Diumenge",
+];
+
+export const CATALAN_WEEKDAYS_SHORT = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
+
+/** Retorna el nom del dia de la setmana en català ("Dilluns", "Dimarts", etc.). */
+export function formatWeekday(date: Date): string {
+  const key = madridDateKey(date);
+  const [y, m, d] = key.split("-").map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+  const index = day === 0 ? 6 : day - 1;
+  return CATALAN_WEEKDAYS[index];
+}
+
+/** Retorna l'abreviatura del dia de la setmana en català ("Dl", "Dt", etc.). */
+export function formatWeekdayShort(date: Date): string {
+  const key = madridDateKey(date);
+  const [y, m, d] = key.split("-").map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+  const index = day === 0 ? 6 : day - 1;
+  return CATALAN_WEEKDAYS_SHORT[index];
+}
+
+/** Format "dilluns, 21 de setembre" en minúscules per a frases com "el dilluns, 21 de setembre". */
+export function formatDayDate(date: Date): string {
+  return date.toLocaleDateString("ca-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: SCHOOL_TIME_ZONE,
+  });
+}
+
+/** Format complet amb majúscula inicial: "Dilluns, 21 de setembre del 2026". */
+export function formatDayDateLong(date: Date): string {
+  const text = date.toLocaleDateString("ca-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: SCHOOL_TIME_ZONE,
+  });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
