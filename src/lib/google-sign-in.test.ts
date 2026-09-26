@@ -52,33 +52,59 @@ describe("entrada amb Google", () => {
     expect(rejection({ userEmail: "ptarazona@iesjmthomas.eu" })).toBe("linked-to-another-user");
   });
 
-  it("un superadmin de la llista ADMIN_EMAILS pot entrar encara que sigui extern (@gmail.com)", () => {
-    expect(
-      checkGoogleSignIn({
-        googleEmail: "pauettt@gmail.com",
-        hostedDomain: undefined,
-        userEmail: "pauettt@gmail.com",
-        workspaceDomain: "iesjmthomas.eu",
-        adminEmails: ["pauettt@gmail.com"],
-      }),
-    ).toEqual({
-      allowed: true,
-      email: "pauettt@gmail.com",
-    });
-  });
+  describe("superadministradors de fora del domini (ADMIN_EMAILS)", () => {
+    const GMAIL_ADMIN: Input = {
+      googleEmail: "pauettt@gmail.com",
+      emailVerified: true,
+      hostedDomain: undefined,
+      userEmail: "pauettt@gmail.com",
+      workspaceDomain: "iesjmthomas.eu",
+      adminEmails: ["pauettt@gmail.com"],
+    };
+    const external = (overrides: Partial<Input>) => {
+      const verdict = checkGoogleSignIn({ ...GMAIL_ADMIN, ...overrides });
+      return verdict.allowed ? null : verdict.reason;
+    };
 
-  it("un compte de Gmail que no és a ADMIN_EMAILS és rebutjat", () => {
-    expect(
-      checkGoogleSignIn({
-        googleEmail: "altre@gmail.com",
-        hostedDomain: undefined,
-        userEmail: "altre@gmail.com",
-        workspaceDomain: "iesjmthomas.eu",
-        adminEmails: ["pauettt@gmail.com"],
-      }),
-    ).toEqual({
-      allowed: false,
-      reason: "outside-domain",
+    it("un @gmail.com de la llista entra", () => {
+      expect(checkGoogleSignIn(GMAIL_ADMIN)).toEqual({ allowed: true, email: "pauettt@gmail.com" });
+    });
+
+    it("un @gmail.com que no és a la llista no entra", () => {
+      expect(external({ googleEmail: "altre@gmail.com", userEmail: "altre@gmail.com" })).toBe(
+        "outside-domain",
+      );
+    });
+
+    it("sense el correu verificat per Google no entra", () => {
+      expect(external({ emailVerified: false })).toBe("unverified-external-account");
+      expect(external({ emailVerified: undefined })).toBe("unverified-external-account");
+    });
+
+    it("un compte de Google fet amb l'adreça d'un altre proveïdor no entra", () => {
+      // Google no n'és el propietari: l'adreça podria haver canviat de mans.
+      const outlook = "pau@outlook.com";
+      expect(external({ googleEmail: outlook, userEmail: outlook, adminEmails: [outlook] })).toBe(
+        "unverified-external-account",
+      );
+    });
+
+    it("un compte de Workspace d'una altra organització sí que entra", () => {
+      const other = "pau@altrecentre.cat";
+      expect(
+        external({
+          googleEmail: other,
+          userEmail: other,
+          adminEmails: [other],
+          hostedDomain: "altrecentre.cat",
+        }),
+      ).toBeNull();
+    });
+
+    it("un superadmin del domini del centre ha de ser igualment un compte de Workspace", () => {
+      expect(rejection({ adminEmails: ["coordtic@iesjmthomas.eu"], hostedDomain: undefined })).toBe(
+        "not-workspace-account",
+      );
     });
   });
 });

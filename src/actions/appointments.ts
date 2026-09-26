@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { zonedDateTime } from "@/lib/date";
 import { notifyAppointmentBooked, notifyAppointmentCancelled } from "@/lib/notifications";
+import { runAfterResponse } from "@/lib/background";
 import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
@@ -124,7 +125,7 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
     };
   }
 
-  await notifyAppointmentBooked(appointmentId);
+  runAfterResponse(() => notifyAppointmentBooked(appointmentId));
 
   revalidatePath("/cites");
   return { success: true };
@@ -159,14 +160,16 @@ export async function cancelAppointment(input: unknown): Promise<ActionResult> {
   await db.appointment.delete({ where: { id: appointment.id } });
 
   // Les dades van ja llegides: la cita acaba d'esborrar-se.
-  await notifyAppointmentCancelled({
-    cancelledById: user.id,
-    cancelledByName: user.name ?? "La coordinació TIC",
-    owner: appointment.user,
-    opener: appointment.slot.openedBy,
-    startDate: appointment.slot.startDate,
-    purpose: appointment.purpose,
-  });
+  runAfterResponse(() =>
+    notifyAppointmentCancelled({
+      cancelledById: user.id,
+      cancelledByName: user.name ?? "La coordinació TIC",
+      owner: appointment.user,
+      opener: appointment.slot.openedBy,
+      startDate: appointment.slot.startDate,
+      purpose: appointment.purpose,
+    }),
+  );
 
   revalidatePath("/cites");
   return { success: true };

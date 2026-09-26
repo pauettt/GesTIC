@@ -7,6 +7,7 @@ export type GoogleSignInRejection =
   | "domain-not-configured"
   | "outside-domain"
   | "not-workspace-account"
+  | "unverified-external-account"
   | "linked-to-another-user";
 
 export type GoogleSignInVerdict =
@@ -15,6 +16,7 @@ export type GoogleSignInVerdict =
 
 export function checkGoogleSignIn({
   googleEmail,
+  emailVerified,
   hostedDomain,
   userEmail,
   workspaceDomain,
@@ -22,6 +24,8 @@ export function checkGoogleSignIn({
 }: {
   /** Correu del compte de Google amb què s'entra. */
   googleEmail: string | null | undefined;
+  /** Camp `email_verified` del perfil de Google. */
+  emailVerified?: unknown;
   /** Camp `hd` del perfil de Google. */
   hostedDomain: unknown;
   /**
@@ -43,19 +47,26 @@ export function checkGoogleSignIn({
   const email = googleEmail?.toLowerCase();
   if (!email) return { allowed: false, reason: "outside-domain" };
 
-  // Els superadministradors designats a ADMIN_EMAILS poden tenir compte extern (p. ex. @gmail.com)
-  const isSuperAdmin = adminEmails?.includes(email);
+  const hasHostedDomain = typeof hostedDomain === "string" && hostedDomain !== "";
 
-  if (!isSuperAdmin) {
-    if (!email.endsWith(`@${workspaceDomain}`)) {
-      return { allowed: false, reason: "outside-domain" };
-    }
-
+  if (email.endsWith(`@${workspaceDomain}`)) {
     // Google només posa `hd` als comptes gestionats per una organització de
     // Workspace. Un compte personal de Google creat amb una adreça del centre
-    // passaria el filtre del correu, però no porta `hd`.
-    if (typeof hostedDomain !== "string" || !hostedDomain) {
-      return { allowed: false, reason: "not-workspace-account" };
+    // passaria el filtre del correu, però no porta `hd`. Val també per als
+    // superadministradors del domini: són els comptes que més cal protegir.
+    if (!hasHostedDomain) return { allowed: false, reason: "not-workspace-account" };
+  } else {
+    // De fora del domini només hi entren els superadministradors d'ADMIN_EMAILS
+    // (p. ex. un @gmail.com).
+    if (!adminEmails.includes(email)) return { allowed: false, reason: "outside-domain" };
+
+    // Sense `hd`, el Workspace del centre ja no avala el compte: només es pot
+    // confiar en el correu si Google n'és el propietari. Ho és d'un @gmail.com
+    // i d'un compte de Workspace (amb `hd`), i ha de dir que l'ha verificat. Un
+    // compte de Google fet amb una adreça d'un altre proveïdor no ho compleix.
+    const googleOwnsAddress = email.endsWith("@gmail.com") || hasHostedDomain;
+    if (emailVerified !== true || !googleOwnsAddress) {
+      return { allowed: false, reason: "unverified-external-account" };
     }
   }
 

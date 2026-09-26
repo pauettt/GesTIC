@@ -57,7 +57,3 @@ export const deleteStudentDeviceRequestSchema = z.object({
 export const markStudentDeviceDeliveredSchema = z.object({ id: z.string().min(1) });
 
 export const markStudentDeviceReturnedSchema = z.object({ id: z.string().min(1) });
-
-export const anonymizeStudentDeviceRequestsSchema = z.object({
-  beforeDate: z.string().min(1, "Indica la data límit d'anonimització"),
-});

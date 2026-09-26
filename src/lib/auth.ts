@@ -57,6 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, profile }) {
       const verdict = checkGoogleSignIn({
         googleEmail: profile?.email,
+        emailVerified: profile?.email_verified,
         // Auth.js no declara `hd` al tipus del perfil, d'aquí el cast.
         hostedDomain: (profile as { hd?: unknown } | undefined)?.hd,
         userEmail: user.email,
@@ -66,6 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!verdict.allowed) {
         if (verdict.reason === "domain-not-configured") {
           console.error("[auth] GOOGLE_WORKSPACE_DOMAIN sense configurar: no es deixa entrar ningú");
+          return false;
         }
         if (verdict.reason === "linked-to-another-user") {
           console.error(
@@ -73,6 +75,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           );
           return "/login?error=AccountLinked";
         }
+        // Sense això, «no puc entrar» no deixava cap rastre: la pantalla diu el
+        // mateix per a tots els motius i el motiu només el sap aquest callback.
+        console.warn(`[auth] entrada rebutjada (${verdict.reason}): ${profile?.email ?? "sense correu"}`);
         return false;
       }
       const { email } = verdict;
@@ -80,7 +85,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Accés retirat a /usuaris: el compte de Google pot seguir actiu (una
       // substitució acabada, un trasllat), però a gesTIC ja no s'hi entra.
       const existing = await db.user.findUnique({ where: { email }, select: { disabledAt: true } });
-      if (existing?.disabledAt) return false;
+      if (existing?.disabledAt) {
+        console.warn(`[auth] entrada rebutjada (accés retirat): ${email}`);
+        return false;
+      }
 
       await closeOtherUsersSession(email);
 

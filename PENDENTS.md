@@ -69,6 +69,7 @@ README).
 | ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
 | ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | en local, també el dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
+| ☐ | Superadmin extern a `ADMIN_EMAILS` (§31): pantalla de consentiment d'OAuth **External** i **In production**, i *Redeploy* després de canviar la variable | ✅ `pauettt@gmail.com` | per comprovar |
 
 Tot comprovat el 2026-09-13. Dos avisos per al primer desplegament d'aquests
 canvis:
@@ -104,6 +105,19 @@ de debò: les dades d'exemple només s'hi pengen.
 compte real: aquelles reserves, incidències i consultes no les treu l'script, i
 s'han de repassar a mà. Val la pena fer una còpia (`npm run db:backup`) abans de
 la neteja.
+
+### 32. Vuit proves e2e en vermell
+Comprovat el 2026-09-26: fallen igual al commit `47b12eb`, abans de l'auditoria
+de Gemini, i per tant venen dels canvis del 23 al 25 de setembre als carros i
+a les claus. Les proves no s'han posat al dia, i també pot ser que alguna
+d'aquelles pantalles s'hagi trencat de debò. Algunes busquen el títol «Carro E2E»,
+que ara porta l'aula al darrere (`259dcc5`). D'altres troben carros creats per
+proves anteriors. La de claus espera «Totes les claus són al taulell.»
+després de tornar-ne una. Fallen:
+`inventari` (carros per edifici), `ordre-carros`, les tres d'`ordre-chromebooks`,
+`reserves-i-claus` (entrega de la clau), `visibilitat-carros` i
+`vista-llistat-carros`. Mentre el conjunt sigui vermell, un error nou no es
+notaria: cal arreglar-ho abans del proper canvi gran.
 
 ---
 
@@ -226,9 +240,61 @@ gesTIC no creï usuaris sols i només hi entri qui el superadministrador hagi
 donat d'alta. Cal construir-ho (ara `/usuaris` no permet donar d'alta ningú) i
 té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
+### 31. El superadministrador pot ser un compte de fora del domini
+Decidit el 2026-09-25: `ADMIN_EMAILS` pot portar un compte extern
+(`pauettt@gmail.com`), l'únic de fora de `iesjmthomas.eu` que hi entra
+(`src/lib/google-sign-in.ts`). Des del 2026-09-26 només si Google en verifica el
+correu i n'és el propietari (un `@gmail.com` o un compte de Workspace); i els
+superadministradors del domini continuen havent de ser comptes del Workspace.
+
+Perquè Google el deixi arribar a gesTIC, la pantalla de consentiment del client
+OAuth (el de la §28) ha de ser **External** i **In production**. Amb
+*Internal*, Google el rebutja abans amb `Error 403: org_internal`. En canviar-la,
+cal tornar a provar el que diu la §28: un compte de professor encara hi entra
+i un d'*Alumnat* continua bloquejat. Si a la consola de Workspace les
+aplicacions de tercers no configurades estan prohibides, gesTIC ha de constar
+com a *De confiança* per al professorat.
+
+Riscos assumits:
+- El compte amb més permisos (contrasenyes, dades de menors) queda fora del
+  control del centre: si es perd o el roben, el Workspace no el pot bloquejar.
+  Cal que tingui la verificació en dos passos activada.
+- Si el superadministrador extern deixa el centre, algú amb accés a Vercel ha de
+  treure'l d'`ADMIN_EMAILS` i fer *Redeploy*. Convé que hi hagi sempre també un
+  compte del centre, perquè el centre no es quedi sense ningú que reparteixi
+  permisos.
+
 ---
 
 ## ✅ Fet
+
+### 2026-09-26
+
+- **Revisió de l'auditoria de Gemini** (commit `450850b`, ja desplegat):
+  - Es queden els avisos per correu en segon pla (`src/lib/background.ts`, amb
+    `after()` de Next): les accions ja no esperen el servidor de correu.
+    S'hi han afegit les cites, que s'havien quedat fora. Continuen esperant el
+    correu les accions que diuen a l'usuari si ha sortit o no (incidència
+    resolta, avís de clau no tornada, correu de prova).
+  - Es queden l'índex `KeyLoan.deliveredAt` (migració
+    `20260925193713_keyloan_delivered_at_idx`) i les exportacions amb `select`.
+    Cap de les dues coses no era urgent a l'escala del centre.
+  - Es queda el límit de 2 connexions per instància a producció
+    (`src/lib/db.ts`). El problema que deia resoldre no hi era: l'app ja va pel
+    *Transaction pooler* de Supabase. Es pot pujar amb `PG_MAX_CONNECTIONS` a
+    Vercel si la pàgina d'inici es nota lenta.
+  - **Es treu l'anonimització de les sol·licituds d'alumnat**: contradeia la
+    §22 (els noms es guarden sense caducitat), cap pantalla no la cridava, i
+    triava per data de creació i no de retorn. Si el centre fixa per escrit un
+    termini de conservació, s'ha de fer de nou: per data de retorn i des
+    d'*Administració → Dades personals*.
+- **Entrada del superadministrador extern, més estricta** (§31): cal el correu
+  verificat per Google i que Google en sigui el propietari. Un superadmin del
+  domini del centre ja no se salta la comprovació de Workspace, com passava des
+  del 2026-09-25.
+- **Les entrades rebutjades deixen rastre** als logs de Vercel
+  (`[auth] entrada rebutjada (motiu): correu`). Abans, «no puc entrar» no es
+  podia diagnosticar sense provar-ho.
 
 ### 2026-09-23
 

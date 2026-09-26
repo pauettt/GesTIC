@@ -11,7 +11,6 @@ import { buildTestEmail, sendEmail } from "@/lib/email";
 import { requireSuperAdmin } from "@/lib/permissions";
 import { formatCounts, isTestAccountEmail } from "@/lib/test-data";
 import { getBaseUrl } from "@/lib/url";
-import { anonymizeStudentDeviceRequestsSchema } from "@/lib/validations/student-devices";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -118,46 +117,5 @@ export async function purgeTestData(): Promise<ActionResult> {
   );
   revalidatePath("/administracio");
   revalidatePath("/usuaris");
-  return { success: true };
-}
-
-/**
- * Anonimitza les sol·licituds de dispositius d'alumnat antigues i tancades
- * (RETORNADA, REBUTJADA o CANCELLADA) creades abans d'una data límit (RGPD / dret a la supressió).
- * Conserva el registre de l'equip i de la data per a l'historial del maquinari,
- * però elimina les dades personals del menor (nom, cognoms i observacions).
- */
-export async function anonymizeStudentDeviceRequests(input: unknown): Promise<ActionResult> {
-  const superAdmin = await requireSuperAdmin();
-  const parsed = anonymizeStudentDeviceRequestsSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
-  }
-  const date = new Date(parsed.data.beforeDate);
-  if (Number.isNaN(date.getTime())) {
-    return { success: false, error: "La data no és vàlida" };
-  }
-
-  const updated = await db.studentDeviceRequest.updateMany({
-    where: {
-      createdAt: { lt: date },
-      status: { in: ["RETORNADA", "REBUTJADA", "CANCELLADA"] },
-    },
-    data: {
-      studentFirstName: "Alumne",
-      studentLastName: "Anonimitzat",
-      reasonNote: null,
-      responseNote: null,
-    },
-  });
-
-  await recordAudit(
-    superAdmin.id,
-    "student-requests.anonymize",
-    `Anonimitzades ${updated.count} sol·licituds d'alumnat anteriors a ${parsed.data.beforeDate}`,
-  );
-
-  revalidatePath("/alumnat");
-  revalidatePath("/administracio");
   return { success: true };
 }

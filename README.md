@@ -27,12 +27,12 @@ Aquestes dues adreces només van a Vercel. En local es treballa amb una base de 
 ### 2. Autenticació (Google Workspace)
 
 1. Vés a [Google Cloud Console](https://console.cloud.google.com/) → crea un projecte (o reutilitza'n un).
-2. **APIs & Services → OAuth consent screen**: configura'l com a intern/extern segons el domini del centre.
+2. **APIs & Services → OAuth consent screen** (ara *Google Auth Platform → Audience*): **Internal** si tots els superadministradors són del domini del centre. Si `ADMIN_EMAILS` porta un compte extern (un `@gmail.com`), ha de ser **External** i **In production**: amb *Internal*, Google el rebutja amb `Error 403: org_internal` i gesTIC no arriba a veure'l. No cal cap verificació de Google, perquè només es demana el nom, el correu i la foto. Fer-la *External* no obre gesTIC: qui no és del Workspace del centre ni d'`ADMIN_EMAILS` es queda a la pantalla d'entrada.
 3. **APIs & Services → Credentials → Create Credentials → OAuth client ID** (tipus "Web application"):
    - **Authorized redirect URI**: `https://<el-teu-domini>/api/auth/callback/google` (i `http://localhost:3000/api/auth/callback/google` per a desenvolupament local).
 4. Copia el **Client ID** i **Client Secret** a `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
 5. Defineix `GOOGLE_WORKSPACE_DOMAIN` amb el domini del centre (ex: `elteucentre.cat`). **És obligatòria**: sense aquesta variable no hi pot entrar ningú.
-6. Defineix `ADMIN_EMAILS` amb els correus dels superadministradors (`SUPER_ADMIN`), els únics que poden repartir permisos. El rol es reconcilia a cada inici de sessió.
+6. Defineix `ADMIN_EMAILS` amb els correus dels superadministradors (`SUPER_ADMIN`), els únics que poden repartir permisos. El rol es reconcilia a cada inici de sessió. A Vercel, un canvi de variable no s'aplica fins al desplegament següent (*Deployments → Redeploy*). Si algú no pot entrar, el motiu surt als logs amb `[auth] entrada rebutjada`.
 
 ### 3. Fitxers (Vercel Blob)
 
