@@ -27,7 +27,7 @@ Aquestes dues adreces només van a Vercel. En local es treballa amb una base de 
 ### 2. Autenticació (Google Workspace)
 
 1. Vés a [Google Cloud Console](https://console.cloud.google.com/) → crea un projecte (o reutilitza'n un).
-2. **APIs & Services → OAuth consent screen** (ara *Google Auth Platform → Audience*): **Internal** si tots els superadministradors són del domini del centre. Si `ADMIN_EMAILS` porta un compte extern (un `@gmail.com`), ha de ser **External** i **In production**: amb *Internal*, Google el rebutja amb `Error 403: org_internal` i gesTIC no arriba a veure'l. No cal cap verificació de Google, perquè només es demana el nom, el correu i la foto. Fer-la *External* no obre gesTIC: qui no és del Workspace del centre ni d'`ADMIN_EMAILS` es queda a la pantalla d'entrada.
+2. **APIs & Services → OAuth consent screen**: **Internal**, perquè només hi entrin comptes del Workspace del centre.
 3. **APIs & Services → Credentials → Create Credentials → OAuth client ID** (tipus "Web application"):
    - **Authorized redirect URI**: `https://<el-teu-domini>/api/auth/callback/google` (i `http://localhost:3000/api/auth/callback/google` per a desenvolupament local).
 4. Copia el **Client ID** i **Client Secret** a `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.

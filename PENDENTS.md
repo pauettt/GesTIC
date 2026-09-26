@@ -69,7 +69,6 @@ README).
 | ✅ | Migracions en desplegar (`scripts/vercel-build.sh`, només a producció) | — | ✅ |
 | ✅ | Login de Google (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`) | en local, també el dev login | ✅ provat de principi a fi; la pantalla ja diu "gesTIC" |
 | ☐ | **NO** posar `ENABLE_DEV_LOGIN` a Vercel | — | — |
-| ☐ | Superadmin extern a `ADMIN_EMAILS` (§31): pantalla de consentiment d'OAuth **External** i **In production**, i *Redeploy* després de canviar la variable | ✅ `pauettt@gmail.com` | per comprovar |
 
 Tot comprovat el 2026-09-13. Dos avisos per al primer desplegament d'aquests
 canvis:
@@ -240,29 +239,12 @@ gesTIC no creï usuaris sols i només hi entri qui el superadministrador hagi
 donat d'alta. Cal construir-ho (ara `/usuaris` no permet donar d'alta ningú) i
 té un preu: cada substitut s'ha de donar d'alta abans que hi pugui entrar.
 
-### 31. El superadministrador pot ser un compte de fora del domini
-Decidit el 2026-09-25: `ADMIN_EMAILS` pot portar un compte extern
-(`pauettt@gmail.com`), l'únic de fora de `iesjmthomas.eu` que hi entra
-(`src/lib/google-sign-in.ts`). Des del 2026-09-26 només si Google en verifica el
-correu i n'és el propietari (un `@gmail.com` o un compte de Workspace); i els
-superadministradors del domini continuen havent de ser comptes del Workspace.
-
-Perquè Google el deixi arribar a gesTIC, la pantalla de consentiment del client
-OAuth (el de la §28) ha de ser **External** i **In production**. Amb
-*Internal*, Google el rebutja abans amb `Error 403: org_internal`. En canviar-la,
-cal tornar a provar el que diu la §28: un compte de professor encara hi entra
-i un d'*Alumnat* continua bloquejat. Si a la consola de Workspace les
-aplicacions de tercers no configurades estan prohibides, gesTIC ha de constar
-com a *De confiança* per al professorat.
-
-Riscos assumits:
-- El compte amb més permisos (contrasenyes, dades de menors) queda fora del
-  control del centre: si es perd o el roben, el Workspace no el pot bloquejar.
-  Cal que tingui la verificació en dos passos activada.
-- Si el superadministrador extern deixa el centre, algú amb accés a Vercel ha de
-  treure'l d'`ADMIN_EMAILS` i fer *Redeploy*. Convé que hi hagi sempre també un
-  compte del centre, perquè el centre no es quedi sense ningú que reparteixi
-  permisos.
+### 31. El superadministrador és un compte del centre
+Decidit el 2026-09-26: el superadministrador és el compte de coordinació TIC
+del Workspace. El 2026-09-25 es va provar de permetre un @gmail.com a
+`ADMIN_EMAILS`, però obligava a obrir l'OAuth a «External» i treia el compte
+amb més permisos del control del centre. S'ha tret: a gesTIC només hi entren
+comptes del Workspace.
 
 ---
 
@@ -288,10 +270,7 @@ Riscos assumits:
     triava per data de creació i no de retorn. Si el centre fixa per escrit un
     termini de conservació, s'ha de fer de nou: per data de retorn i des
     d'*Administració → Dades personals*.
-- **Entrada del superadministrador extern, més estricta** (§31): cal el correu
-  verificat per Google i que Google en sigui el propietari. Un superadmin del
-  domini del centre ja no se salta la comprovació de Workspace, com passava des
-  del 2026-09-25.
+- **Només comptes del Workspace**, també per als superadministradors (§31).
 - **Les entrades rebutjades deixen rastre** als logs de Vercel
   (`[auth] entrada rebutjada (motiu): correu`). Abans, «no puc entrar» no es
   podia diagnosticar sense provar-ho.
