@@ -5,12 +5,16 @@ import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+// `retry` i no `reset`: `reset` només torna a pintar el que ja hi havia, i si
+// l'error venia del servidor (la base de dades un moment caiguda) el botó
+// tornava a ensenyar el mateix error sense haver-ho provat de nou. `retry` torna
+// a demanar la pàgina al servidor abans de pintar-la.
 export default function AppError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   useEffect(() => {
     console.error("[app] error no controlat:", error);
@@ -28,7 +32,7 @@ export default function AppError({
           coordinació TIC.
         </p>
       </div>
-      <Button onClick={reset}>
+      <Button onClick={retry}>
         <RefreshCwIcon className="size-4" />
         Torna-ho a provar
       </Button>

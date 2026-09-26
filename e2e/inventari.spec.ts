@@ -35,13 +35,14 @@ test("els carros es filtren per edifici", async ({ page }) => {
   await expect(manager.getByText("Annex E2E")).toBeVisible();
 
   await page.goto("/chromebooks");
-  await expect(page.getByText("Carro E2E", { exact: true })).toBeVisible();
+  // El títol porta l'aula quan no es diu com el carro.
+  await expect(page.getByText("Carro E2E · Aula E2E", { exact: true })).toBeVisible();
 
   // Per l'aula on és, hi surt.
   await page.getByLabel("Aula", { exact: true }).click();
   await page.getByRole("option", { name: "Aula E2E" }).click();
   await expect(page).toHaveURL(/aula=/);
-  await expect(page.getByText("Carro E2E", { exact: true })).toBeVisible();
+  await expect(page.getByText("Carro E2E · Aula E2E", { exact: true })).toBeVisible();
 
   // Triar un edifici treu l'aula, que no n'és.
   await page.getByLabel("Edifici", { exact: true }).click();

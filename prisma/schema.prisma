@@ -94,6 +94,23 @@ model AuditEvent {
   @@index([createdAt])
 }
 
+/**
+ * Correus que no han sortit. Els avisos s'envien després de respondre a qui fa
+ * l'acció, i si el compte del servidor deixa de funcionar (una contrasenya
+ * d'aplicació revocada) fallen tots sense que ningú ho vegi. Cada fallada queda
+ * aquí fins que la coordinació la dona per revisada. Només l'assumpte i quantes
+ * adreces: mai els destinataris ni el cos.
+ */
+model EmailFailure {
+  id         String   @id @default(cuid())
+  subject    String
+  recipients Int
+  reason     String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -465,6 +482,23 @@ model RecurringReservation {
   @@index([cartId, schoolYear, status])
   @@index([userId])
   @@index([status])
+}
+
+/// Festius i vacances del calendari escolar, que la coordinació entra cada curs.
+/// Aquells dies no hi ha classe: no es reserven carros ni equips, les reserves
+/// fixes se'ls salten i no surt cap recordatori per correu. Les cites amb la
+/// coordinació no hi entren: un dia sense alumnes pot ser de feina.
+///
+/// Les dates són "YYYY-MM-DD", el dia a Espanya, com les altres dates sense hora
+/// de l'aplicació; `endDate` és l'últim dia festiu, inclòs.
+model SchoolHoliday {
+  id        String   @id @default(cuid())
+  name      String
+  startDate String
+  endDate   String
+  createdAt DateTime @default(now())
+
+  @@index([startDate])
 }
 
 /// Reserva d'un sol equip d'un carro, per a unes sessions seguides d'un dia.

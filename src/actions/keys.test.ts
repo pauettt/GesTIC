@@ -18,7 +18,7 @@ vi.mock("@/lib/db", () => ({ db }));
 vi.mock("@/lib/permissions", () => ({ requireKeyAccess, requireSuperAdmin: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
-import { returnKey } from "@/actions/keys";
+import { deleteKey, returnKey } from "@/actions/keys";
 import { returnKeySchema } from "@/lib/validations/keys";
 
 beforeEach(() => {
@@ -93,5 +93,28 @@ describe("returnKey action", () => {
     });
     expect(revalidatePath).toHaveBeenCalledWith("/consergeria");
     expect(revalidatePath).toHaveBeenCalledWith("/consergeria/historial");
+  });
+});
+
+describe("deleteKey", () => {
+  it("no esborra una clau que és fora", async () => {
+    db.keyLoan.count.mockResolvedValueOnce(1);
+    const res = await deleteKey({ id: "clau-1" });
+    expect(res).toEqual({ success: false, error: "Aquesta clau està fora; registra'n el retorn abans" });
+    expect(db.key.delete).not.toHaveBeenCalled();
+  });
+
+  it("no esborra una clau amb historial: se'n perdrien els préstecs", async () => {
+    db.keyLoan.count.mockResolvedValueOnce(0).mockResolvedValueOnce(12);
+    const res = await deleteKey({ id: "clau-1" });
+    expect(res.success).toBe(false);
+    expect(db.keyLoan.count).toHaveBeenLastCalledWith({ where: { keyId: "clau-1" } });
+    expect(db.key.delete).not.toHaveBeenCalled();
+  });
+
+  it("esborra una clau que no s'ha deixat mai", async () => {
+    db.keyLoan.count.mockResolvedValue(0);
+    expect(await deleteKey({ id: "clau-1" })).toEqual({ success: true });
+    expect(db.key.delete).toHaveBeenCalledWith({ where: { id: "clau-1" } });
   });
 });

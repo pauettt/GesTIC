@@ -1,4 +1,5 @@
 import { addDays, madridDateKey, zonedDateTime } from "@/lib/date";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 import { isDateKey } from "@/lib/validations/common";
 import { getPeriodById, isPastPeriod, isSchoolDay, SCHOOL_PERIODS, type SchoolPeriod } from "@/lib/schedule";
 
@@ -25,6 +26,7 @@ export type CartSearchResult =
 export function parseCartSearch(
   params: { dia?: Param; sessio?: Param; equips?: Param },
   now: Date = new Date(),
+  holidays: readonly Holiday[] = [],
 ): CartSearchResult {
   const { dia, sessio, equips } = params;
   if (dia === undefined && sessio === undefined) return { status: "none" };
@@ -34,6 +36,8 @@ export function parseCartSearch(
   if (!isSchoolDay(dia)) {
     return { status: "invalid", message: "Els carros només es reserven de dilluns a divendres." };
   }
+  const holiday = holidayOn(dia, holidays);
+  if (holiday) return { status: "invalid", message: `Aquest dia és festiu (${holiday.name}).` };
   const period = typeof sessio === "string" ? getPeriodById(Number(sessio)) : undefined;
   if (!period) return { status: "invalid", message: "Tria una sessió." };
 
@@ -50,13 +54,17 @@ export function parseCartSearch(
 
 /**
  * El dia i la sessió que proposa el formulari: la sessió que encara no ha
- * acabat, avui mateix; si avui ja no en queda cap o és cap de setmana, la
- * primera del proper dia lectiu.
+ * acabat, avui mateix; si avui ja no en queda cap o és cap de setmana o festiu,
+ * la primera del proper dia lectiu.
  */
-export function defaultCartSearch(now: Date = new Date()): { dateKey: string; periodId: number } {
+export function defaultCartSearch(
+  now: Date = new Date(),
+  holidays: readonly Holiday[] = [],
+): { dateKey: string; periodId: number } {
   let dateKey = madridDateKey(now);
-  for (let tries = 0; tries < 7; tries++) {
-    if (isSchoolDay(dateKey)) {
+  // Prou dies per saltar-se les vacances de Nadal senceres.
+  for (let tries = 0; tries < 40; tries++) {
+    if (isSchoolDay(dateKey) && !holidayOn(dateKey, holidays)) {
       const next = SCHOOL_PERIODS.find(
         (period) => !isPastPeriod(zonedDateTime(dateKey, period.end), now),
       );

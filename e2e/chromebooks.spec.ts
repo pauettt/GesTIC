@@ -200,6 +200,15 @@ test("un equip donat de baixa ja no accepta incidències", async ({ browser }) =
   await professor.goto(`/q/chromebook/${cartChromebooks["E2E-04"]}`);
   await expect(professor.getByText("Aquest dispositiu està donat de baixa")).toBeVisible();
   await expect(professor.getByRole("button", { name: "Pantalla" })).toHaveCount(0);
+
+  // I es pot tornar a activar. Així, a més, les proves següents troben el carro
+  // amb els quatre equips en servei.
+  await admin.reload();
+  await admin.getByRole("button", { name: "E2E-04" }).click();
+  await admin.getByRole("button", { name: "Torna a activar" }).click();
+  await expect(admin.getByText("Dispositiu reactivat")).toBeVisible();
+  await professor.reload();
+  await expect(professor.getByText("Aquest dispositiu està donat de baixa")).toHaveCount(0);
 });
 
 test("l'historial de sol·licituds diu qui les va demanar, i es filtra i es cerca", async ({ browser }) => {

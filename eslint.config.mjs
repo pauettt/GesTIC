@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Informes de Playwright: quan una prova e2e falla hi deixa la traça, amb
+    // JavaScript minificat que no és nostre.
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

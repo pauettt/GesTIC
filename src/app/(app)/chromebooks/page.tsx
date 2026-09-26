@@ -5,6 +5,7 @@ import { LayoutGridIcon, ListIcon, RepeatIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
 import { defaultCartSearch, parseCartSearch, type CartSearch } from "@/lib/cart-finder";
+import { getHolidays } from "@/lib/holidays-data";
 import {
   addDays,
   formatDateTimeFull,
@@ -131,7 +132,8 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
 
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
-  const cartSearch = parseCartSearch(params);
+  const holidays = await getHolidays();
+  const cartSearch = parseCartSearch(params, new Date(), holidays);
   const busyCartIds =
     cartSearch.status === "ok"
       ? new Set(
@@ -155,7 +157,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           periodId: cartSearch.search.period.id,
           minDevices: cartSearch.search.minDevices,
         }
-      : { ...defaultCartSearch(), minDevices: 0 };
+      : { ...defaultCartSearch(new Date(), holidays), minDevices: 0 };
 
   // La importació ha de conèixer tots els carros, també els que el filtre amaga.
   const allCartNames = admin

@@ -18,20 +18,22 @@ import { Button } from "@/components/ui/button";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
-export function ConfirmDeleteButton<TInput>({
+export function ConfirmDeleteButton<TInput, TResult extends ActionResult = ActionResult>({
   action,
   input,
   title = "Segur que vols eliminar-ho?",
   description = "Aquesta acció no es pot desfer.",
   label = "Elimina",
+  successMessage,
 }: {
-  action: (input: TInput) => Promise<ActionResult>;
+  action: (input: TInput) => Promise<TResult>;
   input: TInput;
   title?: string;
   description?: string;
   label?: string;
+  successMessage?: string | ((input: TInput, result: Extract<TResult, { success: true }>) => string);
 }) {
-  const { run, isPending } = useServerAction(action);
+  const { run, isPending } = useServerAction(action, { successMessage });
 
   return (
     <AlertDialog>

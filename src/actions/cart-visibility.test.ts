@@ -8,6 +8,7 @@ const { db, requireUser, requireAdmin } = vi.hoisted(() => ({
     reservation: { findFirst: vi.fn(), create: vi.fn() },
     deviceReservation: { findFirst: vi.fn(), create: vi.fn() },
     recurringReservation: { findFirst: vi.fn(), count: vi.fn(), create: vi.fn() },
+    schoolHoliday: { findMany: vi.fn() },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
   },
@@ -32,6 +33,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date("2026-09-23T08:00:00Z"));
   db.$transaction.mockImplementation((callback) => callback(db));
   db.recurringReservation.create.mockResolvedValue({ id: "recurring-1" });
+  db.schoolHoliday.findMany.mockResolvedValue([]);
 });
 afterEach(() => vi.useRealTimers());
 

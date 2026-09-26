@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import { ACTIVE_STUDENT_REQUEST_STATUSES, syncChromebookStatus } from "@/lib/chromebook-status";
 import { zonedDateTime } from "@/lib/date";
+import { holidayOn, holidayRefusal } from "@/lib/holidays";
+import { getHolidays } from "@/lib/holidays-data";
 import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
@@ -26,6 +28,9 @@ import {
 } from "@/lib/validations/chromebooks";
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+/** Un motiu per no reservar que ha de veure qui ho prova, dins la transacció. */
+class ReservationRefused extends Error {}
 
 export async function setCartOrder(input: unknown): Promise<ActionResult> {
   await requireAdmin();
@@ -434,6 +439,8 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
   if (!isSchoolDay(date)) {
     return { success: false, error: "Només es pot reservar de dilluns a divendres" };
   }
+  const holiday = holidayOn(date, await getHolidays());
+  if (holiday) return { success: false, error: holidayRefusal(holiday) };
 
   const periods: { startDate: Date; endDate: Date }[] = [];
   for (const periodId of periodIds) {
@@ -467,7 +474,7 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
           },
         });
         if (overlapping) {
-          throw new Error("Alguna de les sessions seleccionades ja està reservada");
+          throw new ReservationRefused("Alguna de les sessions seleccionades ja està reservada");
         }
         await tx.reservation.create({
           data: { cartId, userId: user.id, startDate, endDate, purpose: purpose || null },
@@ -480,10 +487,11 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
     if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
       return { success: false, error: "Algú acaba de reservar aquesta sessió. Torna a provar-ho." };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "No s'ha pogut confirmar la reserva",
-    };
+    if (error instanceof ReservationRefused) return { success: false, error: error.message };
+    // Qualsevol altra cosa és un error de la base de dades: el missatge és per al
+    // log, no per a qui reserva.
+    console.error("[reserva] no s'ha pogut desar:", error);
+    return { success: false, error: "No s'ha pogut confirmar la reserva. Torna-ho a provar." };
   }
 
   revalidatePath(`/chromebooks/${cartId}`);

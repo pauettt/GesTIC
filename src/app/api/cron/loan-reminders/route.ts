@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { madridDateKey } from "@/lib/date";
+import { holidayToday } from "@/lib/holidays-data";
 import { sendDevicesNotReturnedReminders, sendLoanOverdueReminder } from "@/lib/notifications";
 
 /**
@@ -27,6 +28,15 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
+  // Un dia de festa ningú no pot tornar res al carro ni al centre: els avisos
+  // tornen a sortir el primer dia de classe. Els préstecs d'inventari, que van
+  // els dilluns, s'esperen al dilluns següent si aquell dilluns és festiu.
+  const holiday = await holidayToday(now);
+  if (holiday) {
+    console.info(`[cron] avui és festiu (${holiday.name}): no s'envia cap recordatori`);
+    return NextResponse.json({ skipped: "festiu", holiday: holiday.name });
+  }
+
   const devices = await sendDevicesNotReturnedReminders(now);
   console.info(`[cron] equips de carro sense tornar: ${devices.overdue}, correus enviats: ${devices.sent}`);
 

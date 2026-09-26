@@ -10,6 +10,7 @@ import { orderCarts } from "@/lib/cart-order";
 import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
+import { getHolidays } from "@/lib/holidays-data";
 import { courseEndLabel, recurringCourse, slotLabel } from "@/lib/recurring-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { placedSpaceSelect } from "@/lib/locations";
@@ -44,7 +45,7 @@ export default async function CartDetailPage({
   const now = new Date();
   const course = recurringCourse(now);
 
-  const [cart, spaces, recurring, carts, existingChromebooks] = await Promise.all([
+  const [cart, spaces, recurring, carts, existingChromebooks, holidays] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
@@ -95,6 +96,7 @@ export default async function CartDetailPage({
     admin
       ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
       : Promise.resolve([]),
+    getHolidays(),
   ]);
 
   if (!cart || !canAccessCart(user.role, cart)) notFound();
@@ -217,6 +219,7 @@ export default async function CartDetailPage({
           weekStart={weekStart}
           reservations={cart.reservations}
           deviceBookings={deviceBookings}
+          holidays={holidays}
           currentUserId={user.id}
           isAdmin={admin}
         />

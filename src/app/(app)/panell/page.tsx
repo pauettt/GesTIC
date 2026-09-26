@@ -13,14 +13,18 @@ import {
   TicketIcon,
 } from "lucide-react";
 
-import { formatDate, formatDateTimeFull, isSameDay } from "@/lib/date";
+import { formatDate, formatDateTimeFull, isSameDay, madridDateKey } from "@/lib/date";
 import { dueLabel } from "@/lib/device-reservations";
 import { slotLabel } from "@/lib/recurring-reservations";
 import { daysSinceActivity, STALLED_DAYS } from "@/lib/incidents";
 import { daysOverdue } from "@/lib/loans";
+import { getEmailFailures } from "@/lib/email-failures";
+import { getHolidays } from "@/lib/holidays-data";
 import { getCourseStats, getPendingWork } from "@/lib/panell-data";
 import { incidentPriorityLabels, incidentPriorityVariants } from "@/lib/labels";
 import { requireAdmin } from "@/lib/permissions";
+import { EmailFailuresAlert } from "@/components/admin/email-failures-alert";
+import { HolidaysDialog } from "@/components/holidays/holidays-dialog";
 import { CourseMetrics } from "@/components/panell/course-metrics";
 import { WorkQueue } from "@/components/panell/work-queue";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -32,8 +36,15 @@ const who = (user: { name: string | null; email: string }) => user.name ?? user.
 
 export default async function PanellPage() {
   await requireAdmin();
-  const [work, stats] = await Promise.all([getPendingWork(), getCourseStats()]);
+  const [work, stats, emailFailures, holidays] = await Promise.all([
+    getPendingWork(),
+    getCourseStats(),
+    getEmailFailures(),
+    getHolidays(),
+  ]);
   const now = new Date();
+  const today = madridDateKey(now);
+  const upcomingHolidays = holidays.filter((holiday) => holiday.endDate >= today);
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,11 +53,16 @@ export default async function PanellPage() {
           <h1 className="text-2xl font-semibold">Panell del coordinador</h1>
           <p className="text-muted-foreground">Què necessita la teva atenció avui.</p>
         </div>
-        <ButtonLink variant="outline" href="/espais">
-          <MapPinIcon className="size-4" />
-          Gestiona aules i espais
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <HolidaysDialog holidays={upcomingHolidays} />
+          <ButtonLink variant="outline" href="/espais">
+            <MapPinIcon className="size-4" />
+            Gestiona aules i espais
+          </ButtonLink>
+        </div>
       </div>
+
+      <EmailFailuresAlert failures={emailFailures} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <WorkQueue

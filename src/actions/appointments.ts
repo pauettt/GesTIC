@@ -17,6 +17,9 @@ import {
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
+/** Un motiu per no donar la cita que ha de veure qui la demana, dins la transacció. */
+class AppointmentRefused extends Error {}
+
 /** P2002: violació d'un índex únic de Prisma. */
 function isUniqueViolation(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
@@ -106,9 +109,9 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
         where: { id: slotId },
         include: { appointment: true },
       });
-      if (!slot) throw new Error("Aquesta hora ja no està oberta");
-      if (isPastPeriod(slot.endDate)) throw new Error("Aquesta hora ja ha passat");
-      if (slot.appointment) throw new Error("Algú acaba d'agafar aquesta hora. Torna a provar-ho.");
+      if (!slot) throw new AppointmentRefused("Aquesta hora ja no està oberta");
+      if (isPastPeriod(slot.endDate)) throw new AppointmentRefused("Aquesta hora ja ha passat");
+      if (slot.appointment) throw new AppointmentRefused("Algú acaba d'agafar aquesta hora. Torna a provar-ho.");
 
       const created = await tx.appointment.create({ data: { slotId, userId: user.id, purpose } });
       return created.id;
@@ -119,10 +122,9 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
     if (isUniqueViolation(error)) {
       return { success: false, error: "Algú acaba d'agafar aquesta hora. Torna a provar-ho." };
     }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "No s'ha pogut demanar la cita",
-    };
+    if (error instanceof AppointmentRefused) return { success: false, error: error.message };
+    console.error("[cita] no s'ha pogut desar:", error);
+    return { success: false, error: "No s'ha pogut demanar la cita. Torna-ho a provar." };
   }
 
   runAfterResponse(() => notifyAppointmentBooked(appointmentId));

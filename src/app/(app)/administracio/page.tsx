@@ -2,10 +2,12 @@ import { AlertTriangleIcon, CheckCircle2Icon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { getConfigChecks, getTestDataSummary } from "@/lib/admin-data";
+import { getEmailFailures } from "@/lib/email-failures";
 import { auditActionLabels, type AuditAction } from "@/lib/audit";
 import { formatDateTime } from "@/lib/date";
 import { requireSuperAdmin } from "@/lib/permissions";
 import { formatCounts, isTestAccountEmail } from "@/lib/test-data";
+import { EmailFailuresAlert } from "@/components/admin/email-failures-alert";
 import { PurgeTestDataButton } from "@/components/admin/purge-test-data-button";
 import { TestEmailButton } from "@/components/admin/test-email-button";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -30,7 +32,7 @@ export const metadata = { title: "Administració" };
 export default async function AdministracioPage() {
   const superAdmin = await requireSuperAdmin();
 
-  const [testData, studentRequests, usersWithoutAccess, auditEvents] = await Promise.all([
+  const [testData, studentRequests, usersWithoutAccess, auditEvents, emailFailures] = await Promise.all([
     getTestDataSummary(),
     db.studentDeviceRequest.count(),
     db.user.count({ where: { disabledAt: { not: null } } }),
@@ -39,6 +41,7 @@ export default async function AdministracioPage() {
       take: 50,
       include: { actor: { select: { name: true, email: true } } },
     }),
+    getEmailFailures(),
   ]);
 
   const checks = getConfigChecks();
@@ -81,6 +84,7 @@ export default async function AdministracioPage() {
               </li>
             ))}
           </ul>
+          <EmailFailuresAlert failures={emailFailures} />
           <div className="flex flex-wrap items-center gap-3">
             <TestEmailButton disabled={isTestAccount} />
             <p className="text-xs text-muted-foreground">

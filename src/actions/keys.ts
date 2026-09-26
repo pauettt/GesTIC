@@ -114,6 +114,18 @@ export async function deleteKey(input: unknown): Promise<ActionResult> {
     return { success: false, error: "Aquesta clau està fora; registra'n el retorn abans" };
   }
 
+  // Els préstecs cauen amb la clau, i l'historial és el que respon qui tenia
+  // una aula un dia concret. Esborrar només serveix per a una clau entrada per
+  // error: una que ja s'ha fet servir es conserva, encara que ja no existeixi.
+  const history = await db.keyLoan.count({ where: { keyId: parsed.data.id } });
+  if (history > 0) {
+    return {
+      success: false,
+      error:
+        "Aquesta clau té préstecs a l'historial i esborrar-la els faria desaparèixer. Si ja no es fa servir, indica-ho a les notes.",
+    };
+  }
+
   await db.key.delete({ where: { id: parsed.data.id } });
   revalidatePath("/consergeria");
   return { success: true };

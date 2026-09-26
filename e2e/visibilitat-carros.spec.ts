@@ -10,6 +10,10 @@ async function visibility(page: Page, visible: boolean) {
   await expect(page.getByText("Carro actualitzat", { exact: true })).toBeVisible();
 }
 
+// Una sessió que no fa servir cap altra prova: totes comparteixen la base de
+// dades, i la 2a hora del dimarts ja la reserva `reserves-i-claus`.
+const freeSlot = (page: Page) => page.locator("tr", { hasText: "7a hora" }).locator("td").nth(2);
+
 test("oculta el carro, bloqueja reserves des de pantalles antigues i permet tornar-lo a mostrar", async ({ browser }) => {
   const { cartId, cartChromebooks, nextWeek } = readFixtures();
   const url = `/chromebooks/${cartId}?week=${nextWeek}`;
@@ -19,7 +23,7 @@ test("oculta el carro, bloqueja reserves des de pantalles antigues i permet torn
   const fixedPage = await pageAs(browser, "professor");
 
   await professor.goto(url);
-  await professor.locator("tr", { hasText: "2a hora" }).locator("td").nth(2).getByRole("button", { name: "Lliure", exact: true }).click();
+  await freeSlot(professor).getByRole("button", { name: "Lliure", exact: true }).click();
   await devicePage.goto(url);
   await devicePage.getByRole("button", { name: /^E2E-02 / }).click();
   await devicePage.getByRole("button", { name: "Reserva aquest equip" }).click();
@@ -57,11 +61,11 @@ test("oculta el carro, bloqueja reserves des de pantalles antigues i permet torn
 
   await professor.goto(`/chromebooks?dia=${nextWeek}&sessio=2&equips=0`);
   await expect(professor.locator(`a[href^="/chromebooks/${cartId}"]`)).toHaveCount(0);
-  await expect(professor.getByText("Carro E2E", { exact: true })).toHaveCount(0);
+  await expect(professor.getByText(/^Carro E2E( ·|$)/)).toHaveCount(0);
   for (const path of [`/chromebooks/${cartId}`, `/q/carro/${cartId}`, `/q/chromebook/${cartChromebooks["E2E-02"]}`]) {
     await professor.goto(path);
     await expect(professor.getByRole("heading", { name: /^(404|Aquesta pàgina no existeix)$/ })).toBeVisible();
-    await expect(professor.getByText("Carro E2E", { exact: true })).toHaveCount(0);
+    await expect(professor.getByText(/^Carro E2E( ·|$)/)).toHaveCount(0);
     await expect(professor.getByRole("button", { name: /Reserva/ })).toHaveCount(0);
   }
   await professor.goto("/incidencies/nova?tipus=carro");
@@ -74,9 +78,9 @@ test("oculta el carro, bloqueja reserves des de pantalles antigues i permet torn
   await expect(superAdmin.getByRole("heading", { name: "Carro E2E" })).toBeVisible();
 
   await admin.goto(url);
-  await admin.locator("tr", { hasText: "2a hora" }).locator("td").nth(2).getByRole("button", { name: "Lliure", exact: true }).click();
+  await freeSlot(admin).getByRole("button", { name: "Lliure", exact: true }).click();
   await admin.getByRole("button", { name: "Reserva aquesta sessió" }).click();
-  await expect(admin.locator("tr", { hasText: "2a hora" }).locator("td").nth(2)).toContainText("Coordinadora E2E");
+  await expect(freeSlot(admin)).toContainText("Coordinadora E2E");
   // Les reserves anteriors tampoc no s'han eliminat en ocultar-lo.
   await admin.goto(`/chromebooks/${cartId}`);
   await expect(admin.locator("table").getByText("Professor Un", { exact: true }).first()).toBeVisible();

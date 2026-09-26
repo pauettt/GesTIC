@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 export type DaySlot =
   | { kind: "free"; devicesOut: number }
   | { kind: "past" }
+  | { kind: "holiday" }
   | {
       kind: "reserved";
       id: string;
@@ -31,6 +32,8 @@ export type ScheduleDay = {
   label: string;
   shortLabel: string;
   dayOfMonth: number;
+  /** El nom del festiu, si ho és: aquell dia no es reserva. */
+  holiday: string | null;
   /** Una casella per sessió, en l'ordre de `periods`. */
   slots: DaySlot[];
 };
@@ -102,6 +105,12 @@ export function DaySchedule({
         ))}
       </div>
 
+      {day.holiday && (
+        <p className="rounded-md bg-muted/60 py-1.5 text-center text-sm text-muted-foreground">
+          Festiu · {day.holiday}
+        </p>
+      )}
+
       <ul className="flex flex-col gap-1.5" aria-label={`Sessions de ${day.label}`}>
         {periods.map((period, index) => {
           const slot = day.slots[index];
@@ -136,6 +145,8 @@ export function DaySchedule({
                   </div>
                 ) : slot.kind === "past" ? (
                   <div className="flex-1 px-3 py-2 text-sm text-muted-foreground/50">—</div>
+                ) : slot.kind === "holiday" ? (
+                  <div className="flex-1 rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">Festiu</div>
                 ) : (
                   <button
                     type="button"

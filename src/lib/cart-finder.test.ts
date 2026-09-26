@@ -53,3 +53,22 @@ describe("defaultCartSearch", () => {
     });
   });
 });
+
+describe("amb festius", () => {
+  const pilar = { id: "pilar", name: "Pilar", startDate: "2026-10-12", endDate: "2026-10-12" };
+
+  it("un dia festiu no es busca, i es diu per què", () => {
+    expect(parseCartSearch({ dia: "2026-10-12", sessio: "1" }, tuesdayTen, [pilar])).toEqual({
+      status: "invalid",
+      message: "Aquest dia és festiu (Pilar).",
+    });
+  });
+
+  it("proposa el primer dia lectiu després del festiu", () => {
+    // Divendres 9 a la tarda: el dilluns 12 és festiu, i per tant el dimarts 13.
+    expect(defaultCartSearch(zonedDateTime("2026-10-09", "16:00"), [pilar])).toEqual({
+      dateKey: "2026-10-13",
+      periodId: 1,
+    });
+  });
+});

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { db } from "@/lib/db";
 import { formatDate, madridDateKey } from "@/lib/date";
+import { getHolidays } from "@/lib/holidays-data";
 import { recurringReservationStatusLabels, recurringReservationStatusVariants } from "@/lib/labels";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import {
@@ -63,7 +64,13 @@ async function weeksTakenByOthers(recurring: {
   periodId: number;
   schoolYear: string;
 }) {
-  const weeks = occurrences(recurring.weekday, recurring.periodId, recurring.schoolYear);
+  const weeks = occurrences(
+    recurring.weekday,
+    recurring.periodId,
+    recurring.schoolYear,
+    new Date(),
+    await getHolidays(),
+  );
   const booked = await db.reservation.findMany({
     where: {
       cartId: recurring.cartId,

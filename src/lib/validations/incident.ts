@@ -19,7 +19,7 @@ export const createIncidentSchema = z
       .optional(),
     // Fotos fetes en el moment de reportar. Mateixa restricció que els adjunts:
     // només fitxers del nostre blob store.
-    photoUrls: z.array(z.string().refine(isBlobUrl, "La imatge no és vàlida")).max(2).optional(),
+    photoUrls: z.array(z.string().refine((value) => isBlobUrl(value), "La imatge no és vàlida")).max(2).optional(),
   })
   .refine(
     (data) => {
@@ -86,6 +86,6 @@ export const deleteIncidentSchema = z.object({
 
 export const attachIncidentFileSchema = z.object({
   incidentId: z.string().min(1),
-  url: z.string().refine(isBlobUrl, "L'enllaç del fitxer no és vàlid"),
+  url: z.string().refine((value) => isBlobUrl(value), "L'enllaç del fitxer no és vàlid"),
   filename: z.string().trim().min(1).max(255),
 });

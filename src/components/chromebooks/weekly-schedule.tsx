@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
 import { occupies, type DeviceBooking } from "@/lib/device-reservations";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 import {
   isPastPeriod,
   RECESS,
@@ -32,6 +33,7 @@ export function WeeklySchedule({
   weekStart,
   reservations,
   deviceBookings,
+  holidays,
   currentUserId,
   isAdmin,
 }: {
@@ -40,11 +42,16 @@ export function WeeklySchedule({
   reservations: Reservation[];
   /** Les reserves obertes d'equips sols del carro: aquelles hores hi faltaran. */
   deviceBookings: DeviceBooking[];
+  /** Els dies festius no es poden reservar. Les reserves que ja hi ha es veuen igual, per poder-les anul·lar. */
+  holidays: Holiday[];
   currentUserId: string;
   isAdmin: boolean;
 }) {
   const now = new Date();
-  const days = SCHOOL_WEEKDAYS.map((label, index) => ({ label, date: addDays(weekStart, index) }));
+  const days = SCHOOL_WEEKDAYS.map((label, index) => {
+    const date = addDays(weekStart, index);
+    return { label, date, holiday: holidayOn(madridDateKey(date), holidays) };
+  });
   const prevWeek = toDateParam(addDays(weekStart, -7));
   const nextWeek = toDateParam(addDays(weekStart, 7));
   const rangeLabel = `${formatShortDate(weekStart)} – ${formatShortDate(days[4].date)}`;
@@ -73,6 +80,7 @@ export function WeeklySchedule({
       label: day.label,
       shortLabel: SCHOOL_WEEKDAYS_SHORT[index],
       dayOfMonth: Number(dayKey.split("-")[2]),
+      holiday: day.holiday?.name ?? null,
       slots: SCHOOL_PERIODS.map((period) => {
         const reservation = findReservation(dayKey, period.start);
         const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
@@ -89,7 +97,8 @@ export function WeeklySchedule({
             devicesOut: out,
           };
         }
-        return isPast ? { kind: "past" as const } : { kind: "free" as const, devicesOut: out };
+        if (isPast) return { kind: "past" as const };
+        return day.holiday ? { kind: "holiday" as const } : { kind: "free" as const, devicesOut: out };
       }),
     };
   });
@@ -97,7 +106,7 @@ export function WeeklySchedule({
   const todayKey = madridDateKey(new Date());
   const initialDay =
     scheduleDays.find((day) => day.dayKey === todayKey) ??
-    scheduleDays.find((day) => day.slots.some((slot) => slot.kind !== "past")) ??
+    scheduleDays.find((day) => day.slots.some((slot) => slot.kind !== "past" && slot.kind !== "holiday")) ??
     scheduleDays[0];
 
   return (
@@ -147,6 +156,11 @@ export function WeeklySchedule({
                   <span className="text-muted-foreground">
                     {Number(madridDateKey(day.date).split("-")[2])}
                   </span>
+                  {day.holiday && (
+                    <span className="block truncate text-xs font-normal text-muted-foreground">
+                      Festiu · {day.holiday.name}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -180,6 +194,7 @@ export function WeeklySchedule({
                           reservation={reservation}
                           canCancel={canCancel(reservation)}
                           isPast={isPast}
+                          holiday={Boolean(day.holiday)}
                           devicesOut={isPast ? 0 : devicesOut(dayKey, period)}
                         />
                       </td>

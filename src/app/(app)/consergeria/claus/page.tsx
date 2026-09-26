@@ -15,7 +15,7 @@ export const metadata = { title: "Claus del centre" };
 export default async function ClausPage() {
   await requireKeyAccess();
 
-  const [keys, rawCarts] = await Promise.all([
+  const [keys, rawCarts, usedKeys] = await Promise.all([
     db.key.findMany({
       include: {
         cart: true,
@@ -24,7 +24,10 @@ export default async function ClausPage() {
       orderBy: { number: "asc" },
     }),
     db.cart.findMany({ select: { id: true, name: true, order: true } }),
+    // Les que tenen historial no s'esborren (vegeu `deleteKey`): el botó no hi surt.
+    db.keyLoan.findMany({ distinct: ["keyId"], select: { keyId: true } }),
   ]);
+  const withHistory = new Set(usedKeys.map((loan) => loan.keyId));
 
   const customOrder = rawCarts.some((c) => c.order !== null);
   const savedOrder = customOrder
@@ -43,7 +46,8 @@ export default async function ClausPage() {
             <h1 className="text-2xl font-semibold">Claus del centre</h1>
             <p className="text-muted-foreground">
               Aules, magatzems i carros de Chromebooks. Cada clau amb el seu número i les còpies que
-              n&apos;hi ha al clauer.
+              n&apos;hi ha al clauer. Les que ja s&apos;han deixat alguna vegada no s&apos;esborren,
+              perquè no se&apos;n perdi l&apos;historial.
             </p>
           </div>
           <KeyDialog carts={carts} />
@@ -105,12 +109,14 @@ export default async function ClausPage() {
                           </Button>
                         }
                       />
-                      <ConfirmDeleteButton
-                        action={deleteKey}
-                        input={{ id: key.id }}
-                        title={`Esborrar la clau ${key.number}?`}
-                        description="Es perd també l'historial de préstecs d'aquesta clau. No es pot desfer."
-                      />
+                      {!withHistory.has(key.id) && (
+                        <ConfirmDeleteButton
+                          action={deleteKey}
+                          input={{ id: key.id }}
+                          title={`Esborrar la clau ${key.number}?`}
+                          description="Encara no s'ha deixat mai. No es pot desfer."
+                        />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

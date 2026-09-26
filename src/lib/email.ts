@@ -1,5 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 
+import { recordEmailFailure } from "@/lib/email-failures";
+
 // Els correus surten pel Google Workspace del centre (SMTP amb contrasenya
 // d'aplicació), de manera que el professorat rep l'avís des d'una adreça del
 // centre que reconeix i no cal tocar cap registre DNS.
@@ -64,10 +66,11 @@ export async function sendEmail({
     return { sent: true };
   } catch (error) {
     console.error("[email] no s'ha pogut enviar:", error);
-    return {
-      sent: false,
-      reason: error instanceof Error ? error.message : "error desconegut",
-    };
+    const reason = error instanceof Error ? error.message : "error desconegut";
+    // Els avisos surten després de respondre: si no s'apunta enlloc, que el
+    // compte de correu hagi deixat de funcionar no ho veuria ningú.
+    await recordEmailFailure({ subject, recipients: recipients.length, reason });
+    return { sent: false, reason };
   }
 }
 

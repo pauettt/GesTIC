@@ -30,7 +30,8 @@ test("vista de llistat al menú dels carros per al professorat", async ({ browse
   const searchInput = professor.getByLabel("Filtra la llista de carros");
   await expect(searchInput).toBeVisible();
   await searchInput.fill("E2E");
-  await expect(professor.getByText("Carro E2E")).toBeVisible();
+  // Dins la taula: la llista del mòbil també el porta, amagada a l'ordinador.
+  await expect(professor.getByRole("row", { name: /Carro E2E · Aula E2E/ })).toBeVisible();
 
   // El menú ara ofereix tornar a la vista de targetes
   const cardsButton = professor.getByRole("link", { name: "Vista de targetes" });

@@ -81,7 +81,7 @@ BACKUP_DATABASE_URL="<DIRECT_URL del projecte de Supabase>" npm run db:backup
 
 Ha de ser l'adreça del **port 5432** (*Direct connection* o *Session pooler*), no la del 6543: aquella és el pooler en mode transacció, que no manté la sessió i dona problemes amb les consultes preparades. A Vercel, la del 5432 és `DIRECT_URL` i la del 6543 és `DATABASE_URL`.
 
-Deixa un JSON datat a `backups/` (fora del repositori) amb totes les taules menys les sessions i els testimonis, que caduquen i no serveixen per restaurar res. Sense `BACKUP_DATABASE_URL` copia la base de dades local, cosa que només serveix per comprovar que l'script va bé.
+Deixa un JSON datat a `backups/` (fora del repositori) amb totes les taules menys les sessions i els testimonis, que caduquen i no serveixen per restaurar res. Dels comptes de Google s'hi desa només el lligam amb l'usuari, sense els testimonis de Google: sense aquest lligam, en restaurar ningú no podria entrar. Sense `BACKUP_DATABASE_URL` copia la base de dades local, cosa que només serveix per comprovar que l'script va bé.
 
 Amb `BACKUP_DIR` el fitxer va directament on es digui, que és el que convé: una còpia al mateix ordinador no és una còpia de seguretat.
 
@@ -105,6 +105,32 @@ Abans cal tenir `BACKUP_DATABASE_URL` i `BACKUP_DIR` al `.env`: sense la primera
 Per provar-la sense esperar al dilluns, `launchctl kickstart -k gui/$(id -u)/com.gestic.backup`. El registre és a `~/Library/Logs/gestic-backup.log`, i per treure-la, `launchctl bootout gui/$(id -u)/com.gestic.backup`.
 
 Això depèn que el Mac estigui engegat. Si algun dia ha de ser independent del tot, el lloc natural és el NAS mateix (Task Scheduler del DSM), que no s'apaga.
+
+### Restaurar una còpia
+
+Per al dia que la base de dades de producció es perd o queda malmesa. `npm run db:restore` només escriu en una base de dades **buida**, i ho fa tot o res: si alguna cosa falla, no hi queda res a mitges.
+
+1. A Supabase, crea un projecte nou a la mateixa regió (Irlanda, `eu-west-1`, la mateixa que Vercel) i copia'n les dues adreces, com a *Base de dades* més amunt.
+2. Aplica-hi les migracions i activa-hi la RLS, des d'aquest ordinador:
+
+   ```bash
+   DIRECT_URL="<DIRECT_URL del projecte nou>" npx prisma migrate deploy
+   DIRECT_URL="<DIRECT_URL del projecte nou>" npx prisma db execute --file prisma/rls.sql
+   ```
+
+3. Restaura-hi la còpia més recent:
+
+   ```bash
+   RESTORE_DATABASE_URL="<DIRECT_URL del projecte nou>" npm run db:restore -- "<ruta de la còpia>.json"
+   ```
+
+   Diu quantes files ha posat de cada taula i s'atura si no quadren amb la còpia.
+4. A Vercel, canvia `DATABASE_URL` i `DIRECT_URL` per les del projecte nou i fes *Redeploy*.
+5. `VAULT_ENCRYPTION_KEY` ha de ser **la mateixa** d'abans: les contrasenyes del centre van xifrades a la còpia i, amb una altra clau, no es poden llegir.
+
+Les sessions no es copien: tothom haurà de tornar a entrar amb Google. Les còpies d'abans del 2026-09-26 no porten el lligam amb els comptes de Google, i amb elles no hi pot entrar ningú: fes servir sempre una de posterior.
+
+Es va provar el 2026-09-26: una còpia de la base de dades de les proves, restaurada en una de nova i tornada a copiar, va sortir idèntica a les 36 taules.
 
 ## Proves
 
@@ -133,6 +159,7 @@ npx playwright install chromium
 | `npm run db:migrate` | Crea una migració nova (`prisma migrate dev`), només contra `gestic_dev` |
 | `npm run db:seed`    | Carrega dades d'exemple a `gestic_dev`                          |
 | `npm run db:backup`  | Còpia de seguretat de les dades en JSON (vegeu *Còpies de seguretat*) |
+| `npm run db:restore` | Restaura una còpia en una base de dades buida (vegeu *Restaurar una còpia*) |
 | `npm run db:studio`  | Obre Prisma Studio                                              |
 
 ## Desplegament (Vercel)

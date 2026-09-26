@@ -1,4 +1,5 @@
 import { formatShortDate, madridDateKey, SCHOOL_TIME_ZONE, schoolYearOf, zonedDateTime } from "@/lib/date";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 import { getPeriodById, isPastPeriod, SCHOOL_WEEKDAYS } from "@/lib/schedule";
 
 /**
@@ -40,9 +41,16 @@ function isoWeekday(dateKey: string) {
 /**
  * Les setmanes que queden d'una reserva fixa: cada `weekday` (1 = dilluns) del
  * curs, a la sessió `periodId`, de l'1 de setembre —o d'avui, si ja ha
- * començat— al 30 de juny. Les sessions que ja han acabat no hi són.
+ * començat— al 30 de juny. Les sessions que ja han acabat no hi són, ni les
+ * que cauen en un festiu.
  */
-export function occurrences(weekday: number, periodId: number, schoolYear: string, now: Date = new Date()) {
+export function occurrences(
+  weekday: number,
+  periodId: number,
+  schoolYear: string,
+  now: Date = new Date(),
+  holidays: readonly Holiday[] = [],
+) {
   const period = getPeriodById(periodId);
   if (!period || weekday < 1 || weekday > 5) return [];
   const { firstDay, lastDay } = courseDays(schoolYear);
@@ -56,7 +64,7 @@ export function occurrences(weekday: number, periodId: number, schoolYear: strin
     dateKey = shiftKey(dateKey, 7)
   ) {
     const endDate = zonedDateTime(dateKey, period.end);
-    if (isPastPeriod(endDate, now)) continue;
+    if (isPastPeriod(endDate, now) || holidayOn(dateKey, holidays)) continue;
     result.push({ dateKey, startDate: zonedDateTime(dateKey, period.start), endDate });
   }
   return result;

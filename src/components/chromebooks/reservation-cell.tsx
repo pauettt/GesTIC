@@ -27,6 +27,7 @@ export function ReservationCell({
   reservation,
   canCancel,
   isPast,
+  holiday,
   devicesOut,
 }: {
   cartId: string;
@@ -37,6 +38,8 @@ export function ReservationCell({
   canCancel: boolean;
   /** Sessió que ja ha acabat: es mostra apagada i no es pot reservar. */
   isPast: boolean;
+  /** Dia festiu: no hi ha classe i no es pot reservar. */
+  holiday: boolean;
   /** Quants equips no hi seran perquè algú els té reservats a part. */
   devicesOut: number;
 }) {
@@ -73,6 +76,10 @@ export function ReservationCell({
         —
       </div>
     );
+  }
+
+  if (holiday) {
+    return <div className="w-full rounded-md bg-muted/60 p-1.5 text-center text-muted-foreground">Festiu</div>;
   }
 
   return (

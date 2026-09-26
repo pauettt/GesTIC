@@ -14,7 +14,7 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Queden sis coses:
+Queden set coses:
 
 1. **Importar els carros i els Chromebooks**: tot d'un cop amb *Carros →
    Importa*, o carro a carro des de la pàgina de cada carro (*Importa des d'un
@@ -37,7 +37,11 @@ Queden sis coses:
    de `gestic_dev` són inventades.
 5. **Treure les dades d'exemple de producció** (§29), amb una còpia abans,
    quan s'acabi de provar i abans del cartell.
-6. **Penjar el cartell a la sala de professors** un cop desplegat:
+6. **Entrar el calendari de festius del curs** (*Panell → Festius i vacances*,
+   §33): Nadal, Setmana Santa, les festes locals i els dies de lliure
+   disposició. Millor abans d'aprovar reserves fixes, encara que les aprovades
+   després també se'ls salten.
+7. **Penjar el cartell a la sala de professors** un cop desplegat:
    *Administració → Obre el cartell*. Abans, afegir gesTIC a la pantalla d'inici
    en un Android i en un iPhone i entrar-hi des de la icona. A l'iPhone,
    l'aplicació instal·lada no comparteix la sessió amb Safari: s'hi entra un cop
@@ -104,19 +108,6 @@ de debò: les dades d'exemple només s'hi pengen.
 compte real: aquelles reserves, incidències i consultes no les treu l'script, i
 s'han de repassar a mà. Val la pena fer una còpia (`npm run db:backup`) abans de
 la neteja.
-
-### 32. Vuit proves e2e en vermell
-Comprovat el 2026-09-26: fallen igual al commit `47b12eb`, abans de l'auditoria
-de Gemini, i per tant venen dels canvis del 23 al 25 de setembre als carros i
-a les claus. Les proves no s'han posat al dia, i també pot ser que alguna
-d'aquelles pantalles s'hagi trencat de debò. Algunes busquen el títol «Carro E2E»,
-que ara porta l'aula al darrere (`259dcc5`). D'altres troben carros creats per
-proves anteriors. La de claus espera «Totes les claus són al taulell.»
-després de tornar-ne una. Fallen:
-`inventari` (carros per edifici), `ordre-carros`, les tres d'`ordre-chromebooks`,
-`reserves-i-claus` (entrega de la clau), `visibilitat-carros` i
-`vista-llistat-carros`. Mentre el conjunt sigui vermell, un error nou no es
-notaria: cal arreglar-ho abans del proper canvi gran.
 
 ---
 
@@ -246,6 +237,25 @@ del Workspace. El 2026-09-25 es va provar de permetre un @gmail.com a
 amb més permisos del control del centre. S'ha tret: a gesTIC només hi entren
 comptes del Workspace.
 
+### 33. Festius i vacances: què fan i què no
+Decidit el 2026-09-26, quan la coordinació va passar a entrar el calendari
+escolar (*Panell → Festius i vacances*). Fins llavors les reserves fixes
+funcionaven sense festius, un criteri que no s'havia discutit. Aquells dies:
+- no es poden reservar carros ni equips sols, i la graella els marca «Festiu»;
+- les reserves fixes se'ls salten, tant les que s'aproven després com les que
+  ja hi havia: en entrar un festiu, les setmanes que l'aplicació hi havia posat
+  s'esborren, i si el festiu s'esborra, hi tornen (menys les que el titular
+  havia alliberat o que ja té algú altre);
+- no surt cap recordatori per correu, i els préstecs d'inventari, que van els
+  dilluns, esperen al dilluns següent si aquell és festiu.
+
+No hi entren les **cites** amb la coordinació, perquè un dia sense alumnes pot
+ser de feina. Tampoc les **reserves puntuals** que ja hi havia: les va fer algú
+a propòsit, i en entrar el festiu la coordinació veu quantes n'hi ha.
+
+Com a molt 31 dies seguits per festiu, perquè un any mal escrit no s'endugui
+mig curs.
+
 ---
 
 ## ✅ Fet
@@ -274,6 +284,37 @@ comptes del Workspace.
 - **Les entrades rebutjades deixen rastre** als logs de Vercel
   (`[auth] entrada rebutjada (motiu): correu`). Abans, «no puc entrar» no es
   podia diagnosticar sense provar-ho.
+- **Auditoria pròpia de tota l'aplicació**, i tot el que en va sortir, arreglat:
+  - **Les còpies es poden restaurar** (`npm run db:restore`, README *Restaurar
+    una còpia*). La còpia no portava els comptes de Google, i en restaurar-la
+    ningú no hauria pogut entrar (Auth.js ho rebutja: `OAuthAccountNotLinked`).
+    Ara porta el lligam amb l'usuari, sense els testimonis de Google. S'ha
+    provat de cap a cap: una còpia restaurada en una base de dades nova i
+    tornada a copiar surt idèntica a les 36 taules. La primera còpia setmanal
+    que es podrà restaurar sencera és la del dilluns 2026-09-28.
+  - **Els correus que no surten s'avisen**: cada fallada queda apuntada
+    (`EmailFailure`, migració `20260926212336_correus_fallits`) i surt en
+    vermell al *Panell* i a *Administració* fins que la coordinació la dona
+    per revisada. Abans, si el compte de correu del servidor deixava de
+    funcionar, no se n'assabentava ningú.
+  - **Les proves e2e tornen a estar en verd** (69 de 69). Les vuit que fallaven
+    eren de les proves, no de l'aplicació: textos que havien canviat, la
+    tornada de claus que ara demana el conserge, i proves que es trepitjaven
+    (una donava de baixa un equip que una altra necessitava, dues reservaven la
+    mateixa sessió). N'hi ha dues de noves: festius i correus fallits.
+  - **Festius i vacances** (§33), amb la migració `20260926213049_festius`.
+  - **Una clau amb historial ja no es pot esborrar**: s'enduia tots els seus
+    préstecs, i ho podia fer el compte compartit de consergeria.
+  - **Errors inesperats en reservar un carro o demanar una cita**: ja no
+    s'ensenya el missatge de la base de dades, i queden al log.
+  - **«Torna-ho a provar» de la pàgina d'error sí que ho torna a provar**:
+    cridava `reset`, que torna a pintar el mateix error sense demanar la pàgina
+    al servidor (a Next 16.3, `retry`). I hi ha pàgina d'error global, en
+    català, per quan falla el layout arrel o la pantalla d'entrada.
+  - **Les fotos i adjunts només poden ser del nostre blob store**: abans valia
+    qualsevol de Vercel Blob.
+  - `npm run lint` ja no falla quan les proves e2e deixen traces a
+    `playwright-report/`.
 
 ### 2026-09-23
 

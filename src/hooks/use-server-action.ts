@@ -5,12 +5,14 @@ import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 
 type ActionResult = { success: true } | { success: false; error: string };
+type Success<TResult> = Extract<TResult, { success: true }>;
 
-export function useServerAction<TInput>(
-  action: (input: TInput) => Promise<ActionResult>,
+export function useServerAction<TInput, TResult extends ActionResult = ActionResult>(
+  action: (input: TInput) => Promise<TResult>,
   options?: {
     onSuccess?: () => void;
-    successMessage?: string | ((input: TInput) => string);
+    /** Amb una funció, el missatge pot dir què ha fet l'acció (p. ex. quantes n'ha tocat). */
+    successMessage?: string | ((input: TInput, result: Success<TResult>) => string);
     /**
      * Per al `set` d'un `useOptimistic`. Es crida dins la transició i abans
      * d'anar al servidor, que és on ha de ser perquè el valor es vegi a l'instant
@@ -29,7 +31,7 @@ export function useServerAction<TInput>(
         if (result.success) {
           const message =
             typeof options?.successMessage === "function"
-              ? options.successMessage(input)
+              ? options.successMessage(input, result as Success<TResult>)
               : options?.successMessage;
           if (message) toast.success(message);
           options?.onSuccess?.();

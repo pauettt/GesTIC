@@ -48,7 +48,9 @@ test("consergeria entrega la clau d'una reserva d'avui i el professor la veu a l
   await expect(professor.getByText("Claus que tens")).toBeVisible();
   await expect(professor.getByText("C-E2E — Clau del carro")).toBeVisible();
 
+  // Des del 2026-09-25 la tornada diu quin conserge la recull: triar-lo ja la registra.
   await concierge.getByRole("button", { name: "Tornada" }).click();
+  await concierge.getByRole("dialog").getByRole("button", { name: "Conserge E2E" }).click();
   await expect(concierge.getByText("Totes les claus són al taulell.")).toBeVisible();
 
   await professor.reload();

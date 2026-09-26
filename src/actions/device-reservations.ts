@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
 import { zonedDateTime } from "@/lib/date";
 import { bookingSpanLabel, isHeld, isOverdue, occupyingWhere, sessionSpan } from "@/lib/device-reservations";
+import { holidayOn, holidayRefusal } from "@/lib/holidays";
+import { getHolidays } from "@/lib/holidays-data";
 import { isAdmin, requireUser } from "@/lib/permissions";
 import { isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { createDeviceReservationSchema, deviceReservationIdSchema } from "@/lib/validations/chromebooks";
@@ -51,6 +53,8 @@ export async function createDeviceReservation(input: unknown): Promise<ActionRes
   if (!isSchoolDay(date)) {
     return { success: false, error: "Només es pot reservar de dilluns a divendres" };
   }
+  const holiday = holidayOn(date, await getHolidays());
+  if (holiday) return { success: false, error: holidayRefusal(holiday) };
   const span = sessionSpan(date, fromPeriodId, toPeriodId);
   if (!span) return { success: false, error: "L'última sessió no pot ser abans de la primera" };
   // Com al carro, la sessió en curs sí que es pot reservar: el cas real és

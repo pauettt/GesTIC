@@ -10,6 +10,7 @@ import {
   notifyRecurringRequested,
 } from "@/lib/notifications";
 import { runAfterResponse } from "@/lib/background";
+import { getHolidays } from "@/lib/holidays-data";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { occurrences, recurringCourse, shortDay } from "@/lib/recurring-reservations";
@@ -53,7 +54,7 @@ export async function requestRecurringReservation(input: unknown): Promise<Actio
   if (limited) return { success: false, error: limited };
 
   const { schoolYear } = recurringCourse();
-  if (occurrences(weekday, periodId, schoolYear).length === 0) {
+  if (occurrences(weekday, periodId, schoolYear, new Date(), await getHolidays()).length === 0) {
     return { success: false, error: "Aquest curs ja no queda cap setmana amb aquesta sessió" };
   }
 
@@ -119,6 +120,8 @@ export async function decideRecurringReservation(input: unknown): Promise<Action
   }
 
   const { cartId, userId, weekday, periodId, schoolYear, purpose } = recurring;
+  // Els festius no s'hi reserven: aquells dies no hi ha classe.
+  const holidays = await getHolidays();
   let outcome: { weeks: number; skipped: string[] };
   try {
     outcome = await db.$transaction(async (tx) => {
@@ -139,7 +142,7 @@ export async function decideRecurringReservation(input: unknown): Promise<Action
         );
       }
 
-      const weeks = occurrences(weekday, periodId, schoolYear);
+      const weeks = occurrences(weekday, periodId, schoolYear, new Date(), holidays);
       if (weeks.length === 0) throw new RecurringRefused("Aquest curs ja no queda cap setmana amb aquesta sessió");
 
       const booked = await tx.reservation.findMany({

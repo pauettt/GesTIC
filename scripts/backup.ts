@@ -24,12 +24,22 @@ import { Pool } from "pg";
  * mateix ordinador que es fa malbé o es perd no és una còpia de seguretat.
  *
  * Les taules surten del propi esquema de Prisma: una taula nova hi entra sola.
- * Només llegeix; no toca res.
+ * Només llegeix; no toca res. Es restaura amb `npm run db:restore` (vegeu
+ * `scripts/restore.ts` i el README).
  */
 
 // Sessions i testimonis no es copien: caduquen, no serveixen per restaurar res
 // i són el més sensible que hi ha a la base de dades.
-const NO_ES_COPIEN = new Set(["Session", "Account", "VerificationToken"]);
+const NO_ES_COPIEN = new Set(["Session", "VerificationToken"]);
+
+// Dels comptes de Google, només el lligam amb l'usuari. Sense aquestes files,
+// una còpia restaurada deixaria tothom fora: Auth.js no deixa entrar un compte
+// de Google si el seu correu ja és d'un usuari que no el té lligat
+// (OAuthAccountNotLinked). Els testimonis de Google no calen per entrar i no
+// han de sortir mai de la base de dades.
+const NOMES_AQUESTS_CAMPS: Record<string, Record<string, true>> = {
+  Account: { id: true, userId: true, type: true, provider: true, providerAccountId: true },
+};
 
 const url = process.env.BACKUP_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!url) {
@@ -54,7 +64,10 @@ try {
 const pool = new Pool({ connectionString: url });
 const db = new PrismaClient({ adapter: new PrismaPg(pool) });
 // Els models del client es diuen com el model amb la primera lletra minúscula.
-const taules = db as unknown as Record<string, { findMany: () => Promise<unknown[]> }>;
+const taules = db as unknown as Record<
+  string,
+  { findMany: (args?: { select: Record<string, true> }) => Promise<unknown[]> }
+>;
 
 async function main() {
   console.info(`Copiant de ${origen}…`);
@@ -63,7 +76,10 @@ async function main() {
   const recompte: Record<string, number> = {};
   for (const model of Prisma.dmmf.datamodel.models) {
     if (NO_ES_COPIEN.has(model.name)) continue;
-    const files = await taules[model.name[0].toLowerCase() + model.name.slice(1)].findMany();
+    const camps = NOMES_AQUESTS_CAMPS[model.name];
+    const files = await taules[model.name[0].toLowerCase() + model.name.slice(1)].findMany(
+      camps ? { select: camps } : undefined,
+    );
     dades[model.name] = files;
     recompte[model.name] = files.length;
   }

@@ -55,6 +55,17 @@ describe("occurrences", () => {
     expect(occurrences(6, 3, "2026-2027")).toEqual([]);
     expect(occurrences(2, 99, "2026-2027")).toEqual([]);
   });
+
+  it("se salta els festius: per Nadal no hi ha classe", () => {
+    const now = zonedDateTime("2026-09-22", "09:00");
+    const nadal = { id: "nadal", name: "Nadal", startDate: "2026-12-23", endDate: "2027-01-07" };
+    const weeks = occurrences(2, 3, "2026-2027", now, [nadal]).map((week) => week.dateKey);
+    expect(weeks).toContain("2026-12-22");
+    expect(weeks).not.toContain("2026-12-29");
+    expect(weeks).not.toContain("2027-01-05");
+    expect(weeks).toContain("2027-01-12");
+    expect(weeks).toHaveLength(39);
+  });
 });
 
 describe("com es diu", () => {
