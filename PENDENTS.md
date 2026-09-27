@@ -14,7 +14,7 @@ el que en quedava obert i era codi.
 
 ## 🎯 Per on seguir
 
-Queden set coses:
+Queden vuit coses:
 
 1. **Importar els carros i els Chromebooks**: tot d'un cop amb *Carros →
    Importa*, o carro a carro des de la pàgina de cada carro (*Importa des d'un
@@ -39,9 +39,12 @@ Queden set coses:
    quan s'acabi de provar i abans del cartell.
 6. **Entrar el calendari de festius del curs** (*Panell → Festius i vacances*,
    §33): Nadal, Setmana Santa, les festes locals i els dies de lliure
-   disposició. Millor abans d'aprovar reserves fixes, encara que les aprovades
-   després també se'ls salten.
-7. **Penjar el cartell a la sala de professors** un cop desplegat:
+   disposició. Millor abans d'aprovar reserves fixes i de marcar les hores
+   fixes de cites, encara que les d'abans també se'ls salten.
+7. **Marcar les hores fixes de cites del curs** (*Cites → Hores fixes*, §34),
+   amb el compte de coordinació TIC: les hores lliures de l'horari. S'obren
+   cada setmana fins al 30 de juny.
+8. **Penjar el cartell a la sala de professors** un cop desplegat:
    *Administració → Obre el cartell*. Abans, afegir gesTIC a la pantalla d'inici
    en un Android i en un iPhone i entrar-hi des de la icona. A l'iPhone,
    l'aplicació instal·lada no comparteix la sessió amb Safari: s'hi entra un cop
@@ -249,18 +252,53 @@ funcionaven sense festius, un criteri que no s'havia discutit. Aquells dies:
 - no surt cap recordatori per correu, i els préstecs d'inventari, que van els
   dilluns, esperen al dilluns següent si aquell és festiu.
 
-No hi entren les **cites** amb la coordinació, perquè un dia sense alumnes pot
-ser de feina. Tampoc les **reserves puntuals** que ja hi havia: les va fer algú
-a propòsit, i en entrar el festiu la coordinació veu quantes n'hi ha.
+Les **hores fixes de cites** (§34) també se'ls salten, des del 2026-09-27, igual
+que les reserves fixes: en entrar un festiu es tanquen les d'aquells dies que no
+tenen cita, i si s'esborra, es tornen a obrir. Les cites ja demanades es queden
+(el missatge diu quantes n'hi ha, per si s'han de cancel·lar), i una hora oberta
+a mà s'hi pot obrir igualment, perquè un dia sense alumnes pot ser de feina.
+Tampoc no hi entren les **reserves puntuals** que ja hi havia: les va fer algú a
+propòsit, i en entrar el festiu la coordinació veu quantes n'hi ha.
 
 Com a molt 31 dies seguits per festiu, perquè un any mal escrit no s'endugui
 mig curs.
+
+### 34. Cites: una sola agenda, la del superadministrador, amb hores fixes
+Decidit el 2026-09-27. **Només el superadministrador** —el compte de
+coordinació TIC (§31)— obre hores a *Cites*; la resta de la coordinació hi veu
+qui té cada cita i la pot cancel·lar, però no n'obre. Per això n'hi ha prou amb
+una cita per hora (`AppointmentSlot.startDate` és únic).
+
+Les hores s'obren **per a tot el curs**: a *Hores fixes* es marca un dia i una
+sessió, i s'obre cada setmana fins al 30 de juny, menys els festius (§33). El
+curs surt de la data, com a les reserves fixes: al juliol i a l'agost, les que
+es marquen van al curs següent, i cada curs es tornen a marcar, perquè l'horari
+canvia. Cada setmana és una hora normal (`availabilityId`), així que:
+- un dia concret es tanca a la graella, sense tocar l'hora fixa, i una hora de
+  més s'hi obre a mà;
+- si l'horari canvia a mig curs, treure una hora fixa tanca les setmanes que
+  queden sense cita; les que en tenen es queden, i el missatge diu quins dies
+  són perquè es cancel·lin a part si cal;
+- una hora oberta a mà no passa mai a ser de l'hora fixa, i treure l'hora fixa
+  no la toca.
+
+Límit conegut: una setmana tancada a mà no deixa rastre. Si cau en un festiu
+que després s'esborra, es torna a obrir amb la resta. Fa falta tancar-la,
+entrar el festiu i esborrar-lo, i es resol tancant-la un altre cop.
 
 ---
 
 ## ✅ Fet
 
 ### 2026-09-27
+
+- **Hores fixes de cites** (*Cites → Hores fixes*, §34), migració
+  `20260927130212_hores_fixes_cites`. El superadministrador marca les hores que
+  té lliures cada setmana i s'obren fins al 30 de juny, menys els festius; abans
+  s'havien d'obrir a mà setmana a setmana. Obrir i tancar hores passa a ser només
+  seu. Els festius també tanquen i tornen a obrir aquestes hores (§33), i la
+  graella de *Cites* els marca a la capçalera. La graella té les columnes
+  iguals, com la dels carros: una cita amb un motiu llarg ja no eixampla el dia.
 
 - **Les claus s'arxiven** (*Consergeria → Gestiona les claus → Arxiva*),
   migració `20260927052707_claus_arxivades`. Una clau que ja s'ha deixat alguna

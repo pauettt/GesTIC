@@ -95,8 +95,11 @@ export async function purgeTestData(): Promise<ActionResult> {
     .map((slot) => slot.id);
 
   // La resta cau en cascada amb l'usuari (vegeu les relacions a schema.prisma).
+  // Les hores fixes que van marcar se'n van amb les seves hores: sense, un
+  // festiu esborrat les tornaria a obrir sense ningú al darrere.
   await db.$transaction([
     db.appointmentSlot.deleteMany({ where: { id: { in: emptySlotIds } } }),
+    db.appointmentAvailability.deleteMany({ where: { createdById: { in: userIds } } }),
     db.user.deleteMany({ where: { id: { in: userIds } } }),
   ]);
 

@@ -70,6 +70,7 @@ model User {
   receivedStudentDevices  StudentDeviceRequest[] @relation("StudentDeviceReceiver")
   appointments            Appointment[]
   openedAppointmentSlots  AppointmentSlot[]      @relation("AppointmentSlotOpener")
+  appointmentAvailability AppointmentAvailability[]
 }
 
 /**
@@ -486,8 +487,9 @@ model RecurringReservation {
 
 /// Festius i vacances del calendari escolar, que la coordinació entra cada curs.
 /// Aquells dies no hi ha classe: no es reserven carros ni equips, les reserves
-/// fixes se'ls salten i no surt cap recordatori per correu. Les cites amb la
-/// coordinació no hi entren: un dia sense alumnes pot ser de feina.
+/// fixes i les hores fixes de cites se'ls salten i no surt cap recordatori per
+/// correu. Una hora de cita oberta a mà sí que s'hi pot obrir: un dia sense
+/// alumnes pot ser de feina.
 ///
 /// Les dates són "YYYY-MM-DD", el dia a Espanya, com les altres dates sense hora
 /// de l'aplicació; `endDate` és l'últim dia festiu, inclòs.
@@ -965,25 +967,61 @@ model KeyLoan {
 // ---------------------------------------------------------------------------
 
 /**
- * Hora que la coordinació TIC obre de la seva disponibilitat perquè algú del
- * claustre hi demani cita. Es marquen una per una damunt la graella de l'horari
- * del centre: la gràcia és justament que només hi siguin les hores en què la
- * coordinació hi pot ser, no totes.
+ * Hora que el superadministrador —el compte de coordinació TIC— obre perquè algú
+ * del claustre hi demani cita. La gràcia és justament que només hi siguin les
+ * hores en què la coordinació hi pot ser, no totes. La majoria surten d'una hora
+ * fixa (`availabilityId`); les de fora, s'han obert a mà damunt la graella.
  * `startDate`/`endDate` surten de combinar el dia amb una sessió de
  * `SCHOOL_PERIODS`, igual que les reserves de carro. `startDate` és únic: una
  * hora, una cita.
  */
 model AppointmentSlot {
-  id         String   @id @default(cuid())
-  startDate  DateTime @unique
-  endDate    DateTime
-  // Qui de coordinació l'ha obert. A coordinació hi som tres, i qui demana
-  // l'hora ha de saber amb qui la té.
-  openedById String?
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  startDate      DateTime @unique
+  endDate        DateTime
+  // Qui l'ha obert: qui demana l'hora ha de saber amb qui la té, i és a qui
+  // arriben els avisos.
+  openedById     String?
+  // L'hora fixa d'on surt. Buit si s'ha obert a mà, o si l'hora fixa s'ha tret
+  // i aquesta setmana ja tenia cita.
+  availabilityId String?
+  createdAt      DateTime @default(now())
 
-  openedBy    User?        @relation("AppointmentSlotOpener", fields: [openedById], references: [id], onDelete: SetNull)
-  appointment Appointment?
+  openedBy     User?                    @relation("AppointmentSlotOpener", fields: [openedById], references: [id], onDelete: SetNull)
+  availability AppointmentAvailability? @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
+  appointment  Appointment?
+
+  @@index([availabilityId])
+}
+
+/**
+ * Hora fixa de l'agenda de cites: el mateix dia de la setmana i la mateixa
+ * sessió, oberta cada setmana d'un curs fins al 30 de juny. La disponibilitat de
+ * la coordinació surt del seu horari, que és el mateix tot el curs, i obrir-la
+ * setmana a setmana era feina repetida i setmanes que s'oblidaven.
+ *
+ * En marcar-la es crea un `AppointmentSlot` normal per a cada setmana que queda,
+ * menys els festius: demanar, cancel·lar i avisar funcionen sense cap cas
+ * especial, i cada setmana es pot tancar sola. Treure-la esborra les setmanes
+ * que queden sense cita; les que ja en tenen es queden, i s'han de cancel·lar a
+ * part. No se'n guarda historial: és l'horari de qui les obre, no una petició.
+ *
+ * `weekday` és 1 (dilluns) a 5 (divendres) i `periodId`, una sessió de
+ * `SCHOOL_PERIODS`. `schoolYear` és el curs, «2026-2027», i surt de la data com
+ * a les reserves fixes: cada curs es tornen a marcar, perquè l'horari canvia.
+ */
+model AppointmentAvailability {
+  id          String   @id @default(cuid())
+  weekday     Int
+  periodId    Int
+  schoolYear  String
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  slots     AppointmentSlot[]
+
+  @@unique([weekday, periodId, schoolYear])
 }
 
 /**

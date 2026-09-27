@@ -29,6 +29,13 @@ const oneOffReservations = (count: number) =>
   count === 1
     ? "hi ha 1 reserva puntual aquells dies, que es manté"
     : `hi ha ${count} reserves puntuals aquells dies, que es mantenen`;
+/** «3 hores de cites tancades», «1 hora de cites tornada a obrir». */
+const appointmentHours = (count: number, singular: string, plural: string) =>
+  count === 1 ? `1 hora de cites ${singular}` : `${count} hores de cites ${plural}`;
+const keptAppointments = (count: number) =>
+  count === 1
+    ? "hi ha 1 cita aquells dies, que es manté: cancel·la-la a Cites si cal"
+    : `hi ha ${count} cites aquells dies, que es mantenen: cancel·la-les a Cites si cal`;
 
 /**
  * El calendari de festius del curs: la coordinació l'entra un cop, quan surt el
@@ -48,11 +55,13 @@ export function HolidaysDialog({ holidays }: { holidays: Holiday[] }) {
   });
 
   const { run, isPending } = useServerAction(createHoliday, {
-    successMessage: (_input, { freed, oneOff }) =>
+    successMessage: (_input, { freed, oneOff, closedHours, appointments }) =>
       [
         "Festiu desat",
         freed > 0 && fixedSessions(freed, "alliberada", "alliberades"),
         oneOff > 0 && oneOffReservations(oneOff),
+        closedHours > 0 && appointmentHours(closedHours, "tancada", "tancades"),
+        appointments > 0 && keptAppointments(appointments),
       ]
         .filter(Boolean)
         .join(" · "),
@@ -74,8 +83,8 @@ export function HolidaysDialog({ holidays }: { holidays: Holiday[] }) {
           <DialogTitle>Festius i vacances</DialogTitle>
           <DialogDescription>
             Aquells dies no hi ha classe: no es poden reservar carros ni equips, les reserves fixes
-            se&apos;ls salten i no surt cap recordatori per correu. Les cites amb la coordinació no
-            hi entren.
+            i les hores fixes de cites se&apos;ls salten i no surt cap recordatori per correu. Les
+            cites que ja estiguin demanades es mantenen.
           </DialogDescription>
         </DialogHeader>
 
@@ -96,11 +105,15 @@ export function HolidaysDialog({ holidays }: { holidays: Holiday[] }) {
                   input={{ id: holiday.id }}
                   label={`Esborra ${holiday.name}`}
                   title={`Esborrar «${holiday.name}»?`}
-                  description="Aquells dies tornaran a ser lectius, i les reserves fixes que hi queien s'hi tornaran a posar si la sessió encara és lliure."
-                  successMessage={(_input, { restored }) =>
-                    restored > 0
-                      ? `Festiu esborrat · ${fixedSessions(restored, "tornada a posar", "tornades a posar")}`
-                      : "Festiu esborrat"
+                  description="Aquells dies tornaran a ser lectius: les reserves fixes que hi queien s'hi tornaran a posar si la sessió encara és lliure, i les hores fixes de cites es tornaran a obrir."
+                  successMessage={(_input, { restored, reopened }) =>
+                    [
+                      "Festiu esborrat",
+                      restored > 0 && fixedSessions(restored, "tornada a posar", "tornades a posar"),
+                      reopened > 0 && appointmentHours(reopened, "tornada a obrir", "tornades a obrir"),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
                   }
                 />
               </li>

@@ -1,8 +1,11 @@
 import { db } from "@/lib/db";
 import { addDays, formatDateTimeFull, startOfWeek } from "@/lib/date";
+import { getHolidays } from "@/lib/holidays-data";
+import { courseEndLabel, recurringCourse } from "@/lib/recurring-reservations";
 import { defaultWeekStart } from "@/lib/schedule";
-import { isAdmin, requireUser } from "@/lib/permissions";
+import { isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
 import { AppointmentWeek } from "@/components/appointments/appointment-week";
+import { AvailabilityDialog } from "@/components/appointments/availability-dialog";
 import { CancelAppointmentButton } from "@/components/appointments/cancel-appointment-button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -19,15 +22,21 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
     requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
   const weekEnd = addDays(weekStart, 7);
 
+  // L'agenda és una i és del superadministrador —el compte de coordinació TIC—:
+  // només aquest compte hi obre hores. La resta de la coordinació hi veu qui té
+  // cada cita i la pot cancel·lar, com fins ara.
+  const canOpen = isSuperAdmin(user.role);
   const canManage = isAdmin(user.role);
   const now = new Date();
+  const course = recurringCourse(now);
 
-  const [slots, upcoming] = await Promise.all([
+  const [slots, upcoming, holidays, fixedHours] = await Promise.all([
     db.appointmentSlot.findMany({
       where: { startDate: { gte: weekStart, lt: weekEnd } },
       select: {
         id: true,
         startDate: true,
+        availabilityId: true,
         openedBy: { select: { name: true, email: true } },
         appointment: {
           select: {
@@ -56,6 +65,13 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
       orderBy: { slot: { startDate: "asc" } },
       take: 10,
     }),
+    getHolidays(),
+    canOpen
+      ? db.appointmentAvailability.findMany({
+          where: { schoolYear: course.schoolYear },
+          select: { id: true, weekday: true, periodId: true },
+        })
+      : [],
   ]);
 
   const booked = slots.filter((slot) => slot.appointment).length;
@@ -97,12 +113,21 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
         </div>
       )}
 
-      {canManage && (
-        <p className="text-sm text-muted-foreground">
-          Clica una hora per obrir-la, i torna-hi per tancar-la. Al professorat només li surten les
-          obertes, i cada hora oberta és una cita. Aquesta setmana n&apos;hi ha {slots.length}{" "}
-          d&apos;obertes i {booked} amb cita.
-        </p>
+      {canOpen && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Les <strong className="font-medium text-foreground">hores fixes</strong> s&apos;obren cada
+            setmana fins al 30 de juny. A la graella, clica una hora per obrir-la només aquesta
+            setmana, i una d&apos;oberta per tancar-la. Al professorat només li surten les obertes, i
+            cada hora oberta és una cita. Aquesta setmana n&apos;hi ha {slots.length} d&apos;obertes i{" "}
+            {booked} amb cita.
+          </p>
+          <AvailabilityDialog
+            fixedHours={fixedHours}
+            schoolYear={course.schoolYear}
+            courseEnd={courseEndLabel(course.schoolYear)}
+          />
+        </div>
       )}
 
       <AppointmentWeek
@@ -118,6 +143,7 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
           return {
             id: slot.id,
             startDate: slot.startDate,
+            fixed: slot.availabilityId !== null,
             openedByName: slot.openedBy ? (slot.openedBy.name ?? slot.openedBy.email) : null,
             appointment: appointment
               ? {
@@ -129,10 +155,12 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
               : null,
           };
         })}
+        holidays={holidays}
+        canOpen={canOpen}
         canManage={canManage}
       />
 
-      {slots.length === 0 && !canManage && (
+      {slots.length === 0 && !canOpen && (
         <p className="text-sm text-muted-foreground">
           Aquesta setmana la coordinació no ha obert cap hora. Mira les setmanes següents.
         </p>

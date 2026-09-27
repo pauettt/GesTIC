@@ -16,6 +16,8 @@ import type { SchoolPeriod } from "@/lib/schedule";
 export type SlotCellSlot = {
   id: string;
   openedByName: string | null;
+  /** Surt d'una hora fixa: tancar-la només tanca aquesta setmana. */
+  fixed: boolean;
   /**
    * La cita de l'hora. Qui la té i per a què només hi van si qui mira és la
    * coordinació o la mateixa persona: la resta del claustre veu que l'hora està
@@ -32,14 +34,16 @@ export type SlotCellSlot = {
 
 /**
  * Una casella de la graella. Té tres estats —tancada, oberta i lliure, i amb
- * cita— i el que se'n pot fer depèn de qui mira: la coordinació obre i tanca
- * hores, i tothom del claustre hi pot demanar cita.
+ * cita— i el que se'n pot fer depèn de qui mira: el superadministrador obre i
+ * tanca hores, la coordinació pot cancel·lar qualsevol cita, i tothom del
+ * claustre hi pot demanar cita.
  */
 export function SlotCell({
   dayKey,
   dayLabel,
   period,
   slot,
+  canOpen,
   canManage,
   isPast,
 }: {
@@ -47,7 +51,9 @@ export function SlotCell({
   dayLabel: string;
   period: SchoolPeriod;
   slot?: SlotCellSlot;
-  /** Coordinació TIC: obre i tanca hores. */
+  /** Superadministrador: obre i tanca hores. L'agenda és seva. */
+  canOpen: boolean;
+  /** Coordinació TIC: cancel·la qualsevol cita. */
   canManage: boolean;
   /** Hora que ja ha acabat: es mostra apagada i no s'hi pot fer res. */
   isPast: boolean;
@@ -95,10 +101,9 @@ export function SlotCell({
     );
   }
 
-  // Hora que la coordinació no ha obert: no hi ha res a fer-hi si no ets tu qui
-  // les obre.
+  // Hora que no s'ha obert: no hi ha res a fer-hi si no ets tu qui les obre.
   if (!slot) {
-    if (!canManage) {
+    if (!canOpen) {
       return (
         <div className="w-full p-1.5 text-center text-muted-foreground/40" aria-hidden>
           —
@@ -154,7 +159,7 @@ export function SlotCell({
           <Button type="submit" size="sm" disabled={book.isPending}>
             {book.isPending ? "Demanant…" : "Demana aquesta cita"}
           </Button>
-          {canManage && (
+          {canOpen && (
             <Button
               type="button"
               variant="ghost"
@@ -162,7 +167,7 @@ export function SlotCell({
               disabled={closeSlot.isPending}
               onClick={() => closeSlot.run({ id: slot.id })}
             >
-              Tanca aquesta hora
+              {slot.fixed ? "Tanca-la només aquesta setmana" : "Tanca aquesta hora"}
             </Button>
           )}
         </form>

@@ -67,6 +67,14 @@ test.describe("coordinació TIC", () => {
     await page.goto(`/cites?week=${nextWeek}`);
     await expect(page.getByText(FOREIGN_APPOINTMENT_PURPOSE).first()).toBeVisible();
   });
+
+  test("no obre hores de cites: l'agenda és del superadministrador", async ({ page }) => {
+    const { nextWeek } = readFixtures();
+    await page.goto(`/cites?week=${nextWeek}`);
+    await expect(page.getByRole("button", { name: "Lliure" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Hores fixes" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Obre", exact: true })).toHaveCount(0);
+  });
 });
 
 test.describe("superadministració", () => {

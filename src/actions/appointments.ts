@@ -7,7 +7,7 @@ import { zonedDateTime } from "@/lib/date";
 import { notifyAppointmentBooked, notifyAppointmentCancelled } from "@/lib/notifications";
 import { runAfterResponse } from "@/lib/background";
 import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
-import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
+import { isAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
 import {
   bookAppointmentSchema,
   cancelAppointmentSchema,
@@ -26,12 +26,13 @@ function isUniqueViolation(error: unknown) {
 }
 
 /**
- * Obre una hora de l'horari del centre perquè s'hi pugui demanar cita. Les
- * hores obertes són la disponibilitat de qui les obre, i per això es marquen
- * una per una damunt la graella.
+ * Obre una sola hora de l'horari del centre perquè s'hi pugui demanar cita:
+ * una setmana concreta, fora de les hores fixes. Només ho fa el
+ * superadministrador —el compte de coordinació TIC—, perquè l'agenda és una i
+ * és la seva: la resta de la coordinació no hi obre hores.
  */
 export async function openAppointmentSlot(input: unknown): Promise<ActionResult> {
-  const user = await requireAdmin();
+  const user = await requireSuperAdmin();
   const parsed = openAppointmentSlotSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
@@ -52,9 +53,9 @@ export async function openAppointmentSlot(input: unknown): Promise<ActionResult>
   try {
     await db.appointmentSlot.create({ data: { startDate, endDate, openedById: user.id } });
   } catch (error) {
-    // Som tres a coordinació: si algú altre acaba d'obrir la mateixa hora, el
-    // resultat ja és el que es volia i fer-ho saltar com un error només
-    // confondria qui està marcant la graella.
+    // Si l'hora ja és oberta —una altra pestanya, o l'hora fixa que s'acaba de
+    // marcar—, el resultat ja és el que es volia i fer-ho saltar com un error
+    // només confondria qui està marcant la graella.
     if (isUniqueViolation(error)) return { success: true };
     return { success: false, error: "No s'ha pogut obrir l'hora" };
   }
@@ -63,8 +64,12 @@ export async function openAppointmentSlot(input: unknown): Promise<ActionResult>
   return { success: true };
 }
 
+/**
+ * Tanca una hora oberta. D'una hora fixa, tanca només aquella setmana: és com es
+ * diu que un dia concret no s'hi serà.
+ */
 export async function closeAppointmentSlot(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
+  await requireSuperAdmin();
   const parsed = closeAppointmentSlotSchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
 

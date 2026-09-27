@@ -18,3 +18,12 @@ export const bookAppointmentSchema = z.object({
 export type BookAppointmentInput = z.infer<typeof bookAppointmentSchema>;
 
 export const cancelAppointmentSchema = z.object({ id: z.string() });
+
+// Una hora fixa és un dia de la setmana (1 = dilluns) i una sessió de l'horari;
+// el curs surt de la data, no del formulari.
+export const addAppointmentAvailabilitySchema = z.object({
+  weekday: z.number().int().min(1, "Tria el dia").max(5, "Tria el dia"),
+  periodId: z.number().int(),
+});
+
+export const removeAppointmentAvailabilitySchema = z.object({ id: z.string().min(1) });

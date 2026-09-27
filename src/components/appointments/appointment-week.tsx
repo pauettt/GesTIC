@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 import {
   isPastPeriod,
   RECESS,
@@ -23,13 +24,24 @@ type Slot = SlotCellSlot & { startDate: Date };
 export function AppointmentWeek({
   weekStart,
   slots,
+  holidays,
+  canOpen,
   canManage,
 }: {
   weekStart: Date;
   slots: Slot[];
+  /**
+   * Es marquen a la capçalera perquè s'entengui per què aquell dia no hi ha
+   * hores fixes. S'hi pot obrir una hora a mà igualment: pot ser dia de feina.
+   */
+  holidays: Holiday[];
+  canOpen: boolean;
   canManage: boolean;
 }) {
-  const days = SCHOOL_WEEKDAYS.map((label, index) => ({ label, date: addDays(weekStart, index) }));
+  const days = SCHOOL_WEEKDAYS.map((label, index) => {
+    const date = addDays(weekStart, index);
+    return { label, date, holiday: holidayOn(madridDateKey(date), holidays) };
+  });
   const prevWeek = toDateParam(addDays(weekStart, -7));
   const nextWeek = toDateParam(addDays(weekStart, 7));
   const rangeLabel = `${formatShortDate(weekStart)} – ${formatShortDate(days[4].date)}`;
@@ -55,7 +67,8 @@ export function AppointmentWeek({
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-background">
-        <table className="w-full min-w-[720px] border-collapse text-xs">
+        {/* Columnes fixes, com a la graella dels carros: el motiu d'una cita es talla en comptes d'eixamplar el dia. */}
+        <table className="w-full min-w-[720px] table-fixed border-collapse text-xs">
           <thead>
             <tr className="border-b bg-muted/40">
               <th className="w-28 p-2 text-left font-medium text-muted-foreground">Sessió</th>
@@ -65,6 +78,11 @@ export function AppointmentWeek({
                   <span className="text-muted-foreground">
                     {Number(madridDateKey(day.date).split("-")[2])}
                   </span>
+                  {day.holiday && (
+                    <span className="block truncate text-xs font-normal text-muted-foreground">
+                      Festiu · {day.holiday.name}
+                    </span>
+                  )}
                 </th>
               ))}
             </tr>
@@ -94,6 +112,7 @@ export function AppointmentWeek({
                           dayLabel={day.label}
                           period={period}
                           slot={slot}
+                          canOpen={canOpen}
                           canManage={canManage}
                           isPast={isPastPeriod(zonedDateTime(dayKey, period.end))}
                         />

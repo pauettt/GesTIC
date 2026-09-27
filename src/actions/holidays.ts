@@ -17,18 +17,24 @@ function revalidateCalendar() {
   revalidatePath("/panell");
   // La graella de cada carro, el cercador i les reserves fixes.
   revalidatePath("/chromebooks", "layout");
+  revalidatePath("/cites");
   revalidatePath("/");
 }
 
 /**
- * La coordinació entra un festiu. Les setmanes de reserves fixes que hi queien
- * les havia posat l'aplicació, no ningú: s'esborren, i si el festiu s'esborra
- * es tornen a posar (`deleteHoliday`). Les reserves puntuals d'aquells dies les
- * ha fet algú a propòsit i es queden; el resultat diu quantes n'hi ha.
+ * La coordinació entra un festiu. Les setmanes de reserves fixes i les hores
+ * fixes de cites que hi queien les havia posat l'aplicació, no ningú:
+ * s'esborren, i si el festiu s'esborra es tornen a posar (`deleteHoliday`). Les
+ * reserves puntuals i les hores de cita obertes a mà les ha fet algú a propòsit
+ * i es queden. Les hores fixes que ja tenen cita també: qui la té s'hi
+ * presentaria igualment. El resultat diu quantes reserves puntuals i quantes
+ * cites hi ha aquells dies.
  */
 export async function createHoliday(
   input: unknown,
-): Promise<{ success: true; freed: number; oneOff: number } | Failure> {
+): Promise<
+  { success: true; freed: number; oneOff: number; closedHours: number; appointments: number } | Failure
+> {
   await requireAdmin();
   const parsed = createHolidaySchema.safeParse(input);
   if (!parsed.success) {
@@ -41,7 +47,7 @@ export async function createHoliday(
   // El que ja ha començat no es toca: és història.
   const upcoming = { gte: from > now ? from : now, lt: to };
 
-  let result: { freed: number; oneOff: number };
+  let result: { freed: number; oneOff: number; closedHours: number; appointments: number };
   try {
     result = await db.$transaction(async (tx) => {
       await tx.schoolHoliday.create({ data: { name, startDate, endDate } });
@@ -51,7 +57,11 @@ export async function createHoliday(
       const kept = await tx.reservation.count({
         where: { recurringId: null, status: "CONFIRMADA", startDate: upcoming },
       });
-      return { freed: count, oneOff: kept };
+      const closed = await tx.appointmentSlot.deleteMany({
+        where: { availabilityId: { not: null }, appointment: { is: null }, startDate: upcoming },
+      });
+      const appointments = await tx.appointment.count({ where: { slot: { startDate: upcoming } } });
+      return { freed: count, oneOff: kept, closedHours: closed.count, appointments };
     });
   } catch (error) {
     console.error("[festius] no s'ha pogut desar:", error);
@@ -67,17 +77,23 @@ export async function createHoliday(
  * les setmanes de les reserves fixes aprovades que hi queien. No les que el
  * titular havia alliberat abans —aquelles setmanes tenen la seva fila
  * cancel·lada— ni les que mentrestant ha reservat algú altre.
+ *
+ * També torna a obrir les hores fixes de cites d'aquells dies, menys les que
+ * mentrestant s'han obert a mà. Una setmana tancada a mà no deixa rastre: si es
+ * va tancar abans d'entrar el festiu, també torna.
  */
-export async function deleteHoliday(input: unknown): Promise<{ success: true; restored: number } | Failure> {
+export async function deleteHoliday(
+  input: unknown,
+): Promise<{ success: true; restored: number; reopened: number } | Failure> {
   await requireAdmin();
   const parsed = deleteHolidaySchema.safeParse(input);
   if (!parsed.success) return { success: false, error: "Dades no vàlides" };
   const { id } = parsed.data;
   const now = new Date();
 
-  let restored: number;
+  let result: { restored: number; reopened: number };
   try {
-    restored = await db.$transaction(async (tx) => {
+    result = await db.$transaction(async (tx) => {
       const holiday = await tx.schoolHoliday.findUnique({ where: { id } });
       if (!holiday) throw new HolidayRefused("Aquest festiu ja no hi és");
       await tx.schoolHoliday.delete({ where: { id } });
@@ -132,7 +148,25 @@ export async function deleteHoliday(input: unknown): Promise<{ success: true; re
         });
         created += missing.length;
       }
-      return created;
+
+      const fixedHours = await tx.appointmentAvailability.findMany({
+        select: { id: true, weekday: true, periodId: true, schoolYear: true, createdById: true },
+      });
+      const hours = fixedHours.flatMap((fixed) =>
+        occurrences(fixed.weekday, fixed.periodId, fixed.schoolYear, now, remaining)
+          .filter((week) => holiday.startDate <= week.dateKey && week.dateKey <= holiday.endDate)
+          .map((week) => ({
+            startDate: week.startDate,
+            endDate: week.endDate,
+            openedById: fixed.createdById,
+            availabilityId: fixed.id,
+          })),
+      );
+      // Les que s'han obert a mà mentrestant ja hi són: l'índex únic de l'hora les salta.
+      const reopened =
+        hours.length > 0 ? (await tx.appointmentSlot.createMany({ data: hours, skipDuplicates: true })).count : 0;
+
+      return { restored: created, reopened };
     });
   } catch (error) {
     if (error instanceof HolidayRefused) return { success: false, error: error.message };
@@ -141,5 +175,5 @@ export async function deleteHoliday(input: unknown): Promise<{ success: true; re
   }
 
   revalidateCalendar();
-  return { success: true, restored };
+  return { success: true, ...result };
 }
