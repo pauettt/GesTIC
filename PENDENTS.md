@@ -42,8 +42,8 @@ Queden vuit coses:
    disposició. Millor abans d'aprovar reserves fixes i de marcar les hores
    fixes de cites, encara que les d'abans també se'ls salten.
 7. **Marcar les hores fixes de cites del curs** (*Cites → Hores fixes*, §34),
-   amb el compte de coordinació TIC: les hores lliures de l'horari. S'obren
-   cada setmana fins al 30 de juny.
+   amb el compte de coordinació TIC: per a cada coordinador, les hores lliures
+   del seu horari. S'obren cada setmana fins al 30 de juny.
 8. **Penjar el cartell a la sala de professors** un cop desplegat:
    *Administració → Obre el cartell*. Abans, afegir gesTIC a la pantalla d'inici
    en un Android i en un iPhone i entrar-hi des de la icona. A l'iPhone,
@@ -263,19 +263,30 @@ propòsit, i en entrar el festiu la coordinació veu quantes n'hi ha.
 Com a molt 31 dies seguits per festiu, perquè un any mal escrit no s'endugui
 mig curs.
 
-### 34. Cites: una sola agenda, la del superadministrador, amb hores fixes
+### 34. Cites: l'agenda la porta el superadministrador, una plaça per coordinador
 Decidit el 2026-09-27. **Només el superadministrador** —el compte de
 coordinació TIC (§31)— obre hores a *Cites*; la resta de la coordinació hi veu
-qui té cada cita i la pot cancel·lar, però no n'obre. Per això n'hi ha prou amb
-una cita per hora (`AppointmentSlot.startDate` és únic).
+qui té cada cita i la pot cancel·lar, però no n'obre.
 
-Les hores s'obren **per a tot el curs**: a *Hores fixes* es marca un dia i una
-sessió, i s'obre cada setmana fins al 30 de juny, menys els festius (§33). El
+Cada hora oberta és d'**un coordinador concret**, que és qui atendrà la cita, i
+el professorat en veu el nom abans de demanar-la. **Cada coordinador és una
+plaça**: si a la mateixa hora n'hi ha dos, la poden agafar dues persones, i
+cadascuna tria amb qui (`AppointmentSlot` és únic per hora i coordinador). Els
+avisos de cita van al coordinador que l'atén. Qui deixa la coordinació o perd
+l'accés no s'esborra, ni les seves hores: deixen de sortir al professorat i
+ningú no les pot demanar. Al diàleg d'hores fixes hi continua sortint mentre en
+tingui, marcat, perquè se li treguin; les setmanes amb cita es queden fins que
+es cancel·len.
+
+Les hores s'obren **per a tot el curs**: a *Hores fixes* es tria el coordinador
+i es marca un dia i una sessió, i s'obre cada setmana fins al 30 de juny, menys
+els festius (§33). El
 curs surt de la data, com a les reserves fixes: al juliol i a l'agost, les que
 es marquen van al curs següent, i cada curs es tornen a marcar, perquè l'horari
 canvia. Cada setmana és una hora normal (`availabilityId`), així que:
-- un dia concret es tanca a la graella, sense tocar l'hora fixa, i una hora de
-  més s'hi obre a mà;
+- un dia que un coordinador no hi pot ser, es tanca la seva plaça a la graella,
+  sense tocar l'hora fixa, i una plaça de més s'hi obre a mà, triant qui
+  l'atendrà;
 - si l'horari canvia a mig curs, treure una hora fixa tanca les setmanes que
   queden sense cita; les que en tenen es queden, i el missatge diu quins dies
   són perquè es cancel·lin a part si cal;
@@ -292,13 +303,20 @@ entrar el festiu i esborrar-lo, i es resol tancant-la un altre cop.
 
 ### 2026-09-27
 
+- **Cites amb nom i una plaça per coordinador** (§34), migració
+  `20260927135024_cites_per_coordinador`. Cada hora oberta és d'un coordinador,
+  i el professorat veu qui l'atendrà abans de demanar-la; si a la mateixa hora
+  n'hi ha dos, hi ha dues places. El superadministrador marca les hores fixes de
+  cada coordinador i obre o tanca places a la graella. Les hores i cites que ja
+  hi havia continuen sent amb qui les va obrir. La pàgina d'inici, el panell i
+  els correus diuen amb qui és cada cita.
 - **Hores fixes de cites** (*Cites → Hores fixes*, §34), migració
-  `20260927130212_hores_fixes_cites`. El superadministrador marca les hores que
-  té lliures cada setmana i s'obren fins al 30 de juny, menys els festius; abans
-  s'havien d'obrir a mà setmana a setmana. Obrir i tancar hores passa a ser només
-  seu. Els festius també tanquen i tornen a obrir aquestes hores (§33), i la
-  graella de *Cites* els marca a la capçalera. La graella té les columnes
-  iguals, com la dels carros: una cita amb un motiu llarg ja no eixampla el dia.
+  `20260927130212_hores_fixes_cites`. Les hores lliures de cada setmana s'obren
+  fins al 30 de juny, menys els festius; abans s'havien d'obrir a mà setmana a
+  setmana. Obrir i tancar hores passa a ser només del superadministrador. Els
+  festius també tanquen i tornen a obrir aquestes hores (§33), i la graella de
+  *Cites* els marca a la capçalera. La graella té les columnes iguals, com la
+  dels carros: una cita amb un motiu llarg ja no eixampla el dia.
 
 - **Les claus s'arxiven** (*Consergeria → Gestiona les claus → Arxiva*),
   migració `20260927052707_claus_arxivades`. Una clau que ja s'ha deixat alguna

@@ -148,8 +148,8 @@ describe("deleteHoliday", () => {
     db.recurringReservation.findMany.mockResolvedValue([]);
     // Cada dilluns a 2a hora, i cada dimarts a 1a, que no cau en el festiu.
     db.appointmentAvailability.findMany.mockResolvedValue([
-      { id: "fixa-dl", weekday: 1, periodId: 2, schoolYear: "2026-2027", createdById: "coordtic" },
-      { id: "fixa-dt", weekday: 2, periodId: 1, schoolYear: "2026-2027", createdById: "coordtic" },
+      { id: "fixa-dl", weekday: 1, periodId: 2, schoolYear: "2026-2027", coordinatorId: "anna" },
+      { id: "fixa-dt", weekday: 2, periodId: 1, schoolYear: "2026-2027", coordinatorId: "anna" },
     ]);
     db.appointmentSlot.createMany.mockResolvedValue({ count: 1 });
 
@@ -159,11 +159,11 @@ describe("deleteHoliday", () => {
         {
           startDate: zonedDateTime("2026-10-12", "08:55"),
           endDate: zonedDateTime("2026-10-12", "09:50"),
-          openedById: "coordtic",
+          coordinatorId: "anna",
           availabilityId: "fixa-dl",
         },
       ],
-      // Si mentrestant s'ha obert a mà, l'índex únic de l'hora la salta.
+      // Si mentrestant s'ha obert a mà, l'índex únic d'hora i coordinador la salta.
       skipDuplicates: true,
     });
   });
@@ -171,7 +171,7 @@ describe("deleteHoliday", () => {
   it("si un altre festiu encara cobreix el dia, no la torna a posar", async () => {
     db.schoolHoliday.findMany.mockResolvedValue([{ ...pilar, id: "pont", name: "Pont" }]);
     db.appointmentAvailability.findMany.mockResolvedValue([
-      { id: "fixa-dl", weekday: 1, periodId: 2, schoolYear: "2026-2027", createdById: "coordtic" },
+      { id: "fixa-dl", weekday: 1, periodId: 2, schoolYear: "2026-2027", coordinatorId: "anna" },
     ]);
     expect(await deleteHoliday({ id: "pilar" })).toEqual({ success: true, restored: 0, reopened: 0 });
     expect(db.reservation.createMany).not.toHaveBeenCalled();

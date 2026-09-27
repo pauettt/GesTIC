@@ -12,7 +12,7 @@ import {
   SCHOOL_WEEKDAYS,
 } from "@/lib/schedule";
 import { ButtonLink } from "@/components/ui/button-link";
-import { SlotCell, type SlotCellSlot } from "@/components/appointments/slot-cell";
+import { SlotCell, type SlotCellCoordinator, type SlotCellSlot } from "@/components/appointments/slot-cell";
 
 type Slot = SlotCellSlot & { startDate: Date };
 
@@ -24,12 +24,16 @@ type Slot = SlotCellSlot & { startDate: Date };
 export function AppointmentWeek({
   weekStart,
   slots,
+  coordinators,
   holidays,
   canOpen,
   canManage,
 }: {
   weekStart: Date;
+  /** Totes les places de la setmana: n'hi pot haver més d'una a la mateixa hora, una per coordinador. */
   slots: Slot[];
+  /** A qui es pot obrir una plaça. Només per a qui porta l'agenda. */
+  coordinators: SlotCellCoordinator[];
   /**
    * Es marquen a la capçalera perquè s'entengui per què aquell dia no hi ha
    * hores fixes. S'hi pot obrir una hora a mà igualment: pot ser dia de feina.
@@ -46,8 +50,8 @@ export function AppointmentWeek({
   const nextWeek = toDateParam(addDays(weekStart, 7));
   const rangeLabel = `${formatShortDate(weekStart)} – ${formatShortDate(days[4].date)}`;
 
-  function findSlot(dayKey: string, periodStart: string) {
-    return slots.find(
+  function findSlots(dayKey: string, periodStart: string) {
+    return slots.filter(
       (slot) => madridDateKey(slot.startDate) === dayKey && formatTime(slot.startDate) === periodStart,
     );
   }
@@ -104,14 +108,15 @@ export function AppointmentWeek({
                   </td>
                   {days.map((day) => {
                     const dayKey = madridDateKey(day.date);
-                    const slot = findSlot(dayKey, period.start);
+                    const hourSlots = findSlots(dayKey, period.start);
                     return (
                       <td key={day.label} className="p-1 align-top">
                         <SlotCell
                           dayKey={dayKey}
                           dayLabel={day.label}
                           period={period}
-                          slot={slot}
+                          slots={hourSlots}
+                          coordinators={coordinators}
                           canOpen={canOpen}
                           canManage={canManage}
                           isPast={isPastPeriod(zonedDateTime(dayKey, period.end))}

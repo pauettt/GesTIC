@@ -214,7 +214,7 @@ export default async function PanellPage() {
             href: "/cites" as Route,
             main: `${who(appointment.user)} · ${appointment.purpose}`,
             meta: `${formatDateTimeFull(appointment.slot.startDate)}${
-              appointment.slot.openedBy ? ` · amb ${who(appointment.slot.openedBy)}` : ""
+              appointment.slot.coordinator ? ` · amb ${who(appointment.slot.coordinator)}` : ""
             }`,
             badge: null,
           }))}

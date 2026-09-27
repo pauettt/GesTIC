@@ -150,7 +150,7 @@ export async function deleteHoliday(
       }
 
       const fixedHours = await tx.appointmentAvailability.findMany({
-        select: { id: true, weekday: true, periodId: true, schoolYear: true, createdById: true },
+        select: { id: true, weekday: true, periodId: true, schoolYear: true, coordinatorId: true },
       });
       const hours = fixedHours.flatMap((fixed) =>
         occurrences(fixed.weekday, fixed.periodId, fixed.schoolYear, now, remaining)
@@ -158,11 +158,11 @@ export async function deleteHoliday(
           .map((week) => ({
             startDate: week.startDate,
             endDate: week.endDate,
-            openedById: fixed.createdById,
+            coordinatorId: fixed.coordinatorId,
             availabilityId: fixed.id,
           })),
       );
-      // Les que s'han obert a mà mentrestant ja hi són: l'índex únic de l'hora les salta.
+      // Les que s'han obert a mà mentrestant ja hi són: l'índex únic d'hora i coordinador les salta.
       const reopened =
         hours.length > 0 ? (await tx.appointmentSlot.createMany({ data: hours, skipDuplicates: true })).count : 0;
 

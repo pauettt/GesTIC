@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { activeCoordinator } from "@/lib/coordinators";
 import { db } from "@/lib/db";
 import { zonedDateTime } from "@/lib/date";
 import { notifyAppointmentBooked, notifyAppointmentCancelled } from "@/lib/notifications";
@@ -26,13 +27,13 @@ function isUniqueViolation(error: unknown) {
 }
 
 /**
- * Obre una sola hora de l'horari del centre perquè s'hi pugui demanar cita:
- * una setmana concreta, fora de les hores fixes. Només ho fa el
- * superadministrador —el compte de coordinació TIC—, perquè l'agenda és una i
- * és la seva: la resta de la coordinació no hi obre hores.
+ * Obre una sola plaça: una hora d'una setmana concreta, fora de les hores fixes,
+ * amb el coordinador que l'atendrà. Només ho fa el superadministrador —el compte
+ * de coordinació TIC—, que és qui porta l'agenda: la resta de la coordinació no
+ * hi obre hores.
  */
 export async function openAppointmentSlot(input: unknown): Promise<ActionResult> {
-  const user = await requireSuperAdmin();
+  await requireSuperAdmin();
   const parsed = openAppointmentSlotSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
@@ -50,12 +51,19 @@ export async function openAppointmentSlot(input: unknown): Promise<ActionResult>
     return { success: false, error: "No es poden obrir hores que ja han passat" };
   }
 
+  const { coordinatorId } = parsed.data;
+  const coordinator = await db.user.findFirst({
+    where: { id: coordinatorId, ...activeCoordinator },
+    select: { id: true },
+  });
+  if (!coordinator) return { success: false, error: "Aquesta persona no és a la coordinació TIC" };
+
   try {
-    await db.appointmentSlot.create({ data: { startDate, endDate, openedById: user.id } });
+    await db.appointmentSlot.create({ data: { startDate, endDate, coordinatorId } });
   } catch (error) {
-    // Si l'hora ja és oberta —una altra pestanya, o l'hora fixa que s'acaba de
-    // marcar—, el resultat ja és el que es volia i fer-ho saltar com un error
-    // només confondria qui està marcant la graella.
+    // Si ja és oberta per a aquest coordinador —una altra pestanya, o l'hora fixa
+    // que s'acaba de marcar—, el resultat ja és el que es volia i fer-ho saltar
+    // com un error només confondria qui està marcant la graella.
     if (isUniqueViolation(error)) return { success: true };
     return { success: false, error: "No s'ha pogut obrir l'hora" };
   }
@@ -95,9 +103,9 @@ export async function closeAppointmentSlot(input: unknown): Promise<ActionResult
 }
 
 /**
- * Demana una hora oberta. Hi entra tothom del claustre: l'agenda serveix per a
- * qualsevol cosa que s'hagi de fer amb la coordinació, i no hi ha límit de
- * cites per persona mentre quedin hores obertes.
+ * Demana una plaça oberta, amb el coordinador que l'atén. Hi entra tothom del
+ * claustre: l'agenda serveix per a qualsevol cosa que s'hagi de fer amb la
+ * coordinació, i no hi ha límit de cites per persona mentre quedin places.
  */
 export async function bookAppointment(input: unknown): Promise<ActionResult> {
   const user = await requireUser();
@@ -110,8 +118,10 @@ export async function bookAppointment(input: unknown): Promise<ActionResult> {
   let appointmentId: string;
   try {
     appointmentId = await db.$transaction(async (tx) => {
-      const slot = await tx.appointmentSlot.findUnique({
-        where: { id: slotId },
+      // Una plaça de qui ja no és a la coordinació no la pot demanar ningú: no hi
+      // hauria qui l'atengués.
+      const slot = await tx.appointmentSlot.findFirst({
+        where: { id: slotId, coordinator: activeCoordinator },
         include: { appointment: true },
       });
       if (!slot) throw new AppointmentRefused("Aquesta hora ja no està oberta");
@@ -151,7 +161,7 @@ export async function cancelAppointment(input: unknown): Promise<ActionResult> {
         select: {
           startDate: true,
           endDate: true,
-          openedBy: { select: { id: true, email: true } },
+          coordinator: { select: { id: true, name: true, email: true } },
         },
       },
     },
@@ -172,7 +182,7 @@ export async function cancelAppointment(input: unknown): Promise<ActionResult> {
       cancelledById: user.id,
       cancelledByName: user.name ?? "La coordinació TIC",
       owner: appointment.user,
-      opener: appointment.slot.openedBy,
+      coordinator: appointment.slot.coordinator,
       startDate: appointment.slot.startDate,
       purpose: appointment.purpose,
     }),

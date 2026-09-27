@@ -74,9 +74,9 @@ export async function purgeTestData(): Promise<ActionResult> {
   }
 
   // Abans d'esborrar: quins equips poden canviar d'estat (tenen incidències o
-  // préstecs d'aquests comptes) i quines hores de cita van obrir que ningú de
+  // préstecs d'aquests comptes) i quines hores de cita atenien que ningú de
   // debò no ha agafat. Un cop esborrats els usuaris ja no es podria saber.
-  const [incidentDevices, assignedDevices, openedSlots] = await Promise.all([
+  const [incidentDevices, assignedDevices, coordinatorSlots] = await Promise.all([
     db.incident.findMany({
       where: { reporterId: { in: userIds }, chromebookId: { not: null } },
       select: { chromebookId: true },
@@ -86,20 +86,18 @@ export async function purgeTestData(): Promise<ActionResult> {
       select: { chromebookId: true },
     }),
     db.appointmentSlot.findMany({
-      where: { openedById: { in: userIds } },
+      where: { coordinatorId: { in: userIds } },
       select: { id: true, appointment: { select: { userId: true } } },
     }),
   ]);
-  const emptySlotIds = openedSlots
+  const emptySlotIds = coordinatorSlots
     .filter((slot) => !slot.appointment || userIds.includes(slot.appointment.userId))
     .map((slot) => slot.id);
 
   // La resta cau en cascada amb l'usuari (vegeu les relacions a schema.prisma).
-  // Les hores fixes que van marcar se'n van amb les seves hores: sense, un
-  // festiu esborrat les tornaria a obrir sense ningú al darrere.
+  // Les hores fixes d'aquests comptes cauen en cascada amb l'usuari.
   await db.$transaction([
     db.appointmentSlot.deleteMany({ where: { id: { in: emptySlotIds } } }),
-    db.appointmentAvailability.deleteMany({ where: { createdById: { in: userIds } } }),
     db.user.deleteMany({ where: { id: { in: userIds } } }),
   ]);
 

@@ -179,7 +179,7 @@ export async function seed(connectionString: string): Promise<{
       data: {
         startDate: zonedDateTime(nextWeek, THIRD_PERIOD[0]),
         endDate: zonedDateTime(nextWeek, THIRD_PERIOD[1]),
-        openedById: userIds.superAdmin,
+        coordinatorId: userIds.admin,
       },
     });
     await db.appointment.create({
@@ -189,7 +189,7 @@ export async function seed(connectionString: string): Promise<{
       data: {
         startDate: zonedDateTime(nextTuesday, SECOND_PERIOD[0]),
         endDate: zonedDateTime(nextTuesday, SECOND_PERIOD[1]),
-        openedById: userIds.superAdmin,
+        coordinatorId: userIds.admin,
       },
     });
 

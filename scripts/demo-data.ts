@@ -168,10 +168,10 @@ async function treu() {
   const people = await db.user.findMany({ where: { email: { in: [...emails] } }, select: { id: true } });
   const ids = people.map((person) => person.id);
 
-  // Les hores de cita sobreviuen a qui les va obrir (openedById és SetNull), així
-  // que van a part; la resta cau amb les persones.
+  // Les hores de cita sobreviuen a qui les atenia (coordinatorId és SetNull),
+  // així que van a part; la resta cau amb les persones.
   const slots = await db.appointmentSlot.findMany({
-    where: { OR: [{ openedById: { in: ids } }, { appointment: { userId: { in: ids } } }] },
+    where: { OR: [{ coordinatorId: { in: ids } }, { appointment: { userId: { in: ids } } }] },
     select: { id: true },
   });
 
@@ -373,7 +373,7 @@ async function posa() {
     data: {
       startDate: zonedDateTime(nextMonday, PERIOD.third[0]),
       endDate: zonedDateTime(nextMonday, PERIOD.third[1]),
-      openedById: people["carles.vidal@local.test"],
+      coordinatorId: people["carles.vidal@local.test"],
     },
   });
   await db.appointment.create({
@@ -391,7 +391,7 @@ async function posa() {
       data: {
         startDate: zonedDateTime(dia, period[0]),
         endDate: zonedDateTime(dia, period[1]),
-        openedById: people["carles.vidal@local.test"],
+        coordinatorId: people["carles.vidal@local.test"],
       },
     });
   }

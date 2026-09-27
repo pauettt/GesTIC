@@ -147,7 +147,11 @@ export default async function HomePage() {
       }),
       db.appointment.findMany({
         where: { userId: user.id, slot: { endDate: { gt: now } } },
-        select: { id: true, purpose: true, slot: { select: { startDate: true } } },
+        select: {
+          id: true,
+          purpose: true,
+          slot: { select: { startDate: true, coordinator: { select: { name: true, email: true } } } },
+        },
         orderBy: { slot: { startDate: "asc" } },
         take: 4,
       }),
@@ -382,6 +386,9 @@ export default async function HomePage() {
                       <span className="block truncate text-sm font-medium">{appointment.purpose}</span>
                       <span className="block text-xs text-muted-foreground">
                         {formatDateTimeFull(appointment.slot.startDate)}
+                        {appointment.slot.coordinator
+                          ? ` · amb ${appointment.slot.coordinator.name ?? appointment.slot.coordinator.email}`
+                          : ""}
                       </span>
                     </Link>
                   </li>

@@ -6,6 +6,7 @@ const { db, requireSuperAdmin, revalidatePath, getHolidays } = vi.hoisted(() => 
   const db = {
     appointmentAvailability: { create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
     appointmentSlot: { createMany: vi.fn(), deleteMany: vi.fn(), findMany: vi.fn() },
+    user: { findFirst: vi.fn() },
     $transaction: vi.fn(),
   };
   return { db, requireSuperAdmin: vi.fn(), revalidatePath: vi.fn(), getHolidays: vi.fn() };
@@ -26,27 +27,31 @@ beforeEach(() => {
   db.$transaction.mockImplementation((run: (tx: typeof db) => unknown) => run(db));
   requireSuperAdmin.mockResolvedValue({ id: "coordtic" });
   getHolidays.mockResolvedValue([pilar]);
+  db.user.findFirst.mockResolvedValue({ id: "anna" });
 });
+
+// Cada dilluns a 1a hora, amb l'Anna.
+const mondayFirst = { coordinatorId: "anna", weekday: 1, periodId: 1 };
 
 describe("addAppointmentAvailability", () => {
   it("només el superadministrador", async () => {
     const denied = new Error("NEXT_REDIRECT");
     requireSuperAdmin.mockRejectedValue(denied);
-    await expect(addAppointmentAvailability({ weekday: 1, periodId: 1 })).rejects.toBe(denied);
+    await expect(addAppointmentAvailability(mondayFirst)).rejects.toBe(denied);
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
   it("obre l'hora cada setmana que queda del curs, fins al 30 de juny i sense els festius", async () => {
     db.appointmentAvailability.create.mockResolvedValue({ id: "fixa-1" });
 
-    const result = await addAppointmentAvailability({ weekday: 1, periodId: 1 });
+    const result = await addAppointmentAvailability(mondayFirst);
 
     expect(db.appointmentAvailability.create).toHaveBeenCalledWith({
-      data: { weekday: 1, periodId: 1, schoolYear: "2026-2027", createdById: "coordtic" },
+      data: { weekday: 1, periodId: 1, schoolYear: "2026-2027", coordinatorId: "anna" },
       select: { id: true },
     });
     const { data, skipDuplicates } = db.appointmentSlot.createMany.mock.calls[0][0];
-    // Una hora ja oberta a mà no es duplica ni passa a ser de l'hora fixa.
+    // Una plaça ja oberta a mà per a l'Anna no es duplica ni passa a ser de l'hora fixa.
     expect(skipDuplicates).toBe(true);
     const starts = data.map((slot: { startDate: Date }) => slot.startDate.getTime());
     // Avui, dilluns, la 1a hora ja ha passat: comença el 5 d'octubre.
@@ -56,30 +61,43 @@ describe("addAppointmentAvailability", () => {
     expect(data[0]).toEqual({
       startDate: zonedDateTime("2026-10-05", "08:00"),
       endDate: zonedDateTime("2026-10-05", "08:55"),
-      openedById: "coordtic",
+      coordinatorId: "anna",
       availabilityId: "fixa-1",
     });
     expect(result).toEqual({ success: true, weeks: data.length });
     expect(revalidatePath).toHaveBeenCalledWith("/cites");
   });
 
-  it("si ja és fixa, ho diu", async () => {
+  it("si ja és fixa per a aquesta persona, ho diu", async () => {
     db.appointmentAvailability.create.mockRejectedValue({ code: "P2002" });
-    expect(await addAppointmentAvailability({ weekday: 1, periodId: 1 })).toEqual({
+    expect(await addAppointmentAvailability(mondayFirst)).toEqual({
       success: false,
-      error: "Aquesta hora ja és fixa aquest curs",
+      error: "Aquesta hora ja és fixa per a aquesta persona aquest curs",
     });
   });
 
+  it("només per a algú de la coordinació que encara hi té accés", async () => {
+    db.user.findFirst.mockResolvedValue(null);
+    expect(await addAppointmentAvailability(mondayFirst)).toEqual({
+      success: false,
+      error: "Aquesta persona no és a la coordinació TIC",
+    });
+    expect(db.user.findFirst).toHaveBeenCalledWith({
+      where: { id: "anna", role: { in: ["SUPER_ADMIN", "ADMIN"] }, disabledAt: null },
+      select: { id: true },
+    });
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
   it("rebutja una sessió que no és a l'horari o un dia de cap de setmana", async () => {
-    expect((await addAppointmentAvailability({ weekday: 1, periodId: 99 })).success).toBe(false);
-    expect((await addAppointmentAvailability({ weekday: 6, periodId: 1 })).success).toBe(false);
+    expect((await addAppointmentAvailability({ ...mondayFirst, periodId: 99 })).success).toBe(false);
+    expect((await addAppointmentAvailability({ ...mondayFirst, weekday: 6 })).success).toBe(false);
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
   it("a final de curs, si ja no queda cap setmana, no en desa res", async () => {
     vi.setSystemTime(zonedDateTime("2027-06-28", "10:00"));
-    expect(await addAppointmentAvailability({ weekday: 1, periodId: 1 })).toEqual({
+    expect(await addAppointmentAvailability(mondayFirst)).toEqual({
       success: false,
       error: "Aquest curs ja no queda cap setmana amb aquesta sessió",
     });

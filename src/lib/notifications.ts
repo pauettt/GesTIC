@@ -1,6 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db";
+import { activeCoordinator } from "@/lib/coordinators";
 import { formatDate, formatDateTimeFull, madridDateKey, zonedDateTime } from "@/lib/date";
 import { dueLabel } from "@/lib/device-reservations";
 import { deviceTypeLabels } from "@/lib/devices";
@@ -31,7 +32,6 @@ import {
   studentDeviceReasonLabels,
 } from "@/lib/labels";
 import { courseEndLabel, slotLabel } from "@/lib/recurring-reservations";
-import { COORDINATOR_ROLES } from "@/lib/roles";
 import { getBaseUrl } from "@/lib/url";
 
 /**
@@ -52,9 +52,8 @@ async function safely(what: string, run: () => Promise<unknown>) {
 async function coordinatorEmails(exceptUserId?: string) {
   const coordinators = await db.user.findMany({
     where: {
-      role: { in: COORDINATOR_ROLES },
       // Qui ja no té accés a gesTIC no ha de rebre'n els avisos.
-      disabledAt: null,
+      ...activeCoordinator,
       ...(exceptUserId ? { id: { not: exceptUserId } } : {}),
     },
     select: { email: true },
@@ -458,16 +457,21 @@ export async function notifyStudentDeviceDecision(requestId: string, approved: b
 }
 
 /**
- * A qui de coordinació li interessa una cita: qui va obrir l'hora, que és amb
- * qui es té. Si l'hora ja no té qui l'obrís, o qui la demana és la mateixa
- * persona, s'avisa la resta de la coordinació.
+ * A qui de coordinació li interessa una cita: el coordinador que l'atén. Si
+ * l'hora ja no té coordinador, o qui la demana és la mateixa persona, s'avisa la
+ * resta de la coordinació.
  */
 async function appointmentCoordinationEmails(
-  opener: { id: string; email: string } | null,
+  coordinator: { id: string; email: string } | null,
   exceptUserId: string,
 ) {
-  if (opener && opener.id !== exceptUserId) return [opener.email];
+  if (coordinator && coordinator.id !== exceptUserId) return [coordinator.email];
   return coordinatorEmails(exceptUserId);
+}
+
+/** Com surt el coordinador d'una cita als correus. */
+function coordinatorName(coordinator: { name: string | null; email: string } | null) {
+  return coordinator ? (coordinator.name ?? coordinator.email) : null;
 }
 
 export async function notifyAppointmentBooked(appointmentId: string) {
@@ -476,12 +480,14 @@ export async function notifyAppointmentBooked(appointmentId: string) {
       where: { id: appointmentId },
       include: {
         user: { select: { name: true, email: true } },
-        slot: { select: { startDate: true, openedBy: { select: { id: true, email: true } } } },
+        slot: {
+          select: { startDate: true, coordinator: { select: { id: true, name: true, email: true } } },
+        },
       },
     });
     if (!appointment) return;
 
-    const to = await appointmentCoordinationEmails(appointment.slot.openedBy, appointment.userId);
+    const to = await appointmentCoordinationEmails(appointment.slot.coordinator, appointment.userId);
     if (to.length === 0) return;
 
     const baseUrl = await getBaseUrl();
@@ -489,6 +495,7 @@ export async function notifyAppointmentBooked(appointmentId: string) {
       to,
       ...buildAppointmentBookedEmail({
         who: appointment.user.name ?? appointment.user.email,
+        coordinator: coordinatorName(appointment.slot.coordinator),
         when: formatDateTimeFull(appointment.slot.startDate),
         purpose: appointment.purpose,
         url: `${baseUrl}/cites`,
@@ -507,20 +514,20 @@ export async function notifyAppointmentCancelled({
   cancelledById,
   cancelledByName,
   owner,
-  opener,
+  coordinator,
   startDate,
   purpose,
 }: {
   cancelledById: string;
   cancelledByName: string;
   owner: { id: string; name: string | null; email: string };
-  opener: { id: string; email: string } | null;
+  coordinator: { id: string; name: string | null; email: string } | null;
   startDate: Date;
   purpose: string;
 }) {
   await safely("cita cancel·lada", async () => {
     const byOwner = cancelledById === owner.id;
-    const to = byOwner ? await appointmentCoordinationEmails(opener, owner.id) : [owner.email];
+    const to = byOwner ? await appointmentCoordinationEmails(coordinator, owner.id) : [owner.email];
     if (to.length === 0) return;
 
     const baseUrl = await getBaseUrl();
@@ -529,6 +536,7 @@ export async function notifyAppointmentCancelled({
       ...buildAppointmentCancelledEmail({
         byOwner,
         who: byOwner ? (owner.name ?? owner.email) : cancelledByName,
+        coordinator: coordinatorName(coordinator),
         when: formatDateTimeFull(startDate),
         purpose,
         url: `${baseUrl}/cites`,

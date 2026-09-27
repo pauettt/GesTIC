@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { activeCoordinator } from "@/lib/coordinators";
 import { db } from "@/lib/db";
 import { formatShortDate } from "@/lib/date";
 import { getHolidays } from "@/lib/holidays-data";
@@ -24,23 +25,28 @@ function isUniqueViolation(error: unknown) {
 }
 
 /**
- * Marca una hora fixa de l'agenda: el mateix dia i la mateixa sessió, oberta
- * cada setmana del curs fins al 30 de juny, menys els festius. Les setmanes que
- * ja estaven obertes a mà es queden com eren, i l'hora fixa se les salta: són
- * de qui les va obrir, i treure l'hora fixa més endavant no les tocarà.
+ * Marca una hora fixa d'un coordinador: el mateix dia i la mateixa sessió,
+ * oberta cada setmana del curs fins al 30 de juny, menys els festius. Les
+ * setmanes que ja s'havien obert a mà per a aquest coordinador es queden com
+ * eren, i l'hora fixa se les salta: treure-la més endavant no les tocarà.
  */
 export async function addAppointmentAvailability(
   input: unknown,
 ): Promise<{ success: true; weeks: number } | Failure> {
-  const user = await requireSuperAdmin();
+  await requireSuperAdmin();
   const parsed = addAppointmentAvailabilitySchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
-  const { weekday, periodId } = parsed.data;
+  const { coordinatorId, weekday, periodId } = parsed.data;
   if (!getPeriodById(periodId)) {
     return { success: false, error: "Aquesta sessió no existeix a l'horari del centre" };
   }
+  const coordinator = await db.user.findFirst({
+    where: { id: coordinatorId, ...activeCoordinator },
+    select: { id: true },
+  });
+  if (!coordinator) return { success: false, error: "Aquesta persona no és a la coordinació TIC" };
 
   const { schoolYear } = recurringCourse();
   const weeks = occurrences(weekday, periodId, schoolYear, new Date(), await getHolidays());
@@ -51,22 +57,24 @@ export async function addAppointmentAvailability(
   try {
     await db.$transaction(async (tx) => {
       const { id } = await tx.appointmentAvailability.create({
-        data: { weekday, periodId, schoolYear, createdById: user.id },
+        data: { weekday, periodId, schoolYear, coordinatorId },
         select: { id: true },
       });
-      // Una hora ja oberta a mà no es duplica: l'índex únic de l'hora la salta.
+      // Una plaça ja oberta a mà no es duplica: l'índex únic d'hora i coordinador la salta.
       await tx.appointmentSlot.createMany({
         data: weeks.map((week) => ({
           startDate: week.startDate,
           endDate: week.endDate,
-          openedById: user.id,
+          coordinatorId,
           availabilityId: id,
         })),
         skipDuplicates: true,
       });
     });
   } catch (error) {
-    if (isUniqueViolation(error)) return { success: false, error: "Aquesta hora ja és fixa aquest curs" };
+    if (isUniqueViolation(error)) {
+      return { success: false, error: "Aquesta hora ja és fixa per a aquesta persona aquest curs" };
+    }
     console.error("[hora fixa] no s'ha pogut desar:", error);
     return { success: false, error: "No s'ha pogut desar l'hora fixa. Torna-ho a provar." };
   }

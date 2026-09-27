@@ -69,8 +69,8 @@ model User {
   deliveredStudentDevices StudentDeviceRequest[] @relation("StudentDeviceDeliverer")
   receivedStudentDevices  StudentDeviceRequest[] @relation("StudentDeviceReceiver")
   appointments            Appointment[]
-  openedAppointmentSlots  AppointmentSlot[]      @relation("AppointmentSlotOpener")
-  appointmentAvailability AppointmentAvailability[]
+  appointmentSlots        AppointmentSlot[]      @relation("AppointmentSlotCoordinator")
+  appointmentAvailability AppointmentAvailability[] @relation("AppointmentAvailabilityCoordinator")
 }
 
 /**
@@ -967,38 +967,43 @@ model KeyLoan {
 // ---------------------------------------------------------------------------
 
 /**
- * Hora que el superadministrador —el compte de coordinació TIC— obre perquè algú
- * del claustre hi demani cita. La gràcia és justament que només hi siguin les
- * hores en què la coordinació hi pot ser, no totes. La majoria surten d'una hora
- * fixa (`availabilityId`); les de fora, s'han obert a mà damunt la graella.
+ * Una plaça de l'agenda de cites: una hora en què un coordinador TIC concret pot
+ * atendre algú del claustre. Les obre el superadministrador —el compte de
+ * coordinació TIC—, que és qui porta l'agenda. Si a la mateixa hora hi ha dos
+ * coordinadors, hi ha dues places, i qui demana la cita tria amb qui.
+ * La majoria surten d'una hora fixa (`availabilityId`); les de fora, s'han obert
+ * a mà damunt la graella.
  * `startDate`/`endDate` surten de combinar el dia amb una sessió de
- * `SCHOOL_PERIODS`, igual que les reserves de carro. `startDate` és únic: una
- * hora, una cita.
+ * `SCHOOL_PERIODS`, igual que les reserves de carro. Una hora i un coordinador,
+ * una sola plaça, i cada plaça, una cita.
  */
 model AppointmentSlot {
   id             String   @id @default(cuid())
-  startDate      DateTime @unique
+  startDate      DateTime
   endDate        DateTime
-  // Qui l'ha obert: qui demana l'hora ha de saber amb qui la té, i és a qui
-  // arriben els avisos.
-  openedById     String?
+  // Qui atén la cita: qui la demana ha de saber amb qui la té, i és a qui
+  // arriben els avisos. Buit només si l'usuari s'ha esborrat, i llavors ningú
+  // no la pot demanar.
+  coordinatorId  String?
   // L'hora fixa d'on surt. Buit si s'ha obert a mà, o si l'hora fixa s'ha tret
   // i aquesta setmana ja tenia cita.
   availabilityId String?
   createdAt      DateTime @default(now())
 
-  openedBy     User?                    @relation("AppointmentSlotOpener", fields: [openedById], references: [id], onDelete: SetNull)
+  coordinator  User?                    @relation("AppointmentSlotCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
   availability AppointmentAvailability? @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
   appointment  Appointment?
 
+  @@unique([startDate, coordinatorId])
   @@index([availabilityId])
 }
 
 /**
- * Hora fixa de l'agenda de cites: el mateix dia de la setmana i la mateixa
- * sessió, oberta cada setmana d'un curs fins al 30 de juny. La disponibilitat de
- * la coordinació surt del seu horari, que és el mateix tot el curs, i obrir-la
- * setmana a setmana era feina repetida i setmanes que s'oblidaven.
+ * Hora fixa d'un coordinador TIC a l'agenda de cites: el mateix dia de la
+ * setmana i la mateixa sessió, oberta cada setmana d'un curs fins al 30 de juny.
+ * La disponibilitat de cada coordinador surt del seu horari, que és el mateix tot
+ * el curs, i obrir-la setmana a setmana era feina repetida i setmanes que
+ * s'oblidaven. Les marca el superadministrador, per a cada coordinador.
  *
  * En marcar-la es crea un `AppointmentSlot` normal per a cada setmana que queda,
  * menys els festius: demanar, cancel·lar i avisar funcionen sense cap cas
@@ -1011,17 +1016,18 @@ model AppointmentSlot {
  * a les reserves fixes: cada curs es tornen a marcar, perquè l'horari canvia.
  */
 model AppointmentAvailability {
-  id          String   @id @default(cuid())
-  weekday     Int
-  periodId    Int
-  schoolYear  String
-  createdById String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  weekday       Int
+  periodId      Int
+  schoolYear    String
+  // Qui atén les cites d'aquesta hora. Les setmanes que en surten el porten també.
+  coordinatorId String
+  createdAt     DateTime @default(now())
 
-  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  slots     AppointmentSlot[]
+  coordinator User              @relation("AppointmentAvailabilityCoordinator", fields: [coordinatorId], references: [id], onDelete: Cascade)
+  slots       AppointmentSlot[]
 
-  @@unique([weekday, periodId, schoolYear])
+  @@unique([weekday, periodId, schoolYear, coordinatorId])
 }
 
 /**

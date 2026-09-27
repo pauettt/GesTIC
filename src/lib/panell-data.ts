@@ -227,7 +227,7 @@ export async function getPendingWork(now: Date = new Date()) {
           id: true,
           purpose: true,
           user: { select: { name: true, email: true } },
-          slot: { select: { startDate: true, openedBy: { select: { name: true, email: true } } } },
+          slot: { select: { startDate: true, coordinator: { select: { name: true, email: true } } } },
         },
         orderBy: { slot: { startDate: "asc" } },
         take: QUEUE_LIMIT,

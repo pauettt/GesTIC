@@ -677,11 +677,14 @@ export function buildKeyNotReturnedEmail({
 
 export function buildAppointmentBookedEmail({
   who,
+  coordinator,
   when,
   purpose,
   url,
 }: {
   who: string;
+  /** Qui l'atén. Si l'avís va a tota la coordinació, és com se sap de qui és. */
+  coordinator: string | null;
   when: string;
   purpose: string;
   url: string;
@@ -693,6 +696,7 @@ export function buildAppointmentBookedEmail({
       rows: [
         ["Qui", who],
         ["Quan", when],
+        ...(coordinator ? [["Amb", coordinator] as [string, string]] : []),
       ],
       quote: { label: "Per a què", body: purpose },
       cta: { label: "Veure l'agenda", url },
@@ -703,6 +707,7 @@ export function buildAppointmentBookedEmail({
 export function buildAppointmentCancelledEmail({
   byOwner,
   who,
+  coordinator,
   when,
   purpose,
   url,
@@ -710,10 +715,13 @@ export function buildAppointmentCancelledEmail({
   /** Cert si l'ha cancel·lada qui la tenia; fals si ho ha fet la coordinació. */
   byOwner: boolean;
   who: string;
+  /** Qui l'havia d'atendre. */
+  coordinator: string | null;
   when: string;
   purpose: string;
   url: string;
 }) {
+  const withRow: [string, string][] = coordinator ? [["Amb", coordinator]] : [];
   return {
     subject: byOwner
       ? `Cita cancel·lada: ${who}`
@@ -723,14 +731,8 @@ export function buildAppointmentCancelledEmail({
         ? `${who} ha cancel·lat la cita que tenia amb la coordinació TIC. L'hora torna a quedar lliure.`
         : `${who} ha cancel·lat la teva cita amb la coordinació TIC.`,
       rows: byOwner
-        ? [
-            ["Qui", who],
-            ["Quan", when],
-          ]
-        : [
-            ["Quan", when],
-            ["Cancel·lada per", who],
-          ],
+        ? [["Qui", who], ["Quan", when], ...withRow]
+        : [["Quan", when], ...withRow, ["Cancel·lada per", who]],
       quote: { label: "Motiu de la cita", body: purpose },
       cta: { label: "Veure l'agenda", url },
       footer: byOwner ? undefined : "Si encara la necessites, demana una altra hora des de gesTIC.",
