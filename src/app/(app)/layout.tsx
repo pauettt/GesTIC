@@ -2,6 +2,7 @@ import { requireSession } from "@/lib/permissions";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserMenu } from "@/components/layout/user-menu";
+import { AutoRefresh } from "@/components/layout/auto-refresh";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   // El layout embolcalla també la secció de consergeria, així que aquí no es
@@ -11,6 +12,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-screen w-full">
+      <AutoRefresh />
       <AppSidebar role={user.role} isTutor={user.isTutor} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6 print:hidden">
