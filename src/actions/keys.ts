@@ -12,6 +12,7 @@ import {
   remindKeySchema,
   returnKeySchema,
   setConciergeActiveSchema,
+  setKeyArchivedSchema,
   upsertConciergeSchema,
   upsertKeySchema,
 } from "@/lib/validations/keys";
@@ -79,8 +80,16 @@ export async function upsertKey(input: unknown): Promise<ActionResult> {
 
   const duplicate = await db.key.findFirst({
     where: { number, ...(id ? { id: { not: id } } : {}) },
+    select: { archivedAt: true },
   });
-  if (duplicate) return { success: false, error: `Ja hi ha una clau amb el número ${number}` };
+  if (duplicate) {
+    return {
+      success: false,
+      error: duplicate.archivedAt
+        ? `El número ${number} és d'una clau arxivada: recupera-la des de «Claus arxivades»`
+        : `Ja hi ha una clau amb el número ${number}`,
+    };
+  }
 
   const data = {
     number,
@@ -96,8 +105,14 @@ export async function upsertKey(input: unknown): Promise<ActionResult> {
     await db.key.create({ data });
   }
 
-  revalidatePath("/consergeria");
+  revalidateKeys();
   return { success: true };
+}
+
+/** Totes les pantalles on surten les claus: el taulell, la gestió, l'historial i els carros. */
+function revalidateKeys() {
+  revalidatePath("/consergeria", "layout");
+  revalidatePath("/chromebooks", "layout");
 }
 
 export async function deleteKey(input: unknown): Promise<ActionResult> {
@@ -122,12 +137,41 @@ export async function deleteKey(input: unknown): Promise<ActionResult> {
     return {
       success: false,
       error:
-        "Aquesta clau té préstecs a l'historial i esborrar-la els faria desaparèixer. Si ja no es fa servir, indica-ho a les notes.",
+        "Aquesta clau té préstecs a l'historial i esborrar-la els faria desaparèixer. Si ja no es fa servir, arxiva-la.",
     };
   }
 
   await db.key.delete({ where: { id: parsed.data.id } });
-  revalidatePath("/consergeria");
+  revalidateKeys();
+  return { success: true };
+}
+
+/**
+ * Arxiva una clau que ja no es fa servir (una aula que ha canviat de pany, un
+ * carro que ja no hi és) o la recupera. Arxivada, surt del taulell, dels carros
+ * i de l'entrega, però l'historial la continua ensenyant.
+ */
+export async function setKeyArchived(input: unknown): Promise<ActionResult> {
+  await requireKeyAccess();
+  const parsed = setKeyArchivedSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: "Dades no vàlides" };
+  const { id, archived } = parsed.data;
+
+  if (archived) {
+    // Arxivada, desapareixeria de «Claus fora» i ningú no la reclamaria.
+    const out = await db.keyLoan.count({ where: { keyId: id, returnedAt: null } });
+    if (out > 0) return { success: false, error: "Aquesta clau està fora; registra'n el retorn abans" };
+  }
+
+  const { count } = await db.key.updateMany({
+    where: { id, archivedAt: archived ? null : { not: null } },
+    data: { archivedAt: archived ? new Date() : null },
+  });
+  if (count === 0) {
+    return { success: false, error: archived ? "Aquesta clau ja està arxivada" : "Aquesta clau no està arxivada" };
+  }
+
+  revalidateKeys();
   return { success: true };
 }
 
@@ -152,6 +196,9 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
     db.concierge.findUnique({ where: { id: deliveredById }, select: { active: true } }),
   ]);
   if (!key) return { success: false, error: "Aquesta clau no existeix" };
+  if (key.archivedAt) {
+    return { success: false, error: "Aquesta clau està arxivada: recupera-la abans d'entregar-la" };
+  }
   // El formulari només ofereix el claustre i els conserges actius; això és per
   // si l'acció es crida amb una altra cosa.
   if (!borrower || borrower.role === "CONSERGERIA") {

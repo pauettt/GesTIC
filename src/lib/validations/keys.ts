@@ -25,6 +25,8 @@ export type UpsertKeyInput = z.infer<typeof upsertKeySchema>;
 
 export const deleteKeySchema = z.object({ id: z.string().min(1) });
 
+export const setKeyArchivedSchema = z.object({ id: z.string().min(1), archived: z.boolean() });
+
 export const deliverKeySchema = z.object({
   keyId: z.string().min(1),
   borrowerId: z.string().min(1, "Tria el professor/a"),

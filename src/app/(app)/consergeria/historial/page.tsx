@@ -203,6 +203,10 @@ export default async function HistorialPage({
   }
 
   const filteredCart = typeof carro === "string" ? keys.find((k) => k.cartId === carro)?.cart : null;
+  // Les arxivades només surten com a filtre si tenen préstecs en el que es mira:
+  // són història, i amb el temps n'hi haurà cada cop més.
+  const keysWithLoans = new Set(loans.map((loan) => loan.keyId));
+  const keyFilters = keys.filter((key) => !key.archivedAt || keysWithLoans.has(key.id));
 
   return (
     <div className="flex flex-col gap-6">
@@ -362,7 +366,7 @@ export default async function HistorialPage({
         >
           Tot
         </ButtonLink>
-        {keys.map((key) => (
+        {keyFilters.map((key) => (
           <ButtonLink
             key={key.id}
             size="sm"
@@ -371,6 +375,7 @@ export default async function HistorialPage({
             href={href({ clau: clau === key.id ? "" : key.id })}
           >
             {key.number}
+            {key.archivedAt && <span className="font-normal opacity-70">(arxivada)</span>}
           </ButtonLink>
         ))}
       </div>
@@ -423,6 +428,7 @@ export default async function HistorialPage({
                   {loan.key.number}
                   <div className="text-xs text-muted-foreground">
                     {loan.key.cart?.name ?? loan.key.name}
+                    {loan.key.archivedAt && " · arxivada"}
                   </div>
                 </TableCell>
                 <TableCell>{loan.borrower.name ?? loan.borrower.email}</TableCell>

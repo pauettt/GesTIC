@@ -27,7 +27,8 @@ export default async function ConsergeriaPage() {
     // files.
     db.reservation.findMany({
       where: { status: "CONFIRMADA", startDate: { gte: addDays(now, -7) } },
-      include: { cart: { include: { keys: true } }, user: true },
+      // Les claus arxivades ja no s'entreguen: el carro queda sense clau associada.
+      include: { cart: { include: { keys: { where: { archivedAt: null } } } }, user: true },
       orderBy: { startDate: "asc" },
     }),
     db.keyLoan.findMany({
@@ -42,6 +43,7 @@ export default async function ConsergeriaPage() {
       orderBy: { deliveredAt: "asc" },
     }),
     db.key.findMany({
+      where: { archivedAt: null },
       include: { _count: { select: { loans: { where: { returnedAt: null } } } } },
       orderBy: { number: "asc" },
     }),

@@ -90,7 +90,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
       },
       include: {
         space: { select: { ...placedSpaceSelect, roomName: true } },
-        keys: { select: { id: true, number: true, name: true } },
+        keys: { where: { archivedAt: null }, select: { id: true, number: true, name: true } },
         chromebooks: {
           include: {
             // Els equips que algú té reservats a part no hi són, ara o a l'hora que es busca.

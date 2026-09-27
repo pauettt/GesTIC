@@ -260,6 +260,17 @@ mig curs.
 
 ## ✅ Fet
 
+### 2026-09-27
+
+- **Les claus s'arxiven** (*Consergeria → Gestiona les claus → Arxiva*),
+  migració `20260927052707_claus_arxivades`. Una clau que ja s'ha deixat alguna
+  vegada no s'esborra, perquè no se'n perdi l'historial; la que ja no es fa
+  servir s'arxiva. Arxivada, surt del taulell, dels carros i de l'entrega, i
+  l'historial la continua ensenyant, marcada com a arxivada. No s'arxiva
+  mentre és fora. El número continua sent seu: si en fa falta una amb el
+  mateix número, es recupera des de *Claus arxivades*. Esborrar només és per
+  a una clau que no s'ha deixat mai.
+
 ### 2026-09-26
 
 - **Revisió de l'auditoria de Gemini** (commit `450850b`, ja desplegat):

@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import { db } from "@/lib/db";
 import { orderCarts } from "@/lib/cart-order";
+import { formatDate } from "@/lib/date";
 import { requireKeyAccess } from "@/lib/permissions";
 import { deleteKey } from "@/actions/keys";
+import { ArchiveKeyButton } from "@/components/keys/archive-key-button";
 import { KeyDialog } from "@/components/keys/key-dialog";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,7 @@ export const metadata = { title: "Claus del centre" };
 export default async function ClausPage() {
   await requireKeyAccess();
 
-  const [keys, rawCarts, usedKeys] = await Promise.all([
+  const [allKeys, rawCarts, usedKeys] = await Promise.all([
     db.key.findMany({
       include: {
         cart: true,
@@ -28,6 +30,8 @@ export default async function ClausPage() {
     db.keyLoan.findMany({ distinct: ["keyId"], select: { keyId: true } }),
   ]);
   const withHistory = new Set(usedKeys.map((loan) => loan.keyId));
+  const keys = allKeys.filter((key) => !key.archivedAt);
+  const archived = allKeys.filter((key) => key.archivedAt);
 
   const customOrder = rawCarts.some((c) => c.order !== null);
   const savedOrder = customOrder
@@ -46,8 +50,9 @@ export default async function ClausPage() {
             <h1 className="text-2xl font-semibold">Claus del centre</h1>
             <p className="text-muted-foreground">
               Aules, magatzems i carros de Chromebooks. Cada clau amb el seu número i les còpies que
-              n&apos;hi ha al clauer. Les que ja s&apos;han deixat alguna vegada no s&apos;esborren,
-              perquè no se&apos;n perdi l&apos;historial.
+              n&apos;hi ha al clauer. La que ja no es fa servir s&apos;arxiva: surt del taulell i dels
+              carros, però se&apos;n conserva l&apos;historial. Esborrar només es pot una que no
+              s&apos;ha deixat mai.
             </p>
           </div>
           <KeyDialog carts={carts} />
@@ -109,6 +114,8 @@ export default async function ClausPage() {
                           </Button>
                         }
                       />
+                      {/* Fora, arxivar-la la trauria de «Claus fora» i ningú no la reclamaria. */}
+                      {out === 0 && <ArchiveKeyButton keyId={key.id} number={key.number} archived={false} />}
                       {!withHistory.has(key.id) && (
                         <ConfirmDeleteButton
                           action={deleteKey}
@@ -125,6 +132,48 @@ export default async function ClausPage() {
           </TableBody>
         </Table>
       </div>
+
+      {archived.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="claus-arxivades">
+          <div>
+            <h2 id="claus-arxivades" className="text-lg font-semibold">
+              Claus arxivades
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              No surten al taulell ni als carros, i no es poden entregar. El seu historial es
+              conserva. Si una torna a fer falta, recupera-la.
+            </p>
+          </div>
+          <div className="overflow-x-auto rounded-lg border bg-background">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número</TableHead>
+                  <TableHead>A què obria</TableHead>
+                  <TableHead>Carro</TableHead>
+                  <TableHead>Arxivada</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {archived.map((key) => (
+                  <TableRow key={key.id} className="text-muted-foreground">
+                    <TableCell className="font-medium text-foreground">{key.number}</TableCell>
+                    <TableCell>{key.name}</TableCell>
+                    <TableCell>{key.cart?.name ?? "—"}</TableCell>
+                    <TableCell>{key.archivedAt && formatDate(key.archivedAt)}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <ArchiveKeyButton keyId={key.id} number={key.number} archived />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

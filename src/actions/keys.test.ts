@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { db, requireKeyAccess, revalidatePath } = vi.hoisted(() => {
   return {
     db: {
-      key: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      key: {
+        findUnique: vi.fn(),
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        updateMany: vi.fn(),
+        delete: vi.fn(),
+      },
       keyLoan: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
       concierge: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
       user: { findUnique: vi.fn() },
@@ -18,7 +25,7 @@ vi.mock("@/lib/db", () => ({ db }));
 vi.mock("@/lib/permissions", () => ({ requireKeyAccess, requireSuperAdmin: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
-import { deleteKey, returnKey } from "@/actions/keys";
+import { deleteKey, deliverKey, returnKey, setKeyArchived, upsertKey } from "@/actions/keys";
 import { returnKeySchema } from "@/lib/validations/keys";
 
 beforeEach(() => {
@@ -116,5 +123,69 @@ describe("deleteKey", () => {
     db.keyLoan.count.mockResolvedValue(0);
     expect(await deleteKey({ id: "clau-1" })).toEqual({ success: true });
     expect(db.key.delete).toHaveBeenCalledWith({ where: { id: "clau-1" } });
+  });
+});
+
+describe("setKeyArchived", () => {
+  it("arxiva una clau que és al taulell", async () => {
+    db.keyLoan.count.mockResolvedValue(0);
+    db.key.updateMany.mockResolvedValue({ count: 1 });
+
+    expect(await setKeyArchived({ id: "clau-1", archived: true })).toEqual({ success: true });
+    const call = db.key.updateMany.mock.calls[0][0];
+    expect(call.where).toEqual({ id: "clau-1", archivedAt: null });
+    expect(call.data.archivedAt).toBeInstanceOf(Date);
+  });
+
+  it("no arxiva una clau que és fora: ningú no la reclamaria", async () => {
+    db.keyLoan.count.mockResolvedValue(1);
+    expect(await setKeyArchived({ id: "clau-1", archived: true })).toEqual({
+      success: false,
+      error: "Aquesta clau està fora; registra'n el retorn abans",
+    });
+    expect(db.key.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("la recupera, i avisa si ja estava com es demana", async () => {
+    db.key.updateMany.mockResolvedValueOnce({ count: 1 });
+    expect(await setKeyArchived({ id: "clau-1", archived: false })).toEqual({ success: true });
+    expect(db.key.updateMany).toHaveBeenCalledWith({
+      where: { id: "clau-1", archivedAt: { not: null } },
+      data: { archivedAt: null },
+    });
+
+    db.key.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await setKeyArchived({ id: "clau-1", archived: false })).toEqual({
+      success: false,
+      error: "Aquesta clau no està arxivada",
+    });
+  });
+});
+
+describe("claus arxivades", () => {
+  it("no s'entreguen", async () => {
+    db.key.findUnique.mockResolvedValue({
+      id: "clau-1",
+      copies: 2,
+      cartId: null,
+      archivedAt: new Date(),
+      _count: { loans: 0 },
+    });
+    db.user.findUnique.mockResolvedValue({ role: "PROFESSOR" });
+    db.concierge.findUnique.mockResolvedValue({ active: true });
+
+    const res = await deliverKey({ keyId: "clau-1", borrowerId: "prof-1", deliveredById: "conserge-1" });
+    expect(res).toEqual({ success: false, error: "Aquesta clau està arxivada: recupera-la abans d'entregar-la" });
+    expect(db.keyLoan.create).not.toHaveBeenCalled();
+  });
+
+  it("el seu número no es pot donar a una clau nova: es recupera", async () => {
+    db.key.findFirst.mockResolvedValue({ archivedAt: new Date() });
+    const res = await upsertKey({ number: "A-14", name: "Aula 2.03", cartId: "", copies: 1, notes: "" });
+    expect(res).toEqual({
+      success: false,
+      error: "El número A-14 és d'una clau arxivada: recupera-la des de «Claus arxivades»",
+    });
+    expect(db.key.create).not.toHaveBeenCalled();
   });
 });

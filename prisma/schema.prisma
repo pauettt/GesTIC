@@ -908,15 +908,21 @@ model Concierge {
  * Clau física del centre. `cartId` només el tenen les dels carros de
  * Chromebooks: aquelles hereten les reserves, i per això se'n pot saber a quina
  * hora havien de tornar. Les d'aula o magatzem no en tenen cap.
+ *
+ * Una clau que ja s'ha deixat alguna vegada no s'esborra, s'arxiva
+ * (`archivedAt`): surt del taulell, del carro i de l'entrega, però el seu
+ * historial es continua veient. El número continua sent seu, i si torna a fer
+ * falta es recupera.
  */
 model Key {
-  id        String   @id @default(cuid())
-  number    String   @unique
-  name      String
-  cartId    String?
-  copies    Int      @default(1)
-  notes     String?
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  number     String    @unique
+  name       String
+  cartId     String?
+  copies     Int       @default(1)
+  notes      String?
+  createdAt  DateTime  @default(now())
+  archivedAt DateTime?
 
   cart  Cart?     @relation(fields: [cartId], references: [id], onDelete: SetNull)
   loans KeyLoan[]
