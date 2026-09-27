@@ -297,12 +297,21 @@ Límit conegut: una setmana tancada a mà no deixa rastre. Si cau en un festiu
 que després s'esborra, es torna a obrir amb la resta. Fa falta tancar-la,
 entrar el festiu i esborrar-lo, i es resol tancant-la un altre cop.
 
+### 35. Les claus són de consergeria i del superadministrador
+Decidit el 2026-09-27. El control de claus (*Claus*: el taulell, la gestió de
+les claus i l'historial) el porten consergeria i el superadministrador. La
+resta de la coordinació TIC no hi entra: no li surt al menú, les pàgines i les
+accions la tornen a l'inici, i a la fitxa del carro no hi veu «Qui s'ha endut
+aquest carro». Fins ara hi entrava tota la coordinació.
+
 ---
 
 ## ✅ Fet
 
 ### 2026-09-27
 
+- **Els coordinadors TIC ja no entren a les claus** (§35): només consergeria i
+  el superadministrador.
 - **Cites amb nom i una plaça per coordinador** (§34), migració
   `20260927135024_cites_per_coordinador`. Cada hora oberta és d'un coordinador,
   i el professorat veu qui l'atendrà abans de demanar-la; si a la mateixa hora

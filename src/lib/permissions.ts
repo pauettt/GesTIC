@@ -64,7 +64,7 @@ export async function requireAdmin() {
   return user;
 }
 
-/** Control de claus: consergeria i la coordinació TIC. */
+/** Control de claus: consergeria i el superadministrador. */
 export async function requireKeyAccess() {
   const user = await requireSession();
   if (!canAccessKeys(user.role)) {

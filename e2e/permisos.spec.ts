@@ -62,6 +62,17 @@ test.describe("coordinació TIC", () => {
     await expect(page).toHaveURL(`${BASE_URL}/`);
   });
 
+  test("no porta les claus: són de consergeria i del superadministrador", async ({ page }) => {
+    const { cartId } = readFixtures();
+    for (const path of ["/consergeria", "/consergeria/claus", "/consergeria/historial"]) {
+      await page.goto(path);
+      await expect(page, `${path} hauria de tornar a l'inici`).toHaveURL(`${BASE_URL}/`);
+    }
+    await expect(page.getByRole("link", { name: "Claus", exact: true })).toHaveCount(0);
+    await page.goto(`/chromebooks/${cartId}`);
+    await expect(page.getByRole("link", { name: "Qui s'ha endut aquest carro" })).toHaveCount(0);
+  });
+
   test("veu qui ha demanat cada cita i per a què", async ({ page }) => {
     const { nextWeek } = readFixtures();
     await page.goto(`/cites?week=${nextWeek}`);
@@ -84,6 +95,12 @@ test.describe("superadministració", () => {
     await page.goto("/usuaris");
     await expect(page.getByRole("heading", { name: "Usuaris i permisos" })).toBeVisible();
     await expect(page.getByText("Superadministrador/a").first()).toBeVisible();
+  });
+
+  test("porta les claus", async ({ page }) => {
+    await page.goto("/consergeria");
+    await expect(page).toHaveURL(`${BASE_URL}/consergeria`);
+    await expect(page.getByRole("link", { name: "Claus", exact: true })).toBeVisible();
   });
 });
 

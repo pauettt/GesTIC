@@ -30,9 +30,12 @@ export function isConcierge(role: Role) {
   return role === "CONSERGERIA";
 }
 
-/** Qui pot entrar al control de claus: consergeria i la coordinació TIC. */
+/**
+ * Qui pot entrar al control de claus: consergeria, que les porta al taulell, i
+ * el superadministrador. La resta de la coordinació TIC no hi entra.
+ */
 export function canAccessKeys(role: Role) {
-  return isConcierge(role) || isAdmin(role);
+  return isConcierge(role) || isSuperAdmin(role);
 }
 
 /**

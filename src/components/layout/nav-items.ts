@@ -51,7 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/consergeria",
     label: "Claus",
     icon: KeyRoundIcon,
-    roles: ["CONSERGERIA", "ADMIN", "SUPER_ADMIN"],
+    roles: ["CONSERGERIA", "SUPER_ADMIN"],
   },
   { href: "/panell", label: "Panell coordinador", icon: LayoutDashboardIcon, adminOnly: true },
   { href: "/contrasenyes", label: "Contrasenyes", icon: LockKeyholeIcon, adminOnly: true },

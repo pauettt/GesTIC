@@ -22,8 +22,8 @@ describe("comprovacions de rol", () => {
     expect(isAdmin("CONSERGERIA")).toBe(false);
   });
 
-  it("les claus les porten consergeria i la coordinació, no el professorat", () => {
-    expect(allowed(canAccessKeys)).toEqual(["SUPER_ADMIN", "ADMIN", "CONSERGERIA"]);
+  it("les claus les porten consergeria i el superadministrador, no la resta de la coordinació", () => {
+    expect(allowed(canAccessKeys)).toEqual(["SUPER_ADMIN", "CONSERGERIA"]);
   });
 
   it("al préstec a l'alumnat hi entren els tutors/es i la coordinació", () => {
@@ -60,14 +60,15 @@ describe("menú per rol", () => {
     expect(hrefs("CONSERGERIA", true)).toEqual(["/consergeria"]);
   });
 
-  it("la coordinació gestiona però no reparteix permisos ni administra", () => {
+  it("la coordinació gestiona però no reparteix permisos, no administra i no porta les claus", () => {
     const admin = hrefs("ADMIN");
-    expect(admin).toEqual(expect.arrayContaining(["/panell", "/espais", "/consergeria", "/alumnat"]));
+    expect(admin).toEqual(expect.arrayContaining(["/panell", "/espais", "/alumnat"]));
     expect(admin).not.toContain("/usuaris");
     expect(admin).not.toContain("/administracio");
+    expect(admin).not.toContain("/consergeria");
   });
 
   it("el superadministrador ho veu tot", () => {
-    expect(hrefs("SUPER_ADMIN")).toEqual(expect.arrayContaining(["/usuaris", "/administracio"]));
+    expect(hrefs("SUPER_ADMIN")).toEqual(expect.arrayContaining(["/usuaris", "/administracio", "/consergeria"]));
   });
 });
