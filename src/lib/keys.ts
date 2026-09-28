@@ -3,6 +3,16 @@ import { RECESS } from "@/lib/schedule";
 /** Marge abans de considerar que una clau de carro s'hauria d'haver tornat. */
 export const KEY_GRACE_MINUTES = 10;
 
+const numberCollator = new Intl.Collator("ca", { numeric: true, sensitivity: "base" });
+
+/**
+ * Ordre de les claus pel número, com al clauer: la 4 abans de la 14. Amb el
+ * cercador, qui escriu «4» troba primer la 4.
+ */
+export function byKeyNumber(a: { number: string }, b: { number: string }) {
+  return numberCollator.compare(a.number, b.number);
+}
+
 type Slot = { startDate: Date; endDate: Date };
 
 function minutesOf(time: string) {

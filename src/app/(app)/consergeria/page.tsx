@@ -2,7 +2,7 @@ import { HistoryIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { addDays, formatDateTime, formatTime, madridDateKey } from "@/lib/date";
-import { deskStatus, dueAt, KEY_GRACE_MINUTES } from "@/lib/keys";
+import { byKeyNumber, deskStatus, dueAt, KEY_GRACE_MINUTES } from "@/lib/keys";
 import { requireKeyAccess } from "@/lib/permissions";
 import { DeliverKeyDialog } from "@/components/keys/deliver-key-dialog";
 import { RemindKeyButton, ReturnKeyButton } from "@/components/keys/key-loan-actions";
@@ -49,7 +49,6 @@ export default async function ConsergeriaPage() {
     db.key.findMany({
       where: { archivedAt: null },
       include: { _count: { select: { loans: { where: { returnedAt: null } } } } },
-      orderBy: { number: "asc" },
     }),
     db.concierge.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     // Tot el claustre, coordinació inclosa: els de coordinació també fan classe
@@ -90,7 +89,7 @@ export default async function ConsergeriaPage() {
     return madridDateKey(loan.deliveredAt) !== today;
   }
 
-  const keyOptions = keys.map((key) => ({
+  const keyOptions = keys.sort(byKeyNumber).map((key) => ({
     id: key.id,
     name: key.name,
     number: key.number,

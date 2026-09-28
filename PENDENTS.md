@@ -321,6 +321,13 @@ aquest carro». Fins ara hi entrava tota la coordinació.
   així que només en surt la d'aquell dia. El rastre de les entregues és a
   l'*Historial*; les reserves que ningú no ha recollit no hi surten, perquè no
   hi ha hagut préstec.
+- **Cercador de claus i de professorat a consergeria**, que ho va demanar
+  perquè hi ha moltes claus. A *Entrega sense reserva*, «Quina clau?» i «A
+  qui?» ja no són desplegables: s'hi escriu el número o l'aula, o un tros del
+  nom, i la llista es filtra. A *Gestiona les claus* hi ha un cercador damunt
+  de la taula (número, aula o carro), que també troba les arxivades. No fa cas
+  de majúscules ni d'accents. Les claus s'ordenen pel número com al clauer (la
+  4 abans de la 14), i no alfabèticament.
 
 ### 2026-09-27
 

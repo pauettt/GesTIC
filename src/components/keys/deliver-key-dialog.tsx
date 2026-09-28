@@ -13,11 +13,65 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Option = { id: string; name: string };
+
+type PickerItem = { id: string; label: string; detail?: string; disabled?: boolean };
+
+/**
+ * Llista amb cercador: al clauer hi ha moltes claus i al claustre molta gent,
+ * i un desplegable s'havia de recórrer sencer. S'escriu un tros del que surt a
+ * l'etiqueta (el número, l'aula, el nom), sense fer cas de majúscules ni accents.
+ */
+function Picker({
+  id,
+  items,
+  value,
+  onChange,
+  placeholder,
+  empty,
+}: {
+  id: string;
+  items: PickerItem[];
+  value: string;
+  onChange: (id: string) => void;
+  placeholder: string;
+  empty: string;
+}) {
+  return (
+    <Combobox
+      items={items}
+      value={items.find((item) => item.id === value) ?? null}
+      onValueChange={(item: PickerItem | null) => onChange(item?.id ?? "")}
+      itemToStringLabel={(item: PickerItem) => item.label}
+      isItemEqualToValue={(a: PickerItem, b: PickerItem) => a.id === b.id}
+      autoHighlight
+    >
+      <ComboboxInput id={id} placeholder={placeholder} className="w-full" />
+      <ComboboxContent>
+        <ComboboxEmpty>{empty}</ComboboxEmpty>
+        <ComboboxList>
+          {(item: PickerItem) => (
+            <ComboboxItem key={item.id} value={item} disabled={item.disabled}>
+              {item.label}
+              {item.detail && <span className="text-muted-foreground">{item.detail}</span>}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
 
 /**
  * Entrega d'una clau. Qui la dona es tria aquí i no una vegada per torn: al
@@ -87,47 +141,36 @@ export function DeliverKeyDialog({
           {keys && !keyId && (
             <Field>
               <FieldLabel htmlFor="deliver-key">Quina clau?</FieldLabel>
-              <Select
+              <Picker
+                id="deliver-key"
+                items={keys.map((k) => ({
+                  id: k.id,
+                  label: `${k.number} — ${k.name}`,
+                  detail:
+                    k.available === 0
+                      ? "cap còpia disponible"
+                      : `${k.available} ${k.available === 1 ? "disponible" : "disponibles"}`,
+                  disabled: k.available === 0,
+                }))}
                 value={selectedKey}
-                onValueChange={(v) => setSelectedKey(v ?? "")}
-                items={Object.fromEntries(
-                  keys.map((k) => [k.id, `${k.number} — ${k.name}`]),
-                )}
-              >
-                <SelectTrigger id="deliver-key" className="w-full">
-                  <SelectValue placeholder="Tria la clau" />
-                </SelectTrigger>
-                <SelectContent>
-                  {keys.map((k) => (
-                    <SelectItem key={k.id} value={k.id} disabled={k.available === 0}>
-                      {k.number} — {k.name}
-                      {k.available === 0 ? " (cap còpia disponible)" : ` (${k.available} disponibles)`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={setSelectedKey}
+                placeholder="Número o aula…"
+                empty="Cap clau amb aquest número o aula"
+              />
             </Field>
           )}
 
           {teachers && !borrowerId && (
             <Field>
               <FieldLabel htmlFor="deliver-teacher">A qui?</FieldLabel>
-              <Select
+              <Picker
+                id="deliver-teacher"
+                items={teachers.map((t) => ({ id: t.id, label: t.name }))}
                 value={teacher}
-                onValueChange={(v) => setTeacher(v ?? "")}
-                items={Object.fromEntries(teachers.map((t) => [t.id, t.name]))}
-              >
-                <SelectTrigger id="deliver-teacher" className="w-full">
-                  <SelectValue placeholder="Tria el professor/a" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teachers.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={setTeacher}
+                placeholder="Nom del professor/a…"
+                empty="Ningú amb aquest nom"
+              />
             </Field>
           )}
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { madridDateKey, zonedDateTime } from "@/lib/date";
-import { blockEnd, deskStatus, dueAt, isOvernight, KEY_GRACE_MINUTES } from "@/lib/keys";
+import { blockEnd, byKeyNumber, deskStatus, dueAt, isOvernight, KEY_GRACE_MINUTES } from "@/lib/keys";
 import { getPeriodById } from "@/lib/schedule";
 
 const DAY = "2026-09-14";
@@ -105,5 +105,12 @@ describe("deskStatus", () => {
     const today = [reservation(3), reservation(4)];
     expect(deskStatus(today[0], today, at("11:00"))).toBe("missed");
     expect(deskStatus(today[1], today, at("11:00"))).toBe("pending");
+  });
+});
+
+describe("byKeyNumber", () => {
+  it("ordena com al clauer: la 4 abans de la 14, també amb lletres", () => {
+    const numbers = ["14", "A-10", "4", "A-2", "B-1", "2"].map((number) => ({ number }));
+    expect(numbers.sort(byKeyNumber).map((key) => key.number)).toEqual(["2", "4", "14", "A-2", "A-10", "B-1"]);
   });
 });
