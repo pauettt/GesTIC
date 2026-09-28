@@ -25,6 +25,12 @@ export const PRIVATE_INCIDENT_TITLE = "Incidència privada de la Professora Dos"
 /** Incidència assignada que fa deu dies que ningú no toca. */
 export const STALLED_INCIDENT_TITLE = "Projector que ningú no ha tornat a mirar";
 
+/** Incidències del Carro Incidències E2E: una del Professor Un i una de la Professora Dos. */
+export const CART_INCIDENT_TITLES = {
+  professor: "La regleta del carro no carrega",
+  professor2: "La porta del carro no tanca",
+} as const;
+
 /** Incidència d'un compte del dev login: l'esborrat de dades de prova se l'ha d'endur. */
 export const DEV_ACCOUNT_INCIDENT_TITLE = "Incidència d'un compte de prova";
 
@@ -64,6 +70,8 @@ export type Fixtures = {
   reservationDevices: Record<"RES-01" | "RES-02", string>;
   /** Carro a part per a les reserves fixes. */
   recurringCartId: string;
+  /** Carro a part amb incidències del carro sencer (`CART_INCIDENT_TITLES`). */
+  incidentCartId: string;
   /** Dilluns de la primera setmana de la prova de reserves fixes, "YYYY-MM-DD". */
   fixedWeek: string;
   poolChromebooks: Record<"ALU-01" | "ALU-02", string>;

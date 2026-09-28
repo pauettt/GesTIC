@@ -128,7 +128,7 @@ export default async function InventoryItemDetailPage({ params }: PageProps<"/in
       )}
 
       <ItemIncidentHistory
-        itemId={item.id}
+        historyHref={`/incidencies?inventoryItemId=${item.id}`}
         incidents={
           canManage
             ? item.incidents

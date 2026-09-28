@@ -1,6 +1,28 @@
 import { expect, test } from "@playwright/test";
 
+import { CART_INCIDENT_TITLES } from "./data";
 import { pageAs, readFixtures, resolveIncident } from "./helpers";
+
+test("la fitxa del carro ensenya les seves incidències", async ({ browser }) => {
+  const { incidentCartId } = readFixtures();
+
+  // La coordinació les veu totes, amb qui les ha reportat, i el nombre d'obertes a dalt.
+  const admin = await pageAs(browser, "admin");
+  await admin.goto(`/chromebooks/${incidentCartId}`);
+  await expect(admin.getByRole("heading", { name: "Historial d'incidències" })).toBeVisible();
+  await expect(admin.getByRole("row", { name: new RegExp(CART_INCIDENT_TITLES.professor) })).toContainText(
+    "Professor Un",
+  );
+  await expect(admin.getByRole("link", { name: CART_INCIDENT_TITLES.professor2 })).toBeVisible();
+  await expect(admin.getByRole("link", { name: "2 incidències obertes" })).toBeVisible();
+
+  // El professorat, només les seves.
+  const professor = await pageAs(browser, "professor");
+  await professor.goto(`/chromebooks/${incidentCartId}`);
+  await expect(professor.getByRole("heading", { name: "Les meves incidències d'aquest carro" })).toBeVisible();
+  await expect(professor.getByRole("link", { name: CART_INCIDENT_TITLES.professor })).toBeVisible();
+  await expect(professor.getByText(CART_INCIDENT_TITLES.professor2)).toHaveCount(0);
+});
 
 test("una incidència de l'entorn Google va i torna entre el professorat i la coordinació", async ({
   browser,

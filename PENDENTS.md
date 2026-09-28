@@ -310,6 +310,12 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ### 2026-09-28
 
+- **Les incidències del carro, a la seva fitxa**. Fins ara la pàgina del carro
+  només hi enllaçava, i qui hi entrava no les veia. Ara, al final, hi ha
+  l'*Historial d'incidències* del carro sencer, com a la fitxa d'un equip
+  d'inventari (la mateixa taula), amb les obertes davant; a dalt, «N incidències
+  obertes» hi porta. Les dels seus dispositius continuen a la fitxa de cada un.
+  El professorat hi veu només les seves.
 - **Al taulell de consergeria només hi queda el que falta**. A *Reserves
   d'avui* una reserva surt de la llista quan la clau torna, o quan l'hora passa
   sense que ningú l'hagi recollida; mentre la clau és fora continua sortint com

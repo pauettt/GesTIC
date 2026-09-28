@@ -13,6 +13,7 @@ import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/devic
 import { getHolidays } from "@/lib/holidays-data";
 import { courseEndLabel, recurringCourse, slotLabel } from "@/lib/recurring-reservations";
 import { deviceSummary } from "@/lib/devices";
+import { OPEN_INCIDENT_STATUSES } from "@/lib/chromebook-status";
 import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ import { ChromebookManager } from "@/components/chromebooks/chromebook-manager";
 import { ChromebookStatusGrid } from "@/components/chromebooks/chromebook-status-grid";
 import { CancelRecurringButton, RecurringRequestDialog } from "@/components/chromebooks/recurring-reservations";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
+import { ItemIncidentHistory } from "@/components/inventory/item-histories";
 import { WeeklySchedule } from "@/components/chromebooks/weekly-schedule";
 import { Separator } from "@/components/ui/separator";
 
@@ -45,7 +47,7 @@ export default async function CartDetailPage({
   const now = new Date();
   const course = recurringCourse(now);
 
-  const [cart, spaces, recurring, carts, existingChromebooks, holidays] = await Promise.all([
+  const [cart, spaces, recurring, carts, existingChromebooks, holidays, incidents] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
@@ -97,6 +99,20 @@ export default async function CartDetailPage({
       ? db.chromebook.findMany({ select: { assetTag: true, serialNumber: true } })
       : Promise.resolve([]),
     getHolidays(),
+    // Les del carro sencer; les dels seus dispositius són a la fitxa de cada un.
+    // El professorat només hi veu les seves, com a Incidències.
+    db.incident.findMany({
+      where: { cartId: id, ...(admin ? {} : { reporterId: user.id }) },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        priority: true,
+        status: true,
+        reporter: { select: { name: true, email: true } },
+      },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   if (!cart || !canAccessCart(user.role, cart)) notFound();
@@ -116,6 +132,7 @@ export default async function CartDetailPage({
   const viewer = { id: user.id, admin };
   // Per a la graella: quants equips hi faltaran a cada sessió perquè algú els té reservats a part.
   const deviceBookings = inService.flatMap((chromebook) => chromebook.reservations);
+  const openIncidents = incidents.filter((incident) => OPEN_INCIDENT_STATUSES.includes(incident.status)).length;
   const existing = {
     assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
     serialNumbers: existingChromebooks.flatMap((chromebook) =>
@@ -150,12 +167,19 @@ export default async function CartDetailPage({
                 </p>
               )}
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href={`/incidencies?cartId=${cart.id}`}
-                  className="text-sm text-muted-foreground hover:underline"
+                <a
+                  href="#incidencies"
+                  className={cn(
+                    "text-sm hover:underline",
+                    openIncidents > 0 ? "font-medium text-red-700" : "text-muted-foreground",
+                  )}
                 >
-                  Historial d&apos;incidències
-                </Link>
+                  {openIncidents === 0
+                    ? "Historial d'incidències"
+                    : openIncidents === 1
+                      ? "1 incidència oberta"
+                      : `${openIncidents} incidències obertes`}
+                </a>
                 {canAccessKeys(user.role) && (
                   <Link
                     href={`/consergeria/historial?carro=${cart.id}`}
@@ -346,6 +370,14 @@ export default async function CartDetailPage({
           </div>
         </>
       )}
+
+      <Separator />
+      <ItemIncidentHistory
+        historyHref={`/incidencies?cartId=${cart.id}`}
+        object="carro"
+        incidents={incidents}
+        showReporter={admin}
+      />
     </div>
   );
 }

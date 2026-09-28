@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { addDays, madridDateKey, startOfWeek, zonedDateTime } from "../src/lib/date";
 import { encryptSecret } from "../src/lib/vault";
 import {
+  CART_INCIDENT_TITLES,
   CREDENTIALS,
   DEV_ACCOUNT_INCIDENT_TITLE,
   FOREIGN_APPOINTMENT_PURPOSE,
@@ -226,6 +227,21 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
+    // Un carro amb incidències del carro sencer, una de cada professor, per a la
+    // seva fitxa. Sense dispositius: cap recompte d'equips no en depèn.
+    const incidentCart = await db.cart.create({ data: { name: "Carro Incidències E2E" } });
+    for (const reporter of ["professor", "professor2"] as const) {
+      await db.incident.create({
+        data: {
+          reporterId: userIds[reporter],
+          targetType: "CART",
+          cartId: incidentCart.id,
+          title: CART_INCIDENT_TITLES[reporter],
+          description: "Reportada a les dades de prova.",
+        },
+      });
+    }
+
     for (const [order, video] of TUTORIAL_VIDEOS.entries()) {
       const tutorialCategory = await db.tutorialCategory.create({ data: { name: video.category, order } });
       await db.tutorialVideo.create({
@@ -279,6 +295,7 @@ export async function seed(connectionString: string): Promise<{
         cartChromebooks,
         reservationCartId: reservationCart.id,
         recurringCartId: recurringCart.id,
+        incidentCartId: incidentCart.id,
         fixedWeek: madridDateKey(fixedMonday),
         reservationDevices,
         poolChromebooks,

@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { HistoryIcon } from "lucide-react";
 
@@ -87,24 +88,33 @@ export function ItemLoanHistory({ loans }: { loans: (LoanRequest & { requester: 
   );
 }
 
+/**
+ * Les incidències d'un objecte a la seva fitxa: un equip d'inventari o un carro.
+ * La llista sencera, amb els filtres, és a Incidències (`historyHref`).
+ */
 export function ItemIncidentHistory({
-  itemId,
+  historyHref,
+  object = "equip",
   incidents,
   showReporter,
 }: {
-  itemId: string;
-  incidents: (Incident & { reporter: User })[];
+  historyHref: Route;
+  /** Per al títol del professorat: «Les meves incidències d'aquest carro». */
+  object?: "equip" | "carro";
+  incidents: (Pick<Incident, "id" | "title" | "createdAt" | "priority" | "status"> & {
+    reporter: Pick<User, "name" | "email">;
+  })[];
   /** El professorat només veu les seves, i sense la columna de qui la va reportar. */
   showReporter: boolean;
 }) {
   return (
-    <div>
+    <div id="incidencies" className="scroll-mt-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">
-          {showReporter ? "Historial d'incidències" : "Les meves incidències d'aquest equip"}
+          {showReporter ? "Historial d'incidències" : `Les meves incidències d'aquest ${object}`}
         </h2>
         <Link
-          href={`/incidencies?inventoryItemId=${itemId}`}
+          href={historyHref}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
         >
           <HistoryIcon className="size-3.5" />
