@@ -14,7 +14,6 @@ import { getHolidays } from "@/lib/holidays-data";
 import { courseEndLabel, recurringCourse, slotLabel } from "@/lib/recurring-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { OPEN_INCIDENT_STATUSES } from "@/lib/chromebook-status";
-import { recentIncidents } from "@/lib/incidents";
 import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -114,11 +113,11 @@ export default async function CartDetailPage({
       },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     }),
-    // Les dels dispositius, per a la fitxa de cada un a la graella de la
-    // coordinació. El professorat només en veu si n'hi ha cap d'oberta.
+    // Les obertes dels dispositius, per a la finestreta de cada un a la graella
+    // de la coordinació; l'historial sencer és a la fitxa de l'equip.
     admin
       ? db.incident.findMany({
-          where: { chromebook: { cartId: id } },
+          where: { chromebook: { cartId: id }, status: { in: OPEN_INCIDENT_STATUSES } },
           select: { id: true, title: true, status: true, chromebookId: true },
           orderBy: { createdAt: "desc" },
         })
@@ -376,15 +375,15 @@ export default async function CartDetailPage({
               cartId={cart.id}
               carts={orderedCarts}
               customOrder={cart.chromebookOrder.length > 0}
-              chromebooks={orderedChromebooks.map((chromebook) => {
-                const incidents = incidentsByDevice.get(chromebook.id) ?? [];
-                return {
-                  ...chromebook,
-                  reservations: reservationViews(chromebook.reservations, viewer, now),
-                  incidents: recentIncidents(incidents).map(({ id, title, status }) => ({ id, title, status })),
-                  incidentCount: incidents.length,
-                };
-              })}
+              chromebooks={orderedChromebooks.map((chromebook) => ({
+                ...chromebook,
+                reservations: reservationViews(chromebook.reservations, viewer, now),
+                openIncidents: (incidentsByDevice.get(chromebook.id) ?? []).map(({ id, title, status }) => ({
+                  id,
+                  title,
+                  status,
+                })),
+              }))}
             />
           </div>
         </>

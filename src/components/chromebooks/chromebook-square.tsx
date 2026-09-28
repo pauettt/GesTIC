@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HistoryIcon, PlusIcon } from "lucide-react";
+import { FileTextIcon, PlusIcon } from "lucide-react";
 import type { ChromebookStatus, DeviceType, IncidentStatus } from "@prisma/client";
 
 import {
@@ -57,45 +57,57 @@ type Chromebook = {
   notes: Note[];
   /** Les reserves obertes d'aquest equip sol, començant per la de qui el té ara, si n'hi ha. */
   reservations: DeviceReservationView[];
-  /** Totes les obertes i les tancades més recents (`recentIncidents`). */
-  incidents: DeviceIncident[];
-  /** Quantes en té en total, per saber si n'hi ha més a Incidències. */
-  incidentCount: number;
+  /** Les incidències obertes: l'historial sencer és a la fitxa de l'equip. */
+  openIncidents: DeviceIncident[];
 };
 
 export type DeviceIncident = { id: string; title: string; status: IncidentStatus };
 
-/** L'historial d'incidències de l'equip, dins la seva fitxa. */
-function DeviceIncidentHistory({ chromebook }: { chromebook: Chromebook }) {
-  const allHref = `/incidencies?chromebookId=${chromebook.id}` as const;
+/** Les incidències obertes de l'equip, per saber què li passa sense sortir del carro. */
+function OpenIncidents({ incidents }: { incidents: DeviceIncident[] }) {
+  if (incidents.length === 0) return null;
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-semibold text-muted-foreground">Historial d&apos;incidències</p>
-      {chromebook.incidents.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Cap incidència registrada.</p>
-      ) : (
-        <ul className="flex flex-col gap-1" aria-label="Incidències de l'equip">
-          {chromebook.incidents.map((incident) => (
-            <li key={incident.id} className="flex items-start justify-between gap-2">
-              <Link href={`/incidencies/${incident.id}`} className="line-clamp-2 text-xs hover:underline">
-                {incident.title}
-              </Link>
-              <Badge variant={incidentStatusVariants[incident.status]} className="shrink-0">
-                {incidentStatusLabels[incident.status]}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      )}
-      {chromebook.incidentCount > chromebook.incidents.length && (
-        <Link
-          href={allHref}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
-        >
-          <HistoryIcon className="size-3.5" />
-          Veure-les totes ({chromebook.incidentCount})
-        </Link>
-      )}
+    <ul className="flex flex-col gap-1 rounded-md bg-red-50 px-2 py-1.5" aria-label="Incidències obertes de l'equip">
+      {incidents.map((incident) => (
+        <li key={incident.id} className="flex items-start justify-between gap-2">
+          <Link href={`/incidencies/${incident.id}`} className="line-clamp-2 text-xs text-red-800 hover:underline">
+            {incident.title}
+          </Link>
+          <Badge variant={incidentStatusVariants[incident.status]} className="shrink-0">
+            {incidentStatusLabels[incident.status]}
+          </Badge>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** L'historial de notes d'un equip, amb el formulari per afegir-ne: a la finestreta del carro i a la fitxa. */
+export function ChromebookNotes({ chromebookId, notes }: { chromebookId: string; notes: Note[] }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-semibold text-muted-foreground">Historial de notes</p>
+      <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto">
+        {notes.length === 0 && <p className="text-xs text-muted-foreground">Encara no hi ha cap nota.</p>}
+        {notes.map((note) => (
+          <div key={note.id} className="rounded-md bg-muted p-1.5 text-xs">
+            <div className="flex items-start justify-between gap-1">
+              <div>
+                <p className="whitespace-pre-line">{note.body}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  {note.author.name ?? note.author.email} · {formatDateTime(note.createdAt)}
+                </p>
+              </div>
+              <ConfirmDeleteButton
+                action={deleteChromebookNote}
+                input={{ id: note.id }}
+                title="Eliminar aquesta nota?"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <ChromebookNoteForm chromebookId={chromebookId} />
     </div>
   );
 }
@@ -282,7 +294,15 @@ export function ChromebookSquare({
             {chromebook.serialNumber && (
               <p className="text-xs text-muted-foreground">Núm. sèrie: {chromebook.serialNumber}</p>
             )}
+            <Link
+              href={`/chromebooks/equips/${chromebook.id}`}
+              className="flex items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              <FileTextIcon className="size-3.5" />
+              Obre la fitxa: incidències, reserves i notes
+            </Link>
             <ChromebookAvailability chromebook={chromebook} />
+            <OpenIncidents incidents={chromebook.openIncidents} />
             <DeviceReservationList reservations={chromebook.reservations} />
             {canBeReserved(chromebook.status, chromebook.reservations) && (
               <ReserveDeviceButton
@@ -323,34 +343,7 @@ export function ChromebookSquare({
 
             <Separator />
 
-            <DeviceIncidentHistory chromebook={chromebook} />
-
-            <Separator />
-
-            <p className="text-xs font-semibold text-muted-foreground">Historial de notes</p>
-            <div className="flex max-h-32 flex-col gap-1.5 overflow-y-auto">
-              {chromebook.notes.length === 0 && (
-                <p className="text-xs text-muted-foreground">Encara no hi ha cap nota.</p>
-              )}
-              {chromebook.notes.map((note) => (
-                <div key={note.id} className="rounded-md bg-muted p-1.5 text-xs">
-                  <div className="flex items-start justify-between gap-1">
-                    <div>
-                      <p>{note.body}</p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {note.author.name ?? note.author.email} · {formatDateTime(note.createdAt)}
-                      </p>
-                    </div>
-                    <ConfirmDeleteButton
-                      action={deleteChromebookNote}
-                      input={{ id: note.id }}
-                      title="Eliminar aquesta nota?"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <ChromebookNoteForm chromebookId={chromebook.id} />
+            <ChromebookNotes chromebookId={chromebook.id} notes={chromebook.notes} />
           </div>
         </PopoverContent>
       </Popover>

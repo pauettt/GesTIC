@@ -37,8 +37,7 @@ type Chromebook = {
   unavailableReason: string | null;
   notes: Note[];
   reservations: DeviceReservationView[];
-  incidents: DeviceIncident[];
-  incidentCount: number;
+  openIncidents: DeviceIncident[];
 };
 
 export function ChromebookManager({

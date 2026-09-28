@@ -26,8 +26,9 @@ const UNRESERVABLE: Partial<Record<ChromebookStatus, string>> = {
 /** Un motiu per no reservar que ha de veure qui ho prova, dins la transacció. */
 class ReservationRefused extends Error {}
 
-function revalidateCart(cartId: string | null) {
+function revalidateCart(cartId: string | null, chromebookId: string) {
   if (cartId) revalidatePath(`/chromebooks/${cartId}`);
+  revalidatePath(`/chromebooks/equips/${chromebookId}`);
   revalidatePath("/chromebooks");
   revalidatePath("/");
 }
@@ -148,7 +149,7 @@ export async function createDeviceReservation(input: unknown): Promise<ActionRes
     return { success: false, error: "No s'ha pogut desar la reserva. Torna-ho a provar." };
   }
 
-  revalidateCart(cartId);
+  revalidateCart(cartId, chromebookId);
   return { success: true };
 }
 
@@ -191,7 +192,7 @@ export async function cancelDeviceReservation(input: unknown): Promise<ActionRes
     where: { id: reservation.id, status: "CONFIRMADA" },
     data: { status: "CANCELLADA" },
   });
-  revalidateCart(reservation.chromebook.cartId);
+  revalidateCart(reservation.chromebook.cartId, reservation.chromebookId);
   return { success: true };
 }
 
@@ -212,7 +213,7 @@ export async function returnReservedDevice(input: unknown): Promise<ActionResult
     where: { id: reservation.id, status: "CONFIRMADA" },
     data: { status: "COMPLETADA", returnedAt: new Date(), returnedById: user.id },
   });
-  revalidateCart(reservation.chromebook.cartId);
+  revalidateCart(reservation.chromebook.cartId, reservation.chromebookId);
   revalidatePath("/panell");
   return { success: true };
 }

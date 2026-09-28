@@ -316,13 +316,15 @@ aquest carro». Fins ara hi entrava tota la coordinació.
   d'inventari (la mateixa taula), amb les obertes davant; a dalt, «N incidències
   obertes» hi porta. Les dels seus dispositius continuen a la fitxa de cada un.
   El professorat hi veu només les seves.
-- **Cada dispositiu, amb el seu historial d'incidències**. A la graella del
-  carro de la coordinació, la fitxa de cada equip ja no només hi enllaça: diu
-  totes les obertes i les tres tancades més recents, amb l'estat i l'enllaç a
-  cadascuna, i «Veure-les totes» si n'hi ha més. La fitxa d'un equip de préstec
-  a l'alumnat té la mateixa taula que la del carro i la de l'inventari, en lloc
-  del botó. El professorat continua veient només si l'equip té una incidència
-  oberta, no quina.
+- **Cada dispositiu d'un carro té la seva fitxa** (`/chromebooks/equips/[id]`),
+  com un equip d'inventari: les dades i el carro on és, l'*Historial
+  d'incidències* (la mateixa taula), l'*Historial de reserves* de l'equip sol
+  (qui, quan, si el va tornar un altre dia) i les notes. Només per a la
+  coordinació. S'hi va des de la finestreta de la graella del carro, «Obre la
+  fitxa», que es queda amb les accions ràpides i, en vermell, les incidències
+  obertes. La fitxa d'un equip de préstec a l'alumnat també té la taula
+  d'incidències en lloc del botó. El professorat continua veient només si
+  l'equip té una incidència oberta, no quina.
 - **Els dispositius, en ordre, a *Nova incidència***: sortien en ordre alfabètic
   (C1.1, C1.10, C1.11… i el C1.2 molt més avall). Ara surten com a la graella del
   carro: l'ordre que hi ha desat la coordinació o, si no n'hi ha, pel número. Els

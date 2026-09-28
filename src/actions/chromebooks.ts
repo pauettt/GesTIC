@@ -91,6 +91,12 @@ function devicePage(cartId: string | null) {
   return cartId ? `/chromebooks/${cartId}` : "/alumnat";
 }
 
+/** On es veu un equip: la pàgina del seu carro (o el préstec a l'alumnat) i, si és d'un carro, la seva fitxa. */
+function revalidateDevice(chromebook: { id: string; cartId: string | null }) {
+  revalidatePath(devicePage(chromebook.cartId));
+  if (chromebook.cartId) revalidatePath(`/chromebooks/equips/${chromebook.id}`);
+}
+
 function prismaCode(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
 }
@@ -232,6 +238,7 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
   }
 
   revalidatePath(`/chromebooks/${cartId}`);
+  if (id) revalidatePath(`/chromebooks/equips/${id}`);
   if (previousCartId && previousCartId !== cartId) {
     revalidatePath(`/chromebooks/${previousCartId}`);
   }
@@ -308,7 +315,7 @@ export async function deleteChromebook(input: unknown): Promise<ActionResult> {
   }
 
   const chromebook = await db.chromebook.delete({ where: { id: parsed.data.id } });
-  revalidatePath(devicePage(chromebook.cartId));
+  revalidateDevice(chromebook);
   return { success: true };
 }
 
@@ -344,7 +351,7 @@ export async function setChromebookRetired(input: unknown): Promise<ActionResult
     });
   }
 
-  revalidatePath(devicePage(chromebook.cartId));
+  revalidateDevice(chromebook);
   return { success: true };
 }
 
@@ -393,7 +400,7 @@ export async function setChromebookAvailability(input: unknown): Promise<ActionR
     });
   }
 
-  revalidatePath(devicePage(chromebook.cartId));
+  revalidateDevice(chromebook);
   if (chromebook.cartId) revalidatePath("/chromebooks");
   return { success: true };
 }
@@ -411,7 +418,7 @@ export async function addChromebookNote(input: unknown): Promise<ActionResult> {
 
   await db.chromebookNote.create({ data: { chromebookId, authorId: user.id, body } });
 
-  revalidatePath(devicePage(chromebook.cartId));
+  revalidateDevice(chromebook);
   return { success: true };
 }
 
@@ -424,7 +431,7 @@ export async function deleteChromebookNote(input: unknown): Promise<ActionResult
     where: { id: parsed.data.id },
     include: { chromebook: true },
   });
-  revalidatePath(devicePage(note.chromebook.cartId));
+  revalidateDevice(note.chromebook);
   return { success: true };
 }
 

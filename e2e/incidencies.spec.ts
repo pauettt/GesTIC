@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { CART_INCIDENT_TITLES, DEVICE_INCIDENT_TITLE } from "./data";
+import { BASE_URL } from "./env";
 import { pageAs, readFixtures, resolveIncident } from "./helpers";
 
 test("la fitxa del carro ensenya les seves incidències, i la de cada dispositiu, les seves", async ({ browser }) => {
@@ -19,9 +20,15 @@ test("la fitxa del carro ensenya les seves incidències, i la de cada dispositiu
   // La del dispositiu no és del carro: surt a la fitxa de l'equip.
   await expect(admin.getByText(DEVICE_INCIDENT_TITLE)).toHaveCount(0);
   await admin.getByRole("button", { name: /INC-01/ }).click();
-  const deviceIncidents = admin.getByRole("list", { name: "Incidències de l'equip" });
-  await expect(deviceIncidents.getByRole("link", { name: DEVICE_INCIDENT_TITLE })).toBeVisible();
-  await expect(deviceIncidents).toContainText("Oberta");
+  // A la finestreta, les obertes; a la fitxa de l'equip, l'historial sencer.
+  const openIncidents = admin.getByRole("list", { name: "Incidències obertes de l'equip" });
+  await expect(openIncidents.getByRole("link", { name: DEVICE_INCIDENT_TITLE })).toBeVisible();
+  await admin.getByRole("link", { name: /Obre la fitxa/ }).click();
+  await expect(admin.getByRole("heading", { level: 1, name: "INC-01" })).toBeVisible();
+  await expect(admin.getByRole("row", { name: new RegExp(DEVICE_INCIDENT_TITLE) })).toContainText("Professora Dos");
+  await expect(admin.getByRole("heading", { name: "Historial de reserves" })).toBeVisible();
+  await expect(admin.getByRole("link", { name: "Carro Incidències E2E" }).first()).toBeVisible();
+  const deviceRecordUrl = admin.url();
 
   // El professorat, només les seves.
   const professor = await pageAs(browser, "professor");
@@ -29,6 +36,9 @@ test("la fitxa del carro ensenya les seves incidències, i la de cada dispositiu
   await expect(professor.getByRole("heading", { name: "Les meves incidències d'aquest carro" })).toBeVisible();
   await expect(professor.getByRole("link", { name: CART_INCIDENT_TITLES.professor })).toBeVisible();
   await expect(professor.getByText(CART_INCIDENT_TITLES.professor2)).toHaveCount(0);
+  // La fitxa de l'equip, que diu qui ha obert cada incidència, és de la coordinació.
+  await professor.goto(deviceRecordUrl);
+  await expect(professor).toHaveURL(`${BASE_URL}/`);
 });
 
 test("una incidència de l'entorn Google va i torna entre el professorat i la coordinació", async ({

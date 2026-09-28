@@ -1,6 +1,4 @@
-import type { IncidentStatus, Prisma } from "@prisma/client";
-
-import { OPEN_INCIDENT_STATUSES } from "@/lib/chromebook-status";
+import type { Prisma } from "@prisma/client";
 
 /** Dies sense cap canvi ni comentari a partir dels quals una incidència és aturada. */
 export const STALLED_DAYS = 7;
@@ -37,17 +35,6 @@ export function incidentViewWhere(view: IncidentView, now: Date = new Date()): P
     updatedAt: { lt: cutoff },
     comments: { none: { createdAt: { gte: cutoff } } },
   };
-}
-
-/**
- * Les incidències que ensenya una fitxa petita, com la d'un dispositiu del
- * carro: totes les obertes, que són la feina d'ara, i les `closedLimit`
- * tancades més recents. Han d'arribar de la més nova a la més antiga; la resta
- * són a Incidències.
- */
-export function recentIncidents<T extends { status: IncidentStatus }>(incidents: T[], closedLimit = 3): T[] {
-  const isOpen = (incident: T) => OPEN_INCIDENT_STATUSES.includes(incident.status);
-  return [...incidents.filter(isOpen), ...incidents.filter((incident) => !isOpen(incident)).slice(0, closedLimit)];
 }
 
 /** Dies sencers des de l'últim moviment: el canvi o el comentari més recent. */
