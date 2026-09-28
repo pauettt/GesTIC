@@ -2,15 +2,17 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
+import type { BadgeVariant } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export type QueueItem = {
   id: string;
   href: Route;
   main: string;
   meta: string;
-  badge: { label: string; variant: "default" | "secondary" | "destructive" | "outline" } | null;
+  badge: { label: string; variant: BadgeVariant } | null;
 };
 
 /**
@@ -21,6 +23,7 @@ export type QueueItem = {
 export function WorkQueue({
   title,
   icon: Icon,
+  iconClassName,
   items,
   total = items.length,
   allHref,
@@ -28,6 +31,7 @@ export function WorkQueue({
 }: {
   title: string;
   icon: LucideIcon;
+  iconClassName?: string;
   items: QueueItem[];
   total?: number;
   allHref?: Route;
@@ -38,11 +42,11 @@ export function WorkQueue({
   return (
     <Card className="h-full">
       <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Icon className="size-4 text-muted-foreground" />
-          {title}
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <Icon className={cn("size-4.5 shrink-0", iconClassName ?? "text-muted-foreground")} />
+          <span className="truncate">{title}</span>
           {total > 0 && (
-            <Badge variant="secondary" className="ml-auto">
+            <Badge variant="secondary" className="ml-auto shrink-0 font-medium">
               {total}
             </Badge>
           )}

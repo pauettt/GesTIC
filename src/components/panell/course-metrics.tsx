@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { CourseStats } from "@/lib/panell-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -6,12 +7,20 @@ function formatAverage(days: number | null) {
   return days < 1 ? "menys d'un dia" : `${days.toFixed(1)} dies`;
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string | number;
+  valueClassName?: string;
+}) {
   return (
     <Card>
       <CardHeader>
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-3xl font-semibold">{value}</p>
+        <p className={cn("text-3xl font-semibold", valueClassName)}>{value}</p>
       </CardHeader>
     </Card>
   );
@@ -25,8 +34,16 @@ export function CourseMetrics({ stats }: { stats: CourseStats }) {
       <h2 className="mb-3 text-lg font-semibold">Aquest curs</h2>
       <div className="grid gap-4 lg:grid-cols-3">
         <Stat label="Incidències reportades" value={stats.reportedCount} />
-        <Stat label="Resoltes" value={stats.resolvedCount} />
-        <Stat label="Temps mitjà de resolució" value={formatAverage(stats.avgResolutionDays)} />
+        <Stat
+          label="Resoltes"
+          value={stats.resolvedCount}
+          valueClassName="text-emerald-600 dark:text-emerald-400"
+        />
+        <Stat
+          label="Temps mitjà de resolució"
+          value={formatAverage(stats.avgResolutionDays)}
+          valueClassName="text-sky-600 dark:text-sky-400"
+        />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -44,7 +61,7 @@ export function CourseMetrics({ stats }: { stats: CourseStats }) {
                     <span className="w-16 shrink-0 text-muted-foreground">{month}</span>
                     <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                       <span
-                        className="block h-full rounded-full bg-primary"
+                        className="block h-full rounded-full bg-sky-600 dark:bg-sky-400"
                         style={{ width: `${(count / maxMonth) * 100}%` }}
                       />
                     </span>

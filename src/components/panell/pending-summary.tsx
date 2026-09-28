@@ -76,8 +76,8 @@ export function PendingSummary({ counts }: { counts: Counts }) {
           </Link>
         </div>
         {pending.length === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CircleCheckIcon className="size-4 text-green-700" />
+          <p className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            <CircleCheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
             Tot al dia: no hi ha res que esperi la coordinació.
           </p>
         ) : (
@@ -90,12 +90,16 @@ export function PendingSummary({ counts }: { counts: Counts }) {
                     href={entry.href}
                     className={
                       entry.urgent
-                        ? "flex items-baseline gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5 text-sm hover:bg-destructive/10"
+                        ? "flex items-baseline gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-sm hover:bg-red-500/15 dark:border-red-500/30 dark:bg-red-950/40"
                         : "flex items-baseline gap-1.5 rounded-md border px-2.5 py-1.5 text-sm hover:bg-muted"
                     }
                   >
-                    <span className="font-semibold">{count}</span>
-                    <span className="text-muted-foreground">{count === 1 ? entry.one : entry.many}</span>
+                    <span className={entry.urgent ? "font-bold text-red-700 dark:text-red-300" : "font-semibold"}>
+                      {count}
+                    </span>
+                    <span className={entry.urgent ? "text-red-900/90 dark:text-red-200/90" : "text-muted-foreground"}>
+                      {count === 1 ? entry.one : entry.many}
+                    </span>
                   </Link>
                 </li>
               );

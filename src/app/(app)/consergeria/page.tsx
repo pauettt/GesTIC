@@ -158,7 +158,7 @@ export default async function ConsergeriaPage() {
                 {openLoans.map((loan) => {
                   const late = isLate(loan);
                   return (
-                    <TableRow key={loan.id} className={late ? "bg-destructive/5" : undefined}>
+                    <TableRow key={loan.id} className={late ? "bg-red-500/10 dark:bg-red-950/30" : undefined}>
                       <TableCell className="font-medium">
                         {loan.key.number} — {loan.key.name}
                         {late && (
@@ -258,7 +258,7 @@ export default async function ConsergeriaPage() {
                       <TableCell>
                         <div className="flex justify-end">
                           {delivered ? (
-                            <Badge variant="secondary">Entregada</Badge>
+                            <Badge variant="success">Entregada</Badge>
                           ) : cartKey ? (
                             <DeliverKeyDialog
                               concierges={concierges}

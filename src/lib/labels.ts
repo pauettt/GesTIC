@@ -125,34 +125,31 @@ export const roleLabels: Record<Role, string> = {
   PROFESSOR: "Professorat",
 };
 
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+export type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info";
 
 export const incidentStatusVariants: Record<IncidentStatus, BadgeVariant> = {
   OBERTA: "destructive",
-  EN_CURS: "default",
-  RESOLTA: "secondary",
+  EN_CURS: "warning",
+  RESOLTA: "success",
   TANCADA: "outline",
 };
 
 export const incidentPriorityVariants: Record<IncidentPriority, BadgeVariant> = {
   ALTA: "destructive",
-  MITJANA: "default",
+  MITJANA: "warning",
   BAIXA: "secondary",
 };
 
 export const inventoryItemStatusVariants: Record<InventoryItemStatus, BadgeVariant> = {
-  ACTIU: "secondary",
-  EN_REPARACIO: "default",
+  ACTIU: "success",
+  EN_REPARACIO: "warning",
   BAIXA: "outline",
 };
 
 export const chromebookStatusVariants: Record<ChromebookStatus, BadgeVariant> = {
-  DISPONIBLE: "secondary",
-  RESERVAT: "default",
-  // Comparteix variant amb RESERVAT perquè tots dos volen dir "ocupat" i no
-  // surten mai a la mateixa llista: RESERVAT és d'equips de carro i ASSIGNAT
-  // del pool de préstec.
-  ASSIGNAT: "default",
+  DISPONIBLE: "success",
+  RESERVAT: "info",
+  ASSIGNAT: "warning",
   EN_INCIDENCIA: "destructive",
   NO_DISPONIBLE: "destructive",
   BAIXA: "outline",
@@ -177,9 +174,9 @@ export const queryStatusLabels: Record<QueryStatus, string> = {
 };
 
 export const queryStatusVariants: Record<QueryStatus, BadgeVariant> = {
-  OBERTA: "destructive",
-  EN_CURS: "default",
-  RESOLTA: "secondary",
+  OBERTA: "info",
+  EN_CURS: "warning",
+  RESOLTA: "success",
   TANCADA: "outline",
 };
 
@@ -213,11 +210,11 @@ export const studentDeviceRequestStatusVariants: Record<
   StudentDeviceRequestStatus,
   BadgeVariant
 > = {
-  PENDENT: "default",
-  APROVADA: "secondary",
-  ENTREGADA: "secondary",
+  PENDENT: "warning",
+  APROVADA: "info",
+  ENTREGADA: "success",
   REBUTJADA: "destructive",
-  RETORNADA: "outline",
+  RETORNADA: "secondary",
   CANCELLADA: "outline",
 };
 
@@ -229,16 +226,16 @@ export const recurringReservationStatusLabels: Record<RecurringReservationStatus
 };
 
 export const recurringReservationStatusVariants: Record<RecurringReservationStatus, BadgeVariant> = {
-  PENDENT: "default",
-  APROVADA: "secondary",
+  PENDENT: "warning",
+  APROVADA: "success",
   REBUTJADA: "destructive",
   CANCELLADA: "outline",
 };
 
 export const loanRequestStatusVariants: Record<LoanRequestStatus, BadgeVariant> = {
-  PENDENT: "default",
-  APROVADA: "secondary",
+  PENDENT: "warning",
+  APROVADA: "success",
   REBUTJADA: "destructive",
-  RETORNADA: "outline",
+  RETORNADA: "secondary",
   CANCELLADA: "outline",
 };

@@ -22,8 +22,11 @@ export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
         <MenuIcon className="size-5" />
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
-        <div className="flex h-14 items-center border-b px-6 font-semibold">
-          gesTIC
+        <div className="flex h-14 items-center gap-2.5 border-b px-6 text-lg font-semibold tracking-tight">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-xs">
+            gT
+          </span>
+          <span>gesTIC</span>
         </div>
         <nav className="space-y-1 p-3">
           {items.map((item) => {

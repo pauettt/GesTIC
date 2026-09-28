@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { updateIncidentPriority, updateIncidentStatus } from "@/actions/incidents";
 import { useServerAction } from "@/hooks/use-server-action";
 import {
+  type BadgeVariant,
   incidentPriorityLabels,
   incidentPriorityVariants,
   incidentStatusLabels,
@@ -16,15 +17,16 @@ import { ResolveIncidentDialog } from "@/components/incidents/resolve-incident-d
 import { badgeVariants } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
-
 // El SelectTrigger porta un fons propi en mode fosc (`dark:bg-input/30`) que
 // trepitjava el de l'etiqueta: «Mitjana» quedava amb text fosc sobre fons fosc.
 // Cada variant hi torna a posar el seu color i, com que va al final, guanya.
 const darkBackgrounds: Record<BadgeVariant, string> = {
   default: "dark:bg-primary dark:hover:bg-primary/80",
   secondary: "dark:bg-secondary dark:hover:bg-secondary/80",
-  destructive: "dark:bg-destructive/20 dark:hover:bg-destructive/30",
+  destructive: "dark:bg-red-950/40 dark:hover:bg-red-950/60",
+  success: "dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60",
+  warning: "dark:bg-amber-950/40 dark:hover:bg-amber-950/60",
+  info: "dark:bg-sky-950/40 dark:hover:bg-sky-950/60",
   outline: "",
 };
 

@@ -37,6 +37,7 @@ import { DeviceReservationAction } from "@/components/chromebooks/device-reserva
 import { PendingSummary } from "@/components/panell/pending-summary";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
+import { cn } from "@/lib/utils";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MODULE_CARDS: Array<{
@@ -44,6 +45,7 @@ const MODULE_CARDS: Array<{
   title: string;
   description: string;
   icon: typeof TicketIcon;
+  iconBoxClasses: string;
   /** El que en veu el professorat, quan la seva pantalla no és la de la coordinació. */
   professor?: { title: string; description: string };
   /** Només per a tutors/es: la resta del professorat no hi pot fer res. */
@@ -54,12 +56,16 @@ const MODULE_CARDS: Array<{
     title: "Incidències TIC",
     description: "Reporta i fes seguiment de problemes amb equips del centre.",
     icon: TicketIcon,
+    iconBoxClasses:
+      "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:border-amber-400/25 dark:bg-amber-400/15 dark:text-amber-400",
   },
   {
     href: "/inventari",
     title: "Inventari i préstecs",
     description: "Consulta l'equipament del centre i demana material en préstec.",
     icon: PackageIcon,
+    iconBoxClasses:
+      "border-indigo-500/25 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400/25 dark:bg-indigo-400/15 dark:text-indigo-400",
     professor: {
       title: "Préstec de material",
       description: "Demana material del centre en préstec i segueix com van les teves sol·licituds.",
@@ -70,12 +76,16 @@ const MODULE_CARDS: Array<{
     title: "Carros",
     description: "Reserva carros de Chromebooks, portàtils o iPads i consulta'n l'estat.",
     icon: LaptopIcon,
+    iconBoxClasses:
+      "border-sky-500/25 bg-sky-500/10 text-sky-600 dark:border-sky-400/25 dark:bg-sky-400/15 dark:text-sky-400",
   },
   {
     href: "/alumnat",
     title: "Préstec a l'alumnat",
     description: "Demana un Chromebook per a un alumne/a del teu grup per a tot el curs.",
     icon: BackpackIcon,
+    iconBoxClasses:
+      "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:border-emerald-400/25 dark:bg-emerald-400/15 dark:text-emerald-400",
     tutorsOnly: true,
   },
   {
@@ -83,24 +93,32 @@ const MODULE_CARDS: Array<{
     title: "Cites",
     description: "Demana hora amb la coordinació TIC per al que necessitis.",
     icon: CalendarCheckIcon,
+    iconBoxClasses:
+      "border-purple-500/25 bg-purple-500/10 text-purple-600 dark:border-purple-400/25 dark:bg-purple-400/15 dark:text-purple-400",
   },
   {
     href: "/consultes",
     title: "Peticions i consultes",
     description: "Demana o pregunta directament a la coordinació TIC i fes-ne seguiment.",
     icon: MessageCircleQuestionIcon,
+    iconBoxClasses:
+      "border-teal-500/25 bg-teal-500/10 text-teal-600 dark:border-teal-400/25 dark:bg-teal-400/15 dark:text-teal-400",
   },
   {
     href: "/dubtes",
     title: "Dubtes freqüents",
     description: "Respostes ràpides a les preguntes més habituals.",
     icon: HelpCircleIcon,
+    iconBoxClasses:
+      "border-orange-500/25 bg-orange-500/10 text-orange-600 dark:border-orange-400/25 dark:bg-orange-400/15 dark:text-orange-400",
   },
   {
     href: "/tutorials",
     title: "Tutorials",
     description: "Vídeos curts per fer servir les eines i els equips del centre.",
     icon: SquarePlayIcon,
+    iconBoxClasses:
+      "border-rose-500/25 bg-rose-500/10 text-rose-600 dark:border-rose-400/25 dark:bg-rose-400/15 dark:text-rose-400",
   },
 ];
 
@@ -277,7 +295,7 @@ export default async function HomePage() {
                         Fins al {formatDate(loan.endDate)}
                       </span>
                     </span>
-                    <Badge variant={loan.status === "APROVADA" ? "secondary" : "default"}>
+                    <Badge variant={loan.status === "APROVADA" ? "success" : "warning"}>
                       {loan.status === "APROVADA" ? "El tens tu" : "Pendent"}
                     </Badge>
                   </li>
@@ -441,12 +459,19 @@ export default async function HomePage() {
           const Icon = item.icon;
           const { title, description } = !coordinator && item.professor ? item.professor : item;
           return (
-            <Link key={item.href} href={item.href}>
-              <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/40">
+            <Link key={item.href} href={item.href} className="group">
+              <Card className="h-full transition-all group-hover:border-primary/40 group-hover:shadow-xs">
                 <CardHeader>
-                  <Icon className="size-6 text-primary" />
-                  <CardTitle className="mt-2">{title}</CardTitle>
-                  <CardDescription>{description}</CardDescription>
+                  <div
+                    className={cn(
+                      "flex size-11 items-center justify-center rounded-lg border transition-transform duration-200 group-hover:scale-105",
+                      item.iconBoxClasses,
+                    )}
+                  >
+                    <Icon className="size-5.5" />
+                  </div>
+                  <CardTitle className="mt-2 text-base font-semibold">{title}</CardTitle>
+                  <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
                 </CardHeader>
               </Card>
             </Link>

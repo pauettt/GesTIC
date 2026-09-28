@@ -14,8 +14,11 @@ export function AppSidebar({ role, isTutor }: { role: Role; isTutor: boolean }) 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r bg-background md:flex print:hidden">
       <div className="flex h-14 items-center border-b px-6">
-        <Link href="/" className="text-lg font-semibold">
-          gesTIC
+        <Link href="/" className="flex items-center gap-2.5 text-lg font-semibold tracking-tight">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-xs">
+            gT
+          </span>
+          <span>gesTIC</span>
         </Link>
       </div>
       <nav className="flex-1 space-y-1 p-3">

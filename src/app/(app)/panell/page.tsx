@@ -68,6 +68,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Incidències sense assignar"
           icon={TicketIcon}
+          iconClassName="text-amber-600 dark:text-amber-400"
           empty="Totes les incidències obertes tenen responsable."
           total={work.unassignedIncidents.total}
           allHref={"/incidencies?vista=sense-responsable" as Route}
@@ -86,6 +87,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Incidències aturades"
           icon={HourglassIcon}
+          iconClassName="text-orange-600 dark:text-orange-400"
           empty={`Cap incidència amb responsable porta ${STALLED_DAYS} dies sense moure's.`}
           total={work.stalledIncidents.total}
           allHref={"/incidencies?vista=aturades" as Route}
@@ -101,6 +103,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Préstecs per aprovar"
           icon={HandCoinsIcon}
+          iconClassName="text-indigo-600 dark:text-indigo-400"
           empty="No hi ha sol·licituds pendents."
           total={work.pendingLoans.total}
           allHref="/inventari"
@@ -116,6 +119,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Devolucions fora de termini"
           icon={AlertTriangleIcon}
+          iconClassName="text-red-600 dark:text-red-400"
           empty="Cap equip prestat ha passat de data."
           items={work.overdueLoans.map((loan) => ({
             id: loan.id,
@@ -129,6 +133,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Equips de carro sense tornar"
           icon={CalendarClockIcon}
+          iconClassName="text-red-600 dark:text-red-400"
           empty="Tots els equips reservats a part han tornat al carro."
           items={work.overdueDevices.map((reservation) => {
             const { chromebook } = reservation;
@@ -148,6 +153,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Reserves fixes per aprovar"
           icon={RepeatIcon}
+          iconClassName="text-sky-600 dark:text-sky-400"
           empty="No hi ha cap reserva fixa pendent."
           total={work.pendingRecurring.total}
           allHref="/chromebooks/reserves-fixes"
@@ -163,6 +169,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Peticions i consultes sense tancar"
           icon={MessageCircleQuestionIcon}
+          iconClassName="text-teal-600 dark:text-teal-400"
           empty="No n'hi ha cap d'oberta."
           total={work.openQueries.total}
           allHref="/consultes"
@@ -178,6 +185,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Chromebooks per a l'alumnat"
           icon={LaptopIcon}
+          iconClassName="text-emerald-600 dark:text-emerald-400"
           empty="No hi ha sol·licituds pendents ni equips per entregar."
           total={work.pendingStudentRequests.total + work.awaitingStudentDeliveries.total}
           allHref="/alumnat"
@@ -198,7 +206,7 @@ export default async function PanellPage() {
                 request.groupName ? ` a un alumne/a de ${request.groupName}` : ""
               }`,
               meta: request.respondedAt ? `Aprovat el ${formatDate(request.respondedAt)}` : "Aprovat",
-              badge: { label: "Per entregar", variant: "secondary" as const },
+              badge: { label: "Per entregar", variant: "info" as const },
             })),
           ]}
         />
@@ -206,6 +214,7 @@ export default async function PanellPage() {
         <WorkQueue
           title="Properes cites"
           icon={CalendarCheckIcon}
+          iconClassName="text-purple-600 dark:text-purple-400"
           empty="No hi ha cap cita demanada."
           total={work.upcomingAppointments.total}
           allHref="/cites"
