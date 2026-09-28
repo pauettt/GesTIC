@@ -47,9 +47,6 @@ const MODULE_CARDS: Array<{
   icon: typeof TicketIcon;
   iconBoxClasses: string;
   accentBorder: string;
-  tag: string;
-  tagClasses: string;
-  linkText: string;
   /** El que en veu el professorat, quan la seva pantalla no és la de la coordinació. */
   professor?: { title: string; description: string };
   /** Només per a tutors/es: la resta del professorat no hi pot fer res. */
@@ -60,11 +57,7 @@ const MODULE_CARDS: Array<{
     title: "Incidències TIC",
     description: "Reporta i fes seguiment de problemes amb equips del centre.",
     icon: TicketIcon,
-    accentBorder: "border-t-4 border-t-amber-500",
-    tag: "Avaries",
-    tagClasses:
-      "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/15 dark:text-amber-300",
-    linkText: "text-amber-600 dark:text-amber-400",
+    accentBorder: "border-t-2 border-t-amber-500",
     iconBoxClasses:
       "border-amber-500/30 bg-amber-500/15 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/20 dark:text-amber-400",
   },
@@ -73,11 +66,7 @@ const MODULE_CARDS: Array<{
     title: "Inventari i préstecs",
     description: "Consulta l'equipament del centre i demana material en préstec.",
     icon: PackageIcon,
-    accentBorder: "border-t-4 border-t-indigo-500",
-    tag: "Material",
-    tagClasses:
-      "border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:border-indigo-400/30 dark:bg-indigo-400/15 dark:text-indigo-300",
-    linkText: "text-indigo-600 dark:text-indigo-400",
+    accentBorder: "border-t-2 border-t-indigo-500",
     iconBoxClasses:
       "border-indigo-500/30 bg-indigo-500/15 text-indigo-600 dark:border-indigo-400/30 dark:bg-indigo-400/20 dark:text-indigo-400",
     professor: {
@@ -90,11 +79,7 @@ const MODULE_CARDS: Array<{
     title: "Carros",
     description: "Reserva carros de Chromebooks, portàtils o iPads i consulta'n l'estat.",
     icon: LaptopIcon,
-    accentBorder: "border-t-4 border-t-sky-500",
-    tag: "Reserves",
-    tagClasses:
-      "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/15 dark:text-sky-300",
-    linkText: "text-sky-600 dark:text-sky-400",
+    accentBorder: "border-t-2 border-t-sky-500",
     iconBoxClasses:
       "border-sky-500/30 bg-sky-500/15 text-sky-600 dark:border-sky-400/30 dark:bg-sky-400/20 dark:text-sky-400",
   },
@@ -103,11 +88,7 @@ const MODULE_CARDS: Array<{
     title: "Préstec a l'alumnat",
     description: "Demana un Chromebook per a un alumne/a del teu grup per a tot el curs.",
     icon: BackpackIcon,
-    accentBorder: "border-t-4 border-t-emerald-500",
-    tag: "Alumnat",
-    tagClasses:
-      "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/15 dark:text-emerald-300",
-    linkText: "text-emerald-600 dark:text-emerald-400",
+    accentBorder: "border-t-2 border-t-emerald-500",
     iconBoxClasses:
       "border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:border-emerald-400/30 dark:bg-emerald-400/20 dark:text-emerald-400",
     tutorsOnly: true,
@@ -117,11 +98,7 @@ const MODULE_CARDS: Array<{
     title: "Cites",
     description: "Demana hora amb la coordinació TIC per al que necessitis.",
     icon: CalendarCheckIcon,
-    accentBorder: "border-t-4 border-t-purple-500",
-    tag: "Atenció TIC",
-    tagClasses:
-      "border-purple-500/30 bg-purple-500/10 text-purple-700 dark:border-purple-400/30 dark:bg-purple-400/15 dark:text-purple-300",
-    linkText: "text-purple-600 dark:text-purple-400",
+    accentBorder: "border-t-2 border-t-purple-500",
     iconBoxClasses:
       "border-purple-500/30 bg-purple-500/15 text-purple-600 dark:border-purple-400/30 dark:bg-purple-400/20 dark:text-purple-400",
   },
@@ -130,11 +107,7 @@ const MODULE_CARDS: Array<{
     title: "Peticions i consultes",
     description: "Demana o pregunta directament a la coordinació TIC i fes-ne seguiment.",
     icon: MessageCircleQuestionIcon,
-    accentBorder: "border-t-4 border-t-teal-500",
-    tag: "Consultes",
-    tagClasses:
-      "border-teal-500/30 bg-teal-500/10 text-teal-700 dark:border-teal-400/30 dark:bg-teal-400/15 dark:text-teal-300",
-    linkText: "text-teal-600 dark:text-teal-400",
+    accentBorder: "border-t-2 border-t-teal-500",
     iconBoxClasses:
       "border-teal-500/30 bg-teal-500/15 text-teal-600 dark:border-teal-400/30 dark:bg-teal-400/20 dark:text-teal-400",
   },
@@ -143,11 +116,7 @@ const MODULE_CARDS: Array<{
     title: "Dubtes freqüents",
     description: "Respostes ràpides a les preguntes més habituals.",
     icon: HelpCircleIcon,
-    accentBorder: "border-t-4 border-t-orange-500",
-    tag: "Ajuda",
-    tagClasses:
-      "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:border-orange-400/30 dark:bg-orange-400/15 dark:text-orange-300",
-    linkText: "text-orange-600 dark:text-orange-400",
+    accentBorder: "border-t-2 border-t-orange-500",
     iconBoxClasses:
       "border-orange-500/30 bg-orange-500/15 text-orange-600 dark:border-orange-400/30 dark:bg-orange-400/20 dark:text-orange-400",
   },
@@ -156,11 +125,7 @@ const MODULE_CARDS: Array<{
     title: "Tutorials",
     description: "Vídeos curts per fer servir les eines i els equips del centre.",
     icon: SquarePlayIcon,
-    accentBorder: "border-t-4 border-t-rose-500",
-    tag: "Vídeos",
-    tagClasses:
-      "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:border-rose-400/30 dark:bg-rose-400/15 dark:text-rose-300",
-    linkText: "text-rose-600 dark:text-rose-400",
+    accentBorder: "border-t-2 border-t-rose-500",
     iconBoxClasses:
       "border-rose-500/30 bg-rose-500/15 text-rose-600 dark:border-rose-400/30 dark:bg-rose-400/20 dark:text-rose-400",
   },
@@ -270,8 +235,7 @@ export default async function HomePage() {
         <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary dark:text-primary-foreground">
-                <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-semibold tracking-wide text-primary">
                 Portal TIC del Centre
               </span>
             </div>
@@ -549,10 +513,14 @@ export default async function HomePage() {
             const Icon = item.icon;
             const { title, description } = !coordinator && item.professor ? item.professor : item;
             return (
-              <Link key={item.href} href={item.href} className="group">
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
                 <Card
                   className={cn(
-                    "flex h-full flex-col justify-between transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-md",
+                    "flex h-full flex-col transition-shadow duration-200 group-hover:shadow-sm motion-reduce:transition-none",
                     item.accentBorder,
                   )}
                 >
@@ -560,38 +528,25 @@ export default async function HomePage() {
                     <div className="flex items-center justify-between gap-2">
                       <div
                         className={cn(
-                          "flex size-11 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105 shadow-2xs",
+                          "flex size-10 items-center justify-center rounded-xl border",
                           item.iconBoxClasses,
                         )}
                       >
-                        <Icon className="size-5.5" />
+                        <Icon className="size-5" aria-hidden="true" />
                       </div>
-                      <span
-                        className={cn(
-                          "rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide",
-                          item.tagClasses,
-                        )}
-                      >
-                        {item.tag}
+                      <span aria-hidden="true" className="text-muted-foreground/60 transition-colors group-hover:text-primary group-focus-visible:text-primary">
+                        →
                       </span>
                     </div>
                     <div>
-                      <CardTitle className="text-base font-semibold transition-colors group-hover:text-primary">
+                      <CardTitle className="text-base font-semibold transition-colors group-hover:text-primary group-focus-visible:text-primary">
                         {title}
                       </CardTitle>
-                      <CardDescription className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      <CardDescription className="mt-1 text-sm leading-relaxed text-muted-foreground">
                         {description}
                       </CardDescription>
                     </div>
                   </CardHeader>
-                  <div className="px-6 pb-4 pt-0">
-                    <div className="flex items-center justify-between border-t pt-3 text-xs font-medium">
-                      <span className={cn("font-medium transition-colors", item.linkText)}>Obre el mòdul</span>
-                      <span className={cn("transition-transform duration-200 group-hover:translate-x-1", item.linkText)}>
-                        →
-                      </span>
-                    </div>
-                  </div>
                 </Card>
               </Link>
             );
