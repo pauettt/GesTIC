@@ -316,6 +316,10 @@ aquest carro». Fins ara hi entrava tota la coordinació.
   d'inventari (la mateixa taula), amb les obertes davant; a dalt, «N incidències
   obertes» hi porta. Les dels seus dispositius continuen a la fitxa de cada un.
   El professorat hi veu només les seves.
+- **Els dispositius, en ordre, a *Nova incidència***: sortien en ordre alfabètic
+  (C1.1, C1.10, C1.11… i el C1.2 molt més avall). Ara surten com a la graella del
+  carro: l'ordre que hi ha desat la coordinació o, si no n'hi ha, pel número. Els
+  equips de préstec a l'alumnat, també pel número.
 - **Al taulell de consergeria només hi queda el que falta**. A *Reserves
   d'avui* una reserva surt de la llista quan la clau torna, o quan l'hora passa
   sense que ningú l'hagi recollida; mentre la clau és fora continua sortint com

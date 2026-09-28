@@ -5,6 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon, CloudIcon, LaptopIcon, MapPinIcon, t
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
 import { orderCarts } from "@/lib/cart-order";
+import { orderChromebooks } from "@/lib/chromebook-order";
 import { requireUser } from "@/lib/permissions";
 import { CartIncidentForm } from "@/components/incidents/cart-incident-form";
 import { GoogleIncidentForm } from "@/components/incidents/google-incident-form";
@@ -131,7 +132,13 @@ async function CartForm({ cartId, chromebookId }: { cartId?: string; chromebookI
       select: { id: true, assetTag: true, deviceType: true },
     }),
   ]);
-  return <CartIncidentForm carts={carts} studentPool={studentPool} initial={{ cartId, chromebookId }} />;
+  return (
+    <CartIncidentForm
+      carts={carts}
+      studentPool={orderChromebooks(studentPool)}
+      initial={{ cartId, chromebookId }}
+    />
+  );
 }
 
 async function loadCarts() {
@@ -147,5 +154,10 @@ async function loadCarts() {
   const savedOrder = customOrder
     ? [...carts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
     : [];
-  return orderCarts(carts, savedOrder);
+  // Els equips, com a la graella del carro: l'ordre desat o, si no n'hi ha, el
+  // del número (C1.2 abans de C1.10), i no l'alfabètic de la base de dades.
+  return orderCarts(carts, savedOrder).map((cart) => ({
+    ...cart,
+    chromebooks: orderChromebooks(cart.chromebooks, cart.chromebookOrder),
+  }));
 }
