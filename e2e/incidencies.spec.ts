@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { CART_INCIDENT_TITLES } from "./data";
+import { CART_INCIDENT_TITLES, DEVICE_INCIDENT_TITLE } from "./data";
 import { pageAs, readFixtures, resolveIncident } from "./helpers";
 
-test("la fitxa del carro ensenya les seves incidències", async ({ browser }) => {
+test("la fitxa del carro ensenya les seves incidències, i la de cada dispositiu, les seves", async ({ browser }) => {
   const { incidentCartId } = readFixtures();
 
   // La coordinació les veu totes, amb qui les ha reportat, i el nombre d'obertes a dalt.
@@ -15,6 +15,13 @@ test("la fitxa del carro ensenya les seves incidències", async ({ browser }) =>
   );
   await expect(admin.getByRole("link", { name: CART_INCIDENT_TITLES.professor2 })).toBeVisible();
   await expect(admin.getByRole("link", { name: "2 incidències obertes" })).toBeVisible();
+
+  // La del dispositiu no és del carro: surt a la fitxa de l'equip.
+  await expect(admin.getByText(DEVICE_INCIDENT_TITLE)).toHaveCount(0);
+  await admin.getByRole("button", { name: /INC-01/ }).click();
+  const deviceIncidents = admin.getByRole("list", { name: "Incidències de l'equip" });
+  await expect(deviceIncidents.getByRole("link", { name: DEVICE_INCIDENT_TITLE })).toBeVisible();
+  await expect(deviceIncidents).toContainText("Oberta");
 
   // El professorat, només les seves.
   const professor = await pageAs(browser, "professor");

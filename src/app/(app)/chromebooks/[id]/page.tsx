@@ -14,6 +14,7 @@ import { getHolidays } from "@/lib/holidays-data";
 import { courseEndLabel, recurringCourse, slotLabel } from "@/lib/recurring-reservations";
 import { deviceSummary } from "@/lib/devices";
 import { OPEN_INCIDENT_STATUSES } from "@/lib/chromebook-status";
+import { recentIncidents } from "@/lib/incidents";
 import { placedSpaceSelect } from "@/lib/locations";
 import { defaultWeekStart } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export default async function CartDetailPage({
   const now = new Date();
   const course = recurringCourse(now);
 
-  const [cart, spaces, recurring, carts, existingChromebooks, holidays, incidents] = await Promise.all([
+  const [cart, spaces, recurring, carts, existingChromebooks, holidays, incidents, deviceIncidents] = await Promise.all([
     db.cart.findUnique({
       where: { id },
       include: {
@@ -113,6 +114,15 @@ export default async function CartDetailPage({
       },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     }),
+    // Les dels dispositius, per a la fitxa de cada un a la graella de la
+    // coordinació. El professorat només en veu si n'hi ha cap d'oberta.
+    admin
+      ? db.incident.findMany({
+          where: { chromebook: { cartId: id } },
+          select: { id: true, title: true, status: true, chromebookId: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   if (!cart || !canAccessCart(user.role, cart)) notFound();
@@ -133,6 +143,10 @@ export default async function CartDetailPage({
   // Per a la graella: quants equips hi faltaran a cada sessió perquè algú els té reservats a part.
   const deviceBookings = inService.flatMap((chromebook) => chromebook.reservations);
   const openIncidents = incidents.filter((incident) => OPEN_INCIDENT_STATUSES.includes(incident.status)).length;
+  const incidentsByDevice = new Map<string | null, typeof deviceIncidents>();
+  for (const incident of deviceIncidents) {
+    incidentsByDevice.set(incident.chromebookId, [...(incidentsByDevice.get(incident.chromebookId) ?? []), incident]);
+  }
   const existing = {
     assetTags: existingChromebooks.map((chromebook) => chromebook.assetTag),
     serialNumbers: existingChromebooks.flatMap((chromebook) =>
@@ -362,10 +376,15 @@ export default async function CartDetailPage({
               cartId={cart.id}
               carts={orderedCarts}
               customOrder={cart.chromebookOrder.length > 0}
-              chromebooks={orderedChromebooks.map((chromebook) => ({
-                ...chromebook,
-                reservations: reservationViews(chromebook.reservations, viewer, now),
-              }))}
+              chromebooks={orderedChromebooks.map((chromebook) => {
+                const incidents = incidentsByDevice.get(chromebook.id) ?? [];
+                return {
+                  ...chromebook,
+                  reservations: reservationViews(chromebook.reservations, viewer, now),
+                  incidents: recentIncidents(incidents).map(({ id, title, status }) => ({ id, title, status })),
+                  incidentCount: incidents.length,
+                };
+              })}
             />
           </div>
         </>

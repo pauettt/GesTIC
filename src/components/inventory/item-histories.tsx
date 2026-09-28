@@ -89,7 +89,8 @@ export function ItemLoanHistory({ loans }: { loans: (LoanRequest & { requester: 
 }
 
 /**
- * Les incidències d'un objecte a la seva fitxa: un equip d'inventari o un carro.
+ * Les incidències d'un objecte a la seva fitxa: un equip d'inventari, un carro
+ * o un equip de préstec a l'alumnat (els dels carros, a la seva fitxa petita).
  * La llista sencera, amb els filtres, és a Incidències (`historyHref`).
  */
 export function ItemIncidentHistory({

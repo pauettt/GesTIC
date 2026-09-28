@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { HistoryIcon, PlusIcon } from "lucide-react";
-import type { ChromebookStatus, DeviceType } from "@prisma/client";
+import type { ChromebookStatus, DeviceType, IncidentStatus } from "@prisma/client";
 
 import {
   addChromebookNote,
@@ -19,6 +19,8 @@ import {
   chromebookStatusLabels,
   chromebookStatusSquareClasses,
   chromebookStatusVariants,
+  incidentStatusLabels,
+  incidentStatusVariants,
 } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +57,48 @@ type Chromebook = {
   notes: Note[];
   /** Les reserves obertes d'aquest equip sol, començant per la de qui el té ara, si n'hi ha. */
   reservations: DeviceReservationView[];
+  /** Totes les obertes i les tancades més recents (`recentIncidents`). */
+  incidents: DeviceIncident[];
+  /** Quantes en té en total, per saber si n'hi ha més a Incidències. */
+  incidentCount: number;
 };
+
+export type DeviceIncident = { id: string; title: string; status: IncidentStatus };
+
+/** L'historial d'incidències de l'equip, dins la seva fitxa. */
+function DeviceIncidentHistory({ chromebook }: { chromebook: Chromebook }) {
+  const allHref = `/incidencies?chromebookId=${chromebook.id}` as const;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs font-semibold text-muted-foreground">Historial d&apos;incidències</p>
+      {chromebook.incidents.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Cap incidència registrada.</p>
+      ) : (
+        <ul className="flex flex-col gap-1" aria-label="Incidències de l'equip">
+          {chromebook.incidents.map((incident) => (
+            <li key={incident.id} className="flex items-start justify-between gap-2">
+              <Link href={`/incidencies/${incident.id}`} className="line-clamp-2 text-xs hover:underline">
+                {incident.title}
+              </Link>
+              <Badge variant={incidentStatusVariants[incident.status]} className="shrink-0">
+                {incidentStatusLabels[incident.status]}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+      {chromebook.incidentCount > chromebook.incidents.length && (
+        <Link
+          href={allHref}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+        >
+          <HistoryIcon className="size-3.5" />
+          Veure-les totes ({chromebook.incidentCount})
+        </Link>
+      )}
+    </div>
+  );
+}
 
 /** Per què no es pot canviar a mà: aquests estats surten dels fets. */
 const DERIVED_STATUS_HINTS: Partial<Record<ChromebookStatus, string>> = {
@@ -249,13 +292,6 @@ export function ChromebookSquare({
                 }}
               />
             )}
-            <Link
-              href={`/incidencies?chromebookId=${chromebook.id}`}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:underline"
-            >
-              <HistoryIcon className="size-3.5" />
-              Veure historial d&apos;incidències
-            </Link>
             <div className="flex flex-wrap justify-end gap-2">
               <RetireChromebookButton
                 chromebookId={chromebook.id}
@@ -284,6 +320,10 @@ export function ChromebookSquare({
                 description="Es perden també les seves notes, i les incidències queden sense equip. Si només ha deixat de funcionar, dona'l de baixa: així se'n conserva l'historial."
               />
             </div>
+
+            <Separator />
+
+            <DeviceIncidentHistory chromebook={chromebook} />
 
             <Separator />
 

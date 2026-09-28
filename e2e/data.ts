@@ -31,6 +31,9 @@ export const CART_INCIDENT_TITLES = {
   professor2: "La porta del carro no tanca",
 } as const;
 
+/** Incidència del dispositiu INC-01 del mateix carro: surt a la fitxa de l'equip, no a la del carro. */
+export const DEVICE_INCIDENT_TITLE = "La pantalla de l'INC-01 parpelleja";
+
 /** Incidència d'un compte del dev login: l'esborrat de dades de prova se l'ha d'endur. */
 export const DEV_ACCOUNT_INCIDENT_TITLE = "Incidència d'un compte de prova";
 

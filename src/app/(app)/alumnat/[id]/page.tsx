@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TicketIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime, schoolYearOf } from "@/lib/date";
@@ -11,8 +10,8 @@ import {
   studentDeviceRequestStatusVariants,
 } from "@/lib/labels";
 import { requireAdmin } from "@/lib/permissions";
+import { ItemIncidentHistory } from "@/components/inventory/item-histories";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button-link";
 import {
   Table,
   TableBody,
@@ -68,6 +67,10 @@ export default async function StudentChromebookHistoryPage({
         include: { tutor: person, respondedBy: person, deliveredBy: person, returnedBy: person },
         orderBy: { respondedAt: "desc" },
       },
+      incidents: {
+        select: { id: true, title: true, createdAt: true, priority: true, status: true, reporter: person },
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      },
     },
   });
   if (!chromebook || !chromebook.isStudentLoanable) notFound();
@@ -88,15 +91,9 @@ export default async function StudentChromebookHistoryPage({
             <h1 className="text-2xl font-semibold">{chromebook.assetTag}</h1>
             <p className="text-muted-foreground">{subtitle || "Préstec a l'alumnat"}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={chromebookStatusVariants[chromebook.status]}>
-              {chromebookStatusLabels[chromebook.status]}
-            </Badge>
-            <ButtonLink variant="outline" size="sm" href={`/incidencies?chromebookId=${chromebook.id}`}>
-              <TicketIcon className="size-4" />
-              Incidències
-            </ButtonLink>
-          </div>
+          <Badge variant={chromebookStatusVariants[chromebook.status]}>
+            {chromebookStatusLabels[chromebook.status]}
+          </Badge>
         </div>
       </div>
 
@@ -159,6 +156,12 @@ export default async function StudentChromebookHistoryPage({
           </Table>
         </div>
       </section>
+
+      <ItemIncidentHistory
+        historyHref={`/incidencies?chromebookId=${chromebook.id}`}
+        incidents={chromebook.incidents}
+        showReporter
+      />
     </div>
   );
 }

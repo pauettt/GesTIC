@@ -9,6 +9,7 @@ import {
   CART_INCIDENT_TITLES,
   CREDENTIALS,
   DEV_ACCOUNT_INCIDENT_TITLE,
+  DEVICE_INCIDENT_TITLE,
   FOREIGN_APPOINTMENT_PURPOSE,
   PRIVATE_INCIDENT_TITLE,
   STALLED_INCIDENT_TITLE,
@@ -227,9 +228,23 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
-    // Un carro amb incidències del carro sencer, una de cada professor, per a la
-    // seva fitxa. Sense dispositius: cap recompte d'equips no en depèn.
+    // Un carro amb incidències del carro sencer, una de cada professor, i un
+    // dispositiu amb la seva. Va a part perquè l'equip en incidència no canviï
+    // els recomptes de cap altre carro.
     const incidentCart = await db.cart.create({ data: { name: "Carro Incidències E2E" } });
+    const incidentDevice = await db.chromebook.create({
+      data: { assetTag: "INC-01", cartId: incidentCart.id, status: "EN_INCIDENCIA" },
+    });
+    await db.incident.create({
+      data: {
+        reporterId: userIds.professor2,
+        targetType: "CHROMEBOOK",
+        chromebookId: incidentDevice.id,
+        category: "PANTALLA",
+        title: DEVICE_INCIDENT_TITLE,
+        description: "Reportada a les dades de prova.",
+      },
+    });
     for (const reporter of ["professor", "professor2"] as const) {
       await db.incident.create({
         data: {

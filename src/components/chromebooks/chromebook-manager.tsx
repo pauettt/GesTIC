@@ -11,7 +11,11 @@ import { shownStatus, type DeviceReservationView } from "@/lib/device-reservatio
 import { chromebookStatusSquareClasses } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { CartOption } from "@/components/chromebooks/chromebook-dialog";
-import { AddChromebookSquare, ChromebookSquare } from "@/components/chromebooks/chromebook-square";
+import {
+  AddChromebookSquare,
+  ChromebookSquare,
+  type DeviceIncident,
+} from "@/components/chromebooks/chromebook-square";
 import { DeviceIcon } from "@/components/chromebooks/device-icon";
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +37,8 @@ type Chromebook = {
   unavailableReason: string | null;
   notes: Note[];
   reservations: DeviceReservationView[];
+  incidents: DeviceIncident[];
+  incidentCount: number;
 };
 
 export function ChromebookManager({

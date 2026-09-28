@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { daysSinceActivity, incidentViewWhere, parseIncidentView, STALLED_DAYS } from "@/lib/incidents";
+import {
+  daysSinceActivity,
+  incidentViewWhere,
+  parseIncidentView,
+  recentIncidents,
+  STALLED_DAYS,
+} from "@/lib/incidents";
 
 const now = new Date("2026-09-21T10:00:00Z");
 const daysAgo = (days: number) => new Date(now.getTime() - days * 86_400_000);
@@ -23,6 +29,19 @@ describe("incidentViewWhere", () => {
       updatedAt: { lt: cutoff },
       comments: { none: { createdAt: { gte: cutoff } } },
     });
+  });
+});
+
+describe("recentIncidents", () => {
+  it("totes les obertes, encara que siguin velles, i només les tancades més recents", () => {
+    const incidents = [
+      { id: "a", status: "RESOLTA" },
+      { id: "b", status: "TANCADA" },
+      { id: "c", status: "EN_CURS" },
+      { id: "d", status: "RESOLTA" },
+      { id: "e", status: "OBERTA" },
+    ] as const;
+    expect(recentIncidents([...incidents], 2).map(({ id }) => id)).toEqual(["c", "e", "a", "b"]);
   });
 });
 
