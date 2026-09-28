@@ -1,3 +1,5 @@
+import { BackpackIcon } from "lucide-react";
+
 import { db } from "@/lib/db";
 import { isAdmin, requireStudentLoanAccess } from "@/lib/permissions";
 import { StudentChromebookPool } from "@/components/chromebooks/student-pool";
@@ -136,11 +138,16 @@ export default async function StudentLoansPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Préstec a l&apos;alumnat</h1>
-        <p className="text-muted-foreground">
-          Chromebooks que es deixen a un alumne/a per a tot el curs.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:border-emerald-400/30 dark:bg-emerald-400/20 dark:text-emerald-400 shadow-2xs">
+          <BackpackIcon className="size-5.5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Préstec a l&apos;alumnat</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Chromebooks que es deixen a un alumne/a per a tot el curs.
+          </p>
+        </div>
       </div>
 
       {user.isTutor && <TutorStudentRequests requests={myRequests} stages={academicStages} />}

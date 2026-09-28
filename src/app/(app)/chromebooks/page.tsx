@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { LayoutGridIcon, ListIcon, RepeatIcon } from "lucide-react";
+import { LaptopIcon, LayoutGridIcon, ListIcon, RepeatIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
@@ -230,11 +230,16 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Carros</h1>
-          <p className="text-muted-foreground">
-            Carros de Chromebooks, portàtils i iPads del centre, i el seu estat.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:border-sky-400/30 dark:bg-sky-400/20 dark:text-sky-400 shadow-2xs">
+            <LaptopIcon className="size-5.5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Carros</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Carros de Chromebooks, portàtils i iPads del centre, i el seu estat.
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <ButtonLink

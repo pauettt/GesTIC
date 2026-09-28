@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { FileIcon } from "lucide-react";
+import { CheckIcon, FileIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 import { db } from "@/lib/db";
 import { deviceTypeLabels } from "@/lib/devices";
@@ -24,6 +26,12 @@ import { SuccessNotice } from "@/components/shared/success-notice";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+
+const LIFECYCLE_STEPS = [
+  { key: "OBERTA", label: "Oberta", desc: "Reportada" },
+  { key: "EN_CURS", label: "En curs", desc: "En revisió / reparació" },
+  { key: "RESOLTA", label: "Resolta", desc: "Solucionada" },
+];
 
 export default async function IncidentDetailPage({ params, searchParams }: PageProps<"/incidencies/[id]">) {
   const user = await requireUser();
@@ -65,6 +73,13 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
         ? `Carro ${incident.cart.name}`
         : (incident.space?.name ?? incidentTargetTypeLabels[incident.targetType]);
 
+  const currentStep =
+    incident.status === "OBERTA"
+      ? 0
+      : incident.status === "EN_CURS"
+        ? 1
+        : 2;
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
@@ -72,7 +87,7 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
           &larr; Totes les incidències
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{incident.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{incident.title}</h1>
           <Badge variant={incidentStatusVariants[incident.status]}>
             {incidentStatusLabels[incident.status]}
           </Badge>
@@ -90,6 +105,60 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
         </p>
       </div>
 
+      <div className="rounded-xl border bg-card p-4 shadow-xs">
+        <div className="flex items-center justify-between gap-2">
+          {LIFECYCLE_STEPS.map((step, idx) => {
+            const isCompleted = currentStep > idx;
+            const isCurrent = currentStep === idx;
+            return (
+              <div key={step.key} className="flex flex-1 items-center">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all",
+                      isCompleted
+                        ? "bg-emerald-600 text-white dark:bg-emerald-500"
+                        : isCurrent
+                          ? step.key === "RESOLTA"
+                            ? "bg-emerald-600 text-white ring-4 ring-emerald-500/20 shadow-xs"
+                            : "bg-amber-500 text-white ring-4 ring-amber-500/20 shadow-xs"
+                          : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {isCompleted ? <CheckIcon className="size-4 stroke-[2.5]" /> : idx + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <p
+                      className={cn(
+                        "text-xs font-semibold leading-tight",
+                        isCurrent
+                          ? "text-foreground font-bold"
+                          : isCompleted
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {step.label}
+                    </p>
+                    <p className="hidden sm:block text-[11px] text-muted-foreground truncate">
+                      {step.desc}
+                    </p>
+                  </div>
+                </div>
+                {idx < LIFECYCLE_STEPS.length - 1 && (
+                  <div
+                    className={cn(
+                      "mx-2 sm:mx-4 h-0.5 flex-1 rounded-full transition-colors",
+                      isCompleted ? "bg-emerald-500" : "bg-muted",
+                    )}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {avis === "creada" && (
         <SuccessNotice>
           Incidència enviada. La coordinació TIC ja la té, i aquí en veuràs els canvis i les respostes.
@@ -100,7 +169,16 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
       )}
       <CleanUrlParam name="avis" />
 
-      <Card>
+      <Card
+        className={cn(
+          "shadow-xs",
+          incident.status === "RESOLTA" || incident.status === "TANCADA"
+            ? "border-t-4 border-t-emerald-500"
+            : incident.status === "EN_CURS"
+              ? "border-t-4 border-t-amber-500"
+              : "border-t-4 border-t-red-500",
+        )}
+      >
         <CardContent className="whitespace-pre-wrap pt-6 text-sm">
           {incident.description}
         </CardContent>

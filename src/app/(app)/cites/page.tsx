@@ -1,3 +1,5 @@
+import { CalendarCheckIcon } from "lucide-react";
+
 import { activeCoordinator, isActiveCoordinator } from "@/lib/coordinators";
 import { db } from "@/lib/db";
 import { addDays, formatDateTimeFull, startOfWeek } from "@/lib/date";
@@ -102,13 +104,17 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Cites</h1>
-        <p className="text-muted-foreground">
-          Demana hora amb la coordinació TIC. Cada hora oberta diu qui t&apos;atendrà: tria la que et
-          vagi bé i digues per a què la vols — passar el sociograma de la teva tutoria, muntar una
-          cosa a l&apos;aula, el que sigui.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/15 text-purple-600 dark:border-purple-400/30 dark:bg-purple-400/20 dark:text-purple-400 shadow-2xs">
+          <CalendarCheckIcon className="size-5.5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Cites</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Demana hora amb la coordinació TIC. Cada hora oberta diu qui t&apos;atendrà: tria la que et
+            vagi bé i digues per a què la vols.
+          </p>
+        </div>
       </div>
 
       {upcoming.length > 0 && (

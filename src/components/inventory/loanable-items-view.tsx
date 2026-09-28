@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HandCoinsIcon } from "lucide-react";
 
 import { formatDate } from "@/lib/date";
 import { isCancellable } from "@/lib/loans";
@@ -29,11 +30,16 @@ export function LoanableItemsView({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Préstec de material</h1>
-        <p className="text-muted-foreground">
-          Demana el que necessitis per als dies que calgui. La coordinació TIC aprova cada préstec.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-500/15 text-indigo-600 dark:border-indigo-400/30 dark:bg-indigo-400/20 dark:text-indigo-400 shadow-2xs">
+          <HandCoinsIcon className="size-5.5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Préstec de material</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Demana el que necessitis per als dies que calgui. La coordinació TIC aprova cada préstec.
+          </p>
+        </div>
       </div>
 
       <InventorySearch placeholder="Cerca per marca, model o aula…" />

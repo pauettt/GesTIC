@@ -9,12 +9,12 @@ import { MenuIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { navItemsFor } from "@/components/layout/nav-items";
+import { navSectionsFor } from "@/components/layout/nav-items";
 
 export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const items = navItemsFor({ role, isTutor });
+  const sections = navSectionsFor({ role, isTutor });
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -28,28 +28,42 @@ export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
           </span>
           <span>gesTIC</span>
         </div>
-        <nav className="space-y-1 p-3">
-          {items.map((item) => {
-            const active =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon className={cn("size-4 shrink-0", active ? "text-primary-foreground" : "text-muted-foreground")} />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="space-y-4 overflow-y-auto p-3">
+          {sections.map((section) => (
+            <div key={section.key} className="space-y-1">
+              {sections.length > 1 && (
+                <p className="px-3 pt-1 pb-1 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70">
+                  {section.label}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const active =
+                  item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0",
+                        active ? "text-primary-foreground" : item.iconColor ?? "text-muted-foreground",
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </SheetContent>
     </Sheet>

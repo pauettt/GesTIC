@@ -1,7 +1,7 @@
 import type { Route } from "next";
 import type { InventoryItem } from "@prisma/client";
 import Link from "next/link";
-import { HandCoinsIcon, LaptopIcon } from "lucide-react";
+import { HandCoinsIcon, LaptopIcon, PackageIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { orderCarts } from "@/lib/cart-order";
@@ -154,9 +154,14 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Inventari TIC</h1>
-          <p className="text-muted-foreground">Equipament TIC del centre.</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-500/15 text-indigo-600 dark:border-indigo-400/30 dark:bg-indigo-400/20 dark:text-indigo-400 shadow-2xs">
+            <PackageIcon className="size-5.5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Inventari TIC</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Equipament TIC del centre.</p>
+          </div>
         </div>
         <InventoryItemDialog spaces={spaces} categories={categories} />
       </div>

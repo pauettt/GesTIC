@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { PlusIcon, UserIcon } from "lucide-react";
+import { PlusIcon, TicketIcon, UserIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { deviceTypeLabels } from "@/lib/devices";
@@ -164,28 +164,33 @@ export default async function IncidenciesPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {historyLabel ? `Historial: ${historyLabel}` : "Incidències TIC"}
-          </h1>
-          <p className="text-muted-foreground">
-            {historyLabel ? (
-              <>
-                {isAdmin(user.role)
-                  ? "Totes les incidències registrades per aquest objecte."
-                  : "Les incidències que has reportat sobre aquest objecte."}{" "}
-                <Link href="/incidencies" className="underline">
-                  Veure totes les incidències
-                </Link>
-              </>
-            ) : isAdmin(user.role) ? (
-              "Totes les incidències reportades al centre."
-            ) : (
-              "Les incidències que has reportat."
-            )}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/20 dark:text-amber-400 shadow-2xs">
+            <TicketIcon className="size-5.5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {historyLabel ? `Historial: ${historyLabel}` : "Incidències TIC"}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {historyLabel ? (
+                <>
+                  {isAdmin(user.role)
+                    ? "Totes les incidències registrades per aquest objecte."
+                    : "Les incidències que has reportat sobre aquest objecte."}{" "}
+                  <Link href="/incidencies" className="underline">
+                    Veure totes les incidències
+                  </Link>
+                </>
+              ) : isAdmin(user.role) ? (
+                "Totes les incidències reportades al centre."
+              ) : (
+                "Les incidències que has reportat."
+              )}
+            </p>
+          </div>
         </div>
-        <ButtonLink href="/incidencies/nova">
+        <ButtonLink href="/incidencies/nova" className="shadow-xs font-medium">
           <PlusIcon className="size-4" />
           Nova incidència
         </ButtonLink>
