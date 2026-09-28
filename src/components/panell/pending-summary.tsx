@@ -64,12 +64,33 @@ const ENTRIES: { key: keyof Counts; one: string; many: string; href: Route; urge
  */
 export function PendingSummary({ counts }: { counts: Counts }) {
   const pending = ENTRIES.filter((entry) => counts[entry.key] > 0);
+  const hasUrgent = pending.some((entry) => entry.urgent);
 
   return (
-    <Card size="sm">
+    <Card
+      size="sm"
+      className={
+        pending.length === 0
+          ? "border-emerald-500/30 bg-emerald-500/5 shadow-xs dark:bg-emerald-950/20"
+          : hasUrgent
+            ? "border-l-4 border-l-red-500 border-red-500/25 bg-red-500/[0.03] shadow-xs dark:bg-red-950/20"
+            : "border-l-4 border-l-amber-500 border-amber-500/25 bg-amber-500/[0.03] shadow-xs dark:bg-amber-950/20"
+      }
+    >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">Feina pendent</h2>
+          <h2 className="text-sm font-semibold flex items-center gap-1.5">
+            <span
+              className={
+                pending.length === 0
+                  ? "size-2 rounded-full bg-emerald-500"
+                  : hasUrgent
+                    ? "size-2 rounded-full bg-red-500 animate-pulse"
+                    : "size-2 rounded-full bg-amber-500"
+              }
+            />
+            Feina pendent
+          </h2>
           <Link href="/panell" className="flex items-center gap-1 text-sm font-medium hover:underline">
             Obre el panell
             <ArrowRightIcon className="size-4" />

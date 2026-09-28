@@ -24,6 +24,9 @@ export function WorkQueue({
   title,
   icon: Icon,
   iconClassName,
+  accentBorder,
+  headerBg,
+  countVariant = "secondary",
   items,
   total = items.length,
   allHref,
@@ -32,6 +35,9 @@ export function WorkQueue({
   title: string;
   icon: LucideIcon;
   iconClassName?: string;
+  accentBorder?: string;
+  headerBg?: string;
+  countVariant?: BadgeVariant;
   items: QueueItem[];
   total?: number;
   allHref?: Route;
@@ -40,13 +46,13 @@ export function WorkQueue({
   const hidden = total - items.length;
 
   return (
-    <Card className="h-full">
-      <CardHeader className="border-b">
+    <Card className={cn("h-full shadow-xs transition-shadow hover:shadow-sm", accentBorder)}>
+      <CardHeader className={cn("border-b py-3.5", headerBg)}>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Icon className={cn("size-4.5 shrink-0", iconClassName ?? "text-muted-foreground")} />
           <span className="truncate">{title}</span>
           {total > 0 && (
-            <Badge variant="secondary" className="ml-auto shrink-0 font-medium">
+            <Badge variant={countVariant} className="ml-auto shrink-0 font-semibold">
               {total}
             </Badge>
           )}

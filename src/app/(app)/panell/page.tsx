@@ -69,6 +69,9 @@ export default async function PanellPage() {
           title="Incidències sense assignar"
           icon={TicketIcon}
           iconClassName="text-amber-600 dark:text-amber-400"
+          accentBorder="border-t-4 border-t-amber-500"
+          headerBg="bg-amber-500/5 dark:bg-amber-500/10"
+          countVariant={work.unassignedIncidents.total > 0 ? "warning" : "secondary"}
           empty="Totes les incidències obertes tenen responsable."
           total={work.unassignedIncidents.total}
           allHref={"/incidencies?vista=sense-responsable" as Route}
@@ -88,6 +91,9 @@ export default async function PanellPage() {
           title="Incidències aturades"
           icon={HourglassIcon}
           iconClassName="text-orange-600 dark:text-orange-400"
+          accentBorder="border-t-4 border-t-orange-500"
+          headerBg="bg-orange-500/5 dark:bg-orange-500/10"
+          countVariant={work.stalledIncidents.total > 0 ? "warning" : "secondary"}
           empty={`Cap incidència amb responsable porta ${STALLED_DAYS} dies sense moure's.`}
           total={work.stalledIncidents.total}
           allHref={"/incidencies?vista=aturades" as Route}
@@ -104,6 +110,9 @@ export default async function PanellPage() {
           title="Préstecs per aprovar"
           icon={HandCoinsIcon}
           iconClassName="text-indigo-600 dark:text-indigo-400"
+          accentBorder="border-t-4 border-t-indigo-500"
+          headerBg="bg-indigo-500/5 dark:bg-indigo-500/10"
+          countVariant={work.pendingLoans.total > 0 ? "default" : "secondary"}
           empty="No hi ha sol·licituds pendents."
           total={work.pendingLoans.total}
           allHref="/inventari"
@@ -120,6 +129,9 @@ export default async function PanellPage() {
           title="Devolucions fora de termini"
           icon={AlertTriangleIcon}
           iconClassName="text-red-600 dark:text-red-400"
+          accentBorder="border-t-4 border-t-red-500"
+          headerBg="bg-red-500/5 dark:bg-red-500/10"
+          countVariant={work.overdueLoans.length > 0 ? "destructive" : "secondary"}
           empty="Cap equip prestat ha passat de data."
           items={work.overdueLoans.map((loan) => ({
             id: loan.id,
@@ -133,7 +145,10 @@ export default async function PanellPage() {
         <WorkQueue
           title="Equips de carro sense tornar"
           icon={CalendarClockIcon}
-          iconClassName="text-red-600 dark:text-red-400"
+          iconClassName="text-rose-600 dark:text-rose-400"
+          accentBorder="border-t-4 border-t-rose-500"
+          headerBg="bg-rose-500/5 dark:bg-rose-500/10"
+          countVariant={work.overdueDevices.length > 0 ? "destructive" : "secondary"}
           empty="Tots els equips reservats a part han tornat al carro."
           items={work.overdueDevices.map((reservation) => {
             const { chromebook } = reservation;
@@ -154,6 +169,9 @@ export default async function PanellPage() {
           title="Reserves fixes per aprovar"
           icon={RepeatIcon}
           iconClassName="text-sky-600 dark:text-sky-400"
+          accentBorder="border-t-4 border-t-sky-500"
+          headerBg="bg-sky-500/5 dark:bg-sky-500/10"
+          countVariant={work.pendingRecurring.total > 0 ? "info" : "secondary"}
           empty="No hi ha cap reserva fixa pendent."
           total={work.pendingRecurring.total}
           allHref="/chromebooks/reserves-fixes"
@@ -170,6 +188,9 @@ export default async function PanellPage() {
           title="Peticions i consultes sense tancar"
           icon={MessageCircleQuestionIcon}
           iconClassName="text-teal-600 dark:text-teal-400"
+          accentBorder="border-t-4 border-t-teal-500"
+          headerBg="bg-teal-500/5 dark:bg-teal-500/10"
+          countVariant={work.openQueries.total > 0 ? "default" : "secondary"}
           empty="No n'hi ha cap d'oberta."
           total={work.openQueries.total}
           allHref="/consultes"
@@ -186,6 +207,9 @@ export default async function PanellPage() {
           title="Chromebooks per a l'alumnat"
           icon={LaptopIcon}
           iconClassName="text-emerald-600 dark:text-emerald-400"
+          accentBorder="border-t-4 border-t-emerald-500"
+          headerBg="bg-emerald-500/5 dark:bg-emerald-500/10"
+          countVariant={work.pendingStudentRequests.total + work.awaitingStudentDeliveries.total > 0 ? "success" : "secondary"}
           empty="No hi ha sol·licituds pendents ni equips per entregar."
           total={work.pendingStudentRequests.total + work.awaitingStudentDeliveries.total}
           allHref="/alumnat"
@@ -215,6 +239,8 @@ export default async function PanellPage() {
           title="Properes cites"
           icon={CalendarCheckIcon}
           iconClassName="text-purple-600 dark:text-purple-400"
+          accentBorder="border-t-4 border-t-purple-500"
+          headerBg="bg-purple-500/5 dark:bg-purple-500/10"
           empty="No hi ha cap cita demanada."
           total={work.upcomingAppointments.total}
           allHref="/cites"

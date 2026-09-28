@@ -22,8 +22,8 @@ export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
         <MenuIcon className="size-5" />
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
-        <div className="flex h-14 items-center gap-2.5 border-b px-6 text-lg font-semibold tracking-tight">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-xs">
+        <div className="flex h-14 items-center gap-2.5 border-b px-6 text-lg font-bold tracking-tight">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground text-xs font-bold shadow-xs">
             gT
           </span>
           <span>gesTIC</span>
@@ -39,14 +39,14 @@ export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   active
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <Icon className="size-4" />
-                {item.label}
+                <Icon className={cn("size-4 shrink-0", active ? "text-primary-foreground" : "text-muted-foreground")} />
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}

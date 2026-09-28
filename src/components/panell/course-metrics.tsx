@@ -11,16 +11,20 @@ function Stat({
   label,
   value,
   valueClassName,
+  accentBorder,
+  headerBg,
 }: {
   label: string;
   value: string | number;
   valueClassName?: string;
+  accentBorder?: string;
+  headerBg?: string;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className={cn("text-3xl font-semibold", valueClassName)}>{value}</p>
+    <Card className={cn("shadow-xs transition-shadow hover:shadow-sm", accentBorder)}>
+      <CardHeader className={cn("rounded-t-lg", headerBg)}>
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <p className={cn("text-3xl font-bold tracking-tight", valueClassName)}>{value}</p>
       </CardHeader>
     </Card>
   );
@@ -33,22 +37,32 @@ export function CourseMetrics({ stats }: { stats: CourseStats }) {
     <div>
       <h2 className="mb-3 text-lg font-semibold">Aquest curs</h2>
       <div className="grid gap-4 lg:grid-cols-3">
-        <Stat label="Incidències reportades" value={stats.reportedCount} />
+        <Stat
+          label="Incidències reportades"
+          value={stats.reportedCount}
+          accentBorder="border-t-4 border-t-blue-500"
+          headerBg="bg-blue-500/5 dark:bg-blue-500/10"
+          valueClassName="text-blue-600 dark:text-blue-400"
+        />
         <Stat
           label="Resoltes"
           value={stats.resolvedCount}
+          accentBorder="border-t-4 border-t-emerald-500"
+          headerBg="bg-emerald-500/5 dark:bg-emerald-500/10"
           valueClassName="text-emerald-600 dark:text-emerald-400"
         />
         <Stat
           label="Temps mitjà de resolució"
           value={formatAverage(stats.avgResolutionDays)}
+          accentBorder="border-t-4 border-t-sky-500"
+          headerBg="bg-sky-500/5 dark:bg-sky-500/10"
           valueClassName="text-sky-600 dark:text-sky-400"
         />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="border-b">
+        <Card className="shadow-xs">
+          <CardHeader className="border-b bg-muted/30">
             <CardTitle className="text-base">Incidències per mes</CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
@@ -59,9 +73,9 @@ export function CourseMetrics({ stats }: { stats: CourseStats }) {
                 {stats.byMonth.map(([month, count]) => (
                   <li key={month} className="flex items-center gap-3 text-sm">
                     <span className="w-16 shrink-0 text-muted-foreground">{month}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
                       <span
-                        className="block h-full rounded-full bg-sky-600 dark:bg-sky-400"
+                        className="block h-full rounded-full bg-gradient-to-r from-sky-500 to-indigo-500"
                         style={{ width: `${(count / maxMonth) * 100}%` }}
                       />
                     </span>
@@ -73,8 +87,8 @@ export function CourseMetrics({ stats }: { stats: CourseStats }) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="border-b">
+        <Card className="shadow-xs">
+          <CardHeader className="border-b bg-muted/30">
             <CardTitle className="text-base">On es concentren</CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
