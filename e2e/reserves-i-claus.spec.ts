@@ -36,7 +36,9 @@ test("consergeria entrega la clau d'una reserva d'avui i el professor la veu a l
   const concierge = await pageAs(browser, "concierge");
   await concierge.goto("/consergeria");
 
-  const reservationRow = concierge.locator("tr", { hasText: "Carro E2E" }).filter({ hasText: "Professor Un" });
+  const reservationRow = concierge
+    .locator("tr", { hasText: "Carro Consergeria E2E" })
+    .filter({ hasText: "Professor Un" });
   await reservationRow.getByRole("button", { name: "Entrega la clau" }).click();
   const dialog = concierge.getByRole("dialog");
   await dialog.getByRole("button", { name: "Conserge E2E" }).click();
@@ -52,6 +54,8 @@ test("consergeria entrega la clau d'una reserva d'avui i el professor la veu a l
   await concierge.getByRole("button", { name: "Tornada" }).click();
   await concierge.getByRole("dialog").getByRole("button", { name: "Conserge E2E" }).click();
   await expect(concierge.getByText("Totes les claus són al taulell.")).toBeVisible();
+  // Tornada la clau, la reserva surt de la llista: no s'ha de poder tornar a entregar.
+  await expect(reservationRow).toHaveCount(0);
 
   await professor.reload();
   await expect(professor.getByText("Claus que tens")).toHaveCount(0);

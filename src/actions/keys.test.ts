@@ -14,7 +14,7 @@ const { db, requireKeyAccess, revalidatePath } = vi.hoisted(() => {
       keyLoan: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), count: vi.fn() },
       concierge: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
       user: { findUnique: vi.fn() },
-      reservation: { findUnique: vi.fn() },
+      reservation: { findUnique: vi.fn(), findMany: vi.fn() },
     },
     requireKeyAccess: vi.fn(),
     revalidatePath: vi.fn(),
@@ -100,6 +100,51 @@ describe("returnKey action", () => {
     });
     expect(revalidatePath).toHaveBeenCalledWith("/consergeria");
     expect(revalidatePath).toHaveBeenCalledWith("/consergeria/historial");
+  });
+});
+
+describe("deliverKey amb reserva", () => {
+  const minutes = (n: number) => new Date(Date.now() + n * 60_000);
+  const input = { keyId: "clau-1", borrowerId: "prof-1", deliveredById: "conserge-1", reservationId: "res-1" };
+
+  /** Una reserva del carro de la clau, amb els préstecs que ja s'hi han lligat. */
+  function withReservation(endDate: Date, keyLoans: { returnedAt: Date | null }[] = []) {
+    const reservation = { cartId: "carro-1", userId: "prof-1", status: "CONFIRMADA", startDate: minutes(-10) };
+    db.key.findUnique.mockResolvedValue({ id: "clau-1", copies: 2, cartId: "carro-1", archivedAt: null, _count: { loans: 0 } });
+    db.user.findUnique.mockResolvedValue({ role: "PROFESSOR" });
+    db.concierge.findUnique.mockResolvedValue({ active: true });
+    db.reservation.findUnique.mockResolvedValue(reservation);
+    db.reservation.findMany.mockResolvedValue([{ ...reservation, id: "res-1", endDate, keyLoans }]);
+  }
+
+  it("entrega la clau d'una reserva que encara s'espera", async () => {
+    withReservation(minutes(45));
+    expect(await deliverKey(input)).toEqual({ success: true });
+    expect(db.keyLoan.create).toHaveBeenCalledWith({
+      data: { keyId: "clau-1", borrowerId: "prof-1", deliveredById: "conserge-1", reservationId: "res-1", reason: null },
+    });
+  });
+
+  it("no la torna a entregar mentre és fora: un doble clic no treu dues còpies", async () => {
+    withReservation(minutes(45), [{ returnedAt: null }]);
+    expect(await deliverKey(input)).toEqual({ success: false, error: "La clau d'aquesta reserva ja està entregada" });
+    expect(db.keyLoan.create).not.toHaveBeenCalled();
+  });
+
+  it("no la torna a entregar un cop ha tornat", async () => {
+    withReservation(minutes(45), [{ returnedAt: minutes(-1) }]);
+    const res = await deliverKey(input);
+    expect(res.success).toBe(false);
+    expect(res).toMatchObject({ error: expect.stringContaining("ja ha tornat") });
+    expect(db.keyLoan.create).not.toHaveBeenCalled();
+  });
+
+  it("no l'entrega si l'hora ha passat sense que ningú la reculli", async () => {
+    withReservation(minutes(-1));
+    const res = await deliverKey(input);
+    expect(res.success).toBe(false);
+    expect(res).toMatchObject({ error: expect.stringContaining("ja ha passat") });
+    expect(db.keyLoan.create).not.toHaveBeenCalled();
   });
 });
 

@@ -308,6 +308,20 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ## ✅ Fet
 
+### 2026-09-28
+
+- **Al taulell de consergeria només hi queda el que falta**. A *Reserves
+  d'avui* una reserva surt de la llista quan la clau torna, o quan l'hora passa
+  sense que ningú l'hagi recollida; mentre la clau és fora continua sortint com
+  a «Entregada». Fins ara quedava en gris i tornava a oferir la clau. Una
+  reserva tancada ja no la torna a donar (tampoc des del servidor): si algú la
+  necessita un altre cop, és una entrega sense reserva. Amb el carro a sessions
+  seguides (3a i 4a), la clau de la 3a cobreix la 4a; si torna al pati, la 4a
+  torna a estar per entregar. Les reserves fixes són una reserva per setmana,
+  així que només en surt la d'aquell dia. El rastre de les entregues és a
+  l'*Historial*; les reserves que ningú no ha recollit no hi surten, perquè no
+  hi ha hagut préstec.
+
 ### 2026-09-27
 
 - **Els coordinadors TIC ja no entren a les claus** (§35): només consergeria i

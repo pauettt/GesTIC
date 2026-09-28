@@ -2,7 +2,7 @@ import { HistoryIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { addDays, formatDateTime, formatTime, madridDateKey } from "@/lib/date";
-import { dueAt, KEY_GRACE_MINUTES } from "@/lib/keys";
+import { deskStatus, dueAt, KEY_GRACE_MINUTES } from "@/lib/keys";
 import { requireKeyAccess } from "@/lib/permissions";
 import { DeliverKeyDialog } from "@/components/keys/deliver-key-dialog";
 import { RemindKeyButton, ReturnKeyButton } from "@/components/keys/key-loan-actions";
@@ -28,7 +28,11 @@ export default async function ConsergeriaPage() {
     db.reservation.findMany({
       where: { status: "CONFIRMADA", startDate: { gte: addDays(now, -7) } },
       // Les claus arxivades ja no s'entreguen: el carro queda sense clau associada.
-      include: { cart: { include: { keys: { where: { archivedAt: null } } } }, user: true },
+      include: {
+        cart: { include: { keys: { where: { archivedAt: null } } } },
+        user: true,
+        keyLoans: { select: { returnedAt: true } },
+      },
       orderBy: { startDate: "asc" },
     }),
     db.keyLoan.findMany({
@@ -59,10 +63,12 @@ export default async function ConsergeriaPage() {
 
   const todayReservations = reservations.filter((r) => madridDateKey(r.startDate) === today);
 
-  // Una clau ja entregada no s'ha de tornar a oferir per a la mateixa reserva.
-  const deliveredReservationIds = new Set(
-    openLoans.map((loan) => loan.reservationId).filter(Boolean),
-  );
+  // Només el que encara té feina al taulell: la clau per entregar o encara fora.
+  // Les que ja han tornat són a l'historial, i les que han passat sense que
+  // ningú baixés ja no tenen res a fer-hi.
+  const deskReservations = todayReservations
+    .map((reservation) => ({ reservation, status: deskStatus(reservation, todayReservations, now) }))
+    .filter(({ status }) => status === "pending" || status === "delivered");
 
   /**
    * Quan compta com a no tornada. Amb reserva, 10 minuts després del final del
@@ -210,6 +216,8 @@ export default async function ConsergeriaPage() {
           <CardTitle>Reserves d&apos;avui</CardTitle>
           <CardDescription>
             Qui baixarà a buscar un carro, a quina hora i quin. Sense reserva no es dona la clau.
+            Quan la clau torna, o si l&apos;hora passa sense que ningú la reculli, la reserva surt
+            de la llista.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -225,16 +233,18 @@ export default async function ConsergeriaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {todayReservations.length === 0 && (
+                {deskReservations.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                      Avui no hi ha cap carro reservat.
+                      {todayReservations.length === 0
+                        ? "Avui no hi ha cap carro reservat."
+                        : "Ja no queda cap clau per entregar avui."}
                     </TableCell>
                   </TableRow>
                 )}
-                {todayReservations.map((reservation) => {
+                {deskReservations.map(({ reservation, status }) => {
                   const cartKey = reservation.cart.keys[0];
-                  const delivered = deliveredReservationIds.has(reservation.id);
+                  const delivered = status === "delivered";
                   const past = reservation.endDate < now;
                   return (
                     <TableRow key={reservation.id} className={past ? "opacity-60" : undefined}>

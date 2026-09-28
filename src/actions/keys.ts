@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { formatDateTime } from "@/lib/date";
+import { formatDateTime, madridDateKey, zonedDateTime } from "@/lib/date";
 import { buildKeyNotReturnedEmail, sendEmail } from "@/lib/email";
+import { deskStatus } from "@/lib/keys";
 import { requireKeyAccess, requireSuperAdmin } from "@/lib/permissions";
 import {
   deleteKeySchema,
@@ -216,17 +217,13 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
     };
   }
 
-  // La reserva ha de ser d'aquest carro i d'aquesta persona, i no pot tenir ja
-  // la clau entregada: un doble clic al taulell no ha de treure dues còpies.
+  // La reserva ha de ser d'aquest carro i d'aquesta persona, i encara ha
+  // d'estar per entregar, com al taulell: un doble clic no ha de treure dues
+  // còpies, i una reserva tancada no torna a donar la clau.
   if (reservationId) {
     const reservation = await db.reservation.findUnique({
       where: { id: reservationId },
-      select: {
-        cartId: true,
-        userId: true,
-        status: true,
-        _count: { select: { keyLoans: { where: { returnedAt: null } } } },
-      },
+      select: { cartId: true, userId: true, status: true, startDate: true },
     });
     if (
       !reservation ||
@@ -236,8 +233,42 @@ export async function deliverKey(input: unknown): Promise<ActionResult> {
     ) {
       return { success: false, error: "Aquesta reserva no correspon a aquesta clau" };
     }
-    if (reservation._count.keyLoans > 0) {
+
+    // Les d'aquell dia del mateix carro i professor: la clau de la sessió
+    // anterior pot cobrir aquesta.
+    const day = madridDateKey(reservation.startDate);
+    const sameDay = await db.reservation.findMany({
+      where: {
+        cartId: reservation.cartId,
+        userId: reservation.userId,
+        status: "CONFIRMADA",
+        startDate: { gte: zonedDateTime(day, "00:00"), lte: zonedDateTime(day, "23:59") },
+      },
+      select: {
+        id: true,
+        cartId: true,
+        userId: true,
+        startDate: true,
+        endDate: true,
+        keyLoans: { select: { returnedAt: true } },
+      },
+    });
+    const current = sameDay.find((r) => r.id === reservationId);
+    const status = current ? deskStatus(current, sameDay, new Date()) : "missed";
+    if (status === "delivered") {
       return { success: false, error: "La clau d'aquesta reserva ja està entregada" };
+    }
+    if (status === "returned") {
+      return {
+        success: false,
+        error: "La clau d'aquesta reserva ja ha tornat. Si la torna a necessitar, fes una entrega sense reserva",
+      };
+    }
+    if (status === "missed") {
+      return {
+        success: false,
+        error: "L'hora d'aquesta reserva ja ha passat. Si encara necessita la clau, fes una entrega sense reserva",
+      };
     }
   }
 

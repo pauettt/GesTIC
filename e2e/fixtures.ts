@@ -158,15 +158,30 @@ export async function seed(connectionString: string): Promise<{
       },
     });
 
-    // Consergeria: la clau del carro i una reserva d'avui del Professor Un.
-    await db.concierge.create({ data: { name: "Conserge E2E" } });
-    await db.key.create({ data: { number: "C-E2E", name: "Clau del carro", cartId: cart.id } });
+    // Una reserva d'avui del Professor Un al Carro E2E: la graella de la setmana
+    // l'ensenya, i `visibilitat-carros` comprova que ocultar el carro no l'esborra.
     await db.reservation.create({
       data: {
         cartId: cart.id,
         userId: userIds.professor,
         startDate: zonedDateTime(dayKey(0), FIRST_PERIOD[0]),
         endDate: zonedDateTime(dayKey(0), FIRST_PERIOD[1]),
+      },
+    });
+
+    // Consergeria: un carro amb la seva clau i una reserva d'avui del Professor
+    // Un. La reserva dura tot el dia perquè la prova passi a qualsevol hora (una
+    // que ja ha passat sense que ningú reculli la clau surt del taulell), i per
+    // això va en un carro a part: el Carro E2E ha d'estar lliure ara mateix.
+    await db.concierge.create({ data: { name: "Conserge E2E" } });
+    const conciergeCart = await db.cart.create({ data: { name: "Carro Consergeria E2E" } });
+    await db.key.create({ data: { number: "C-E2E", name: "Clau del carro", cartId: conciergeCart.id } });
+    await db.reservation.create({
+      data: {
+        cartId: conciergeCart.id,
+        userId: userIds.professor,
+        startDate: zonedDateTime(dayKey(0), "00:00"),
+        endDate: zonedDateTime(dayKey(0), "23:59"),
       },
     });
 
