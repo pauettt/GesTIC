@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { daysSinceActivity, incidentViewWhere, parseIncidentView, STALLED_DAYS } from "@/lib/incidents";
+import {
+  daysSinceActivity,
+  incidentViewWhere,
+  parseIncidentView,
+  sortForRecord,
+  STALLED_DAYS,
+} from "@/lib/incidents";
 
 const now = new Date("2026-09-21T10:00:00Z");
 const daysAgo = (days: number) => new Date(now.getTime() - days * 86_400_000);
@@ -23,6 +29,25 @@ describe("incidentViewWhere", () => {
       updatedAt: { lt: cutoff },
       comments: { none: { createdAt: { gte: cutoff } } },
     });
+  });
+});
+
+describe("sortForRecord", () => {
+  it("les obertes a dalt, i les resoltes i tancades juntes, de la més nova a la més antiga", () => {
+    const incidents = [
+      { id: "resolta-vella", status: "RESOLTA", createdAt: daysAgo(30) },
+      { id: "tancada-nova", status: "TANCADA", createdAt: daysAgo(2) },
+      { id: "oberta-vella", status: "OBERTA", createdAt: daysAgo(20) },
+      { id: "en-curs-nova", status: "EN_CURS", createdAt: daysAgo(1) },
+      { id: "resolta-nova", status: "RESOLTA", createdAt: daysAgo(5) },
+    ] as const;
+    expect(sortForRecord([...incidents]).map(({ id }) => id)).toEqual([
+      "en-curs-nova",
+      "oberta-vella",
+      "tancada-nova",
+      "resolta-nova",
+      "resolta-vella",
+    ]);
   });
 });
 

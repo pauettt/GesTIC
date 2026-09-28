@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HistoryIcon } from "lucide-react";
 
 import { formatDate } from "@/lib/date";
+import { sortForRecord } from "@/lib/incidents";
 import {
   incidentPriorityLabels,
   incidentPriorityVariants,
@@ -141,7 +142,7 @@ export function ItemIncidentHistory({
                 </TableCell>
               </TableRow>
             )}
-            {incidents.map((incident) => (
+            {sortForRecord(incidents).map((incident) => (
               <TableRow key={incident.id}>
                 <TableCell className="font-medium">
                   <Link href={`/incidencies/${incident.id}`} className="hover:underline">

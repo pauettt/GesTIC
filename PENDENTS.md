@@ -325,6 +325,11 @@ aquest carro». Fins ara hi entrava tota la coordinació.
   obertes. La fitxa d'un equip de préstec a l'alumnat també té la taula
   d'incidències en lloc del botó. El professorat continua veient només si
   l'equip té una incidència oberta, no quina.
+- **Totes les fitxes ordenen l'historial d'incidències igual**: a dalt les
+  obertes, i després les resoltes i les tancades juntes, de la més nova a la
+  més antiga. Ordenar per l'estat posava totes les resoltes davant de les
+  tancades, fos quina fos la data, i l'inventari ni tan sols posava les obertes
+  a dalt.
 - **Els dispositius, en ordre, a *Nova incidència***: sortien en ordre alfabètic
   (C1.1, C1.10, C1.11… i el C1.2 molt més avall). Ara surten com a la graella del
   carro: l'ordre que hi ha desat la coordinació o, si no n'hi ha, pel número. Els

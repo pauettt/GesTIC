@@ -1,4 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import type { IncidentStatus, Prisma } from "@prisma/client";
+
+import { OPEN_INCIDENT_STATUSES } from "@/lib/chromebook-status";
 
 /** Dies sense cap canvi ni comentari a partir dels quals una incidència és aturada. */
 export const STALLED_DAYS = 7;
@@ -35,6 +37,19 @@ export function incidentViewWhere(view: IncidentView, now: Date = new Date()): P
     updatedAt: { lt: cutoff },
     comments: { none: { createdAt: { gte: cutoff } } },
   };
+}
+
+/**
+ * L'ordre de l'historial a la fitxa d'un objecte: a dalt les obertes, que són
+ * la feina d'ara, i després les resoltes i les tancades juntes; cada grup, de la
+ * més nova a la més antiga. Ordenar per l'estat posava totes les resoltes davant
+ * de les tancades, fos quina fos la data.
+ */
+export function sortForRecord<T extends { status: IncidentStatus; createdAt: Date }>(incidents: T[]): T[] {
+  const isOpen = (incident: T) => OPEN_INCIDENT_STATUSES.includes(incident.status);
+  return [...incidents].sort(
+    (a, b) => Number(isOpen(b)) - Number(isOpen(a)) || b.createdAt.getTime() - a.createdAt.getTime(),
+  );
 }
 
 /** Dies sencers des de l'últim moviment: el canvi o el comentari més recent. */

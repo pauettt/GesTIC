@@ -85,7 +85,7 @@ export default async function DeviceRecordPage({ params }: PageProps<"/chromeboo
       notes: { include: { author: person }, orderBy: { createdAt: "desc" } },
       incidents: {
         select: { id: true, title: true, createdAt: true, priority: true, status: true, reporter: person },
-        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
       },
       reservations: {
         include: { user: person, returnedBy: person },

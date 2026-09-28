@@ -111,7 +111,7 @@ export default async function CartDetailPage({
         status: true,
         reporter: { select: { name: true, email: true } },
       },
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      orderBy: { createdAt: "desc" },
     }),
     // Les obertes dels dispositius, per a la finestreta de cada un a la graella
     // de la coordinació; l'historial sencer és a la fitxa de l'equip.

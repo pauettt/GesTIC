@@ -69,7 +69,7 @@ export default async function StudentChromebookHistoryPage({
       },
       incidents: {
         select: { id: true, title: true, createdAt: true, priority: true, status: true, reporter: person },
-        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
       },
     },
   });
