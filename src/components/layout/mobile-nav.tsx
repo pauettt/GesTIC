@@ -8,7 +8,7 @@ import { MenuIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { navSectionsFor } from "@/components/layout/nav-items";
 
 export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
@@ -18,10 +18,14 @@ export function MobileNav({ role, isTutor }: { role: Role; isTutor: boolean }) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
+      <SheetTrigger
+        aria-label="Obre el menú de navegació"
+        render={<Button variant="ghost" size="icon" className="md:hidden" />}
+      >
         <MenuIcon className="size-5" />
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
+        <SheetTitle className="sr-only">Menú de navegació</SheetTitle>
         <div className="flex h-14 items-center gap-2.5 border-b px-6 text-lg font-bold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground text-xs font-bold shadow-xs">
             gT

@@ -310,6 +310,18 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ### 2026-09-28
 
+- **Navegació directa a les gestions de préstec**. Des del panell, cada
+  sol·licitud pendent i devolució vençuda porta a la seva fila de l'inventari,
+  ressaltada i sense quedar tapada pel capçal. El resum de l'inici i «Veure-les
+  totes» porten a la secció corresponent.
+- **Cerca i paginació d'incidències**. Cerca per títol, descripció, equip,
+  carro o aula, combinada amb els filtres d'estat, responsable, curs i objecte.
+  Pàgines de 25 resultats, sempre limitades a les incidències que l'usuari pot
+  veure. Una cerca o filtre nou torna a la primera pàgina. Obrir una incidència
+  i fer «Torna a la llista» conserva cerca, filtres i pàgina.
+- **Incidències al mòbil en targetes**. Equip, data, estat i prioritat sense
+  una taula amb desplaçament horitzontal; la coordinació conserva els controls
+  ràpids i veu autor i responsable. El menú mòbil té nom i títol accessibles.
 - **Les incidències del carro, a la seva fitxa**. Fins ara la pàgina del carro
   només hi enllaçava, i qui hi entrava no les veia. Ara, al final, hi ha
   l'*Historial d'incidències* del carro sencer, com a la fitxa d'un equip

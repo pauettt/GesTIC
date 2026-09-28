@@ -115,10 +115,10 @@ export default async function PanellPage() {
           countVariant={work.pendingLoans.total > 0 ? "default" : "secondary"}
           empty="No hi ha sol·licituds pendents."
           total={work.pendingLoans.total}
-          allHref="/inventari"
+          allHref="/inventari#prestecs-pendents"
           items={work.pendingLoans.items.map((loan) => ({
             id: loan.id,
-            href: "/inventari" as Route,
+            href: `/inventari#prestec-${loan.id}` as Route,
             main: `${loan.item.brand} ${loan.item.model}`,
             meta: `${who(loan.requester)} · ${formatDate(loan.startDate)} – ${formatDate(loan.endDate)}`,
             badge: null,
@@ -135,7 +135,7 @@ export default async function PanellPage() {
           empty="Cap equip prestat ha passat de data."
           items={work.overdueLoans.map((loan) => ({
             id: loan.id,
-            href: "/inventari" as Route,
+            href: `/inventari#prestec-${loan.id}` as Route,
             main: `${loan.item.brand} ${loan.item.model}`,
             meta: `${who(loan.requester)} · havia de tornar el ${formatDate(loan.endDate)}`,
             badge: { label: `${daysOverdue(loan.endDate)} dies`, variant: "destructive" as const },

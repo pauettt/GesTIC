@@ -135,7 +135,7 @@ test.describe("superadministració", () => {
 
     // Les dades de debò hi continuen; les del compte de prova, no.
     await page.goto("/incidencies?curs=TOTS");
-    await expect(page.getByText(PRIVATE_INCIDENT_TITLE)).toBeVisible();
+    await expect(page.getByRole("link", { name: PRIVATE_INCIDENT_TITLE, exact: true })).toBeVisible();
     await expect(page.getByText(DEV_ACCOUNT_INCIDENT_TITLE)).toHaveCount(0);
   });
 });

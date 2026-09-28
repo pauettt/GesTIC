@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CheckIcon, FileIcon } from "lucide-react";
 
+import { incidentReturnHref } from "@/lib/incident-list";
 import { cn } from "@/lib/utils";
 
 import { db } from "@/lib/db";
@@ -36,7 +37,8 @@ const LIFECYCLE_STEPS = [
 export default async function IncidentDetailPage({ params, searchParams }: PageProps<"/incidencies/[id]">) {
   const user = await requireUser();
   const { id } = await params;
-  const { avis } = await searchParams;
+  const { avis, retorn } = await searchParams;
+  const returnHref = incidentReturnHref(retorn);
 
   const [incident, coordinators] = await Promise.all([
     db.incident.findUnique({
@@ -83,8 +85,8 @@ export default async function IncidentDetailPage({ params, searchParams }: PageP
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
-        <Link href="/incidencies" className="text-sm text-muted-foreground hover:underline">
-          &larr; Totes les incidències
+        <Link href={returnHref} className="text-sm text-muted-foreground hover:underline">
+          &larr; {retorn ? "Torna a la llista" : "Totes les incidències"}
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{incident.title}</h1>

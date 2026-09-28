@@ -25,7 +25,7 @@ const ENTRIES: { key: keyof Counts; one: string; many: string; href: Route; urge
     key: "overdueLoans",
     one: "devolució fora de termini",
     many: "devolucions fora de termini",
-    href: "/inventari",
+    href: "/inventari#prestecs-actius",
     urgent: true,
   },
   {
@@ -41,7 +41,12 @@ const ENTRIES: { key: keyof Counts; one: string; many: string; href: Route; urge
     many: "reserves fixes per aprovar",
     href: "/chromebooks/reserves-fixes",
   },
-  { key: "pendingLoans", one: "préstec per aprovar", many: "préstecs per aprovar", href: "/inventari" },
+  {
+    key: "pendingLoans",
+    one: "préstec per aprovar",
+    many: "préstecs per aprovar",
+    href: "/inventari#prestecs-pendents",
+  },
   { key: "openQueries", one: "petició o consulta oberta", many: "peticions i consultes obertes", href: "/consultes" },
   {
     key: "pendingStudent",
@@ -105,9 +110,11 @@ export function PendingSummary({ counts }: { counts: Counts }) {
           <ul className="flex flex-wrap gap-2">
             {pending.map((entry) => {
               const count = counts[entry.key];
+              // La navegació nativa amb hash activa el ressaltat :target de la secció.
+              const EntryLink = entry.href.includes("#") ? "a" : Link;
               return (
                 <li key={entry.key}>
-                  <Link
+                  <EntryLink
                     href={entry.href}
                     className={
                       entry.urgent
@@ -121,7 +128,7 @@ export function PendingSummary({ counts }: { counts: Counts }) {
                     <span className={entry.urgent ? "text-red-900/90 dark:text-red-200/90" : "text-muted-foreground"}>
                       {count === 1 ? entry.one : entry.many}
                     </span>
-                  </Link>
+                  </EntryLink>
                 </li>
               );
             })}

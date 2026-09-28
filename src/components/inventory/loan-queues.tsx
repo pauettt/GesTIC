@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/date";
 import { daysOverdue, isOverdue } from "@/lib/loans";
+import { LoanAnchorScroll } from "@/components/inventory/loan-anchor-scroll";
 import {
   MarkLoanReturnedButton,
   RemindOverdueLoanButton,
@@ -24,8 +25,15 @@ const who = (user: User) => user.name ?? user.email;
 /** Sol·licituds que esperen una decisió del coordinador. */
 export function PendingLoanRequests({ requests }: { requests: LoanWithContext[] }) {
   return (
-    <div>
-      <h2 className="mb-3 text-lg font-semibold">Sol·licituds de préstec pendents</h2>
+    <section
+      id="prestecs-pendents"
+      aria-labelledby="prestecs-pendents-title"
+      className="scroll-mt-24 rounded-lg target:ring-2 target:ring-primary/40 target:ring-offset-4"
+    >
+      <LoanAnchorScroll sectionId="prestecs-pendents" />
+      <h2 id="prestecs-pendents-title" className="mb-3 text-lg font-semibold">
+        Sol·licituds de préstec pendents
+      </h2>
       <div className="overflow-x-auto rounded-lg border bg-background">
         <Table>
           <TableHeader>
@@ -46,7 +54,11 @@ export function PendingLoanRequests({ requests }: { requests: LoanWithContext[] 
               </TableRow>
             )}
             {requests.map((request) => (
-              <TableRow key={request.id}>
+              <TableRow
+                key={request.id}
+                id={`prestec-${request.id}`}
+                className="scroll-mt-24 target:bg-primary/10 target:outline-2 target:-outline-offset-2 target:outline-primary/50"
+              >
                 <TableCell className="font-medium">{who(request.requester)}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {request.item.brand} {request.item.model}
@@ -61,15 +73,20 @@ export function PendingLoanRequests({ requests }: { requests: LoanWithContext[] 
           </TableBody>
         </Table>
       </div>
-    </div>
+    </section>
   );
 }
 
 /** Equips que ara mateix són fora, amb els endarrerits marcats a dalt. */
 export function ActiveLoans({ loans }: { loans: LoanWithContext[] }) {
   return (
-    <div>
-      <h2 className="mb-3 text-lg font-semibold">Préstecs actius</h2>
+    <section
+      id="prestecs-actius"
+      aria-labelledby="prestecs-actius-title"
+      className="scroll-mt-24 rounded-lg target:ring-2 target:ring-primary/40 target:ring-offset-4"
+    >
+      <LoanAnchorScroll sectionId="prestecs-actius" />
+      <h2 id="prestecs-actius-title" className="mb-3 text-lg font-semibold">Préstecs actius</h2>
       <div className="overflow-x-auto rounded-lg border bg-background">
         <Table>
           <TableHeader>
@@ -91,7 +108,11 @@ export function ActiveLoans({ loans }: { loans: LoanWithContext[] }) {
             {loans.map((loan) => {
               const late = isOverdue(loan.endDate);
               return (
-                <TableRow key={loan.id}>
+                <TableRow
+                  key={loan.id}
+                  id={`prestec-${loan.id}`}
+                  className="scroll-mt-24 target:bg-primary/10 target:outline-2 target:-outline-offset-2 target:outline-primary/50"
+                >
                   <TableCell className="font-medium">{who(loan.requester)}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {loan.item.brand} {loan.item.model}
@@ -116,6 +137,6 @@ export function ActiveLoans({ loans }: { loans: LoanWithContext[] }) {
           </TableBody>
         </Table>
       </div>
-    </div>
+    </section>
   );
 }

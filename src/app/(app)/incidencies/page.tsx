@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import Form from "next/form";
 import { PlusIcon, TicketIcon, UserIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
@@ -19,6 +20,10 @@ import {
   IncidentPrioritySelect,
   IncidentStatusSelect,
 } from "@/components/incidents/incident-badge-selects";
+import { INCIDENT_PAGE_SIZE, incidentPage, incidentSearchQuery, incidentSearchWhere } from "@/lib/incident-list";
+import { IncidentMobileList } from "@/components/incidents/incident-mobile-list";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
 import {
@@ -29,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { IncidentStatus } from "@prisma/client";
+import type { IncidentStatus, Prisma } from "@prisma/client";
 
 const STATUS_FILTERS: { value: IncidentStatus | "TOTES"; label: string }[] = [
   { value: "TOTES", label: "Totes" },
@@ -45,10 +50,11 @@ export default async function IncidenciesPage({
   searchParams,
 }: PageProps<"/incidencies">) {
   const user = await requireUser();
-  const { status, inventoryItemId, chromebookId, cartId, assignada, curs, vista } = await searchParams;
+  const { status, inventoryItemId, chromebookId, cartId, assignada, curs, vista, q, pagina } = await searchParams;
   // Les cues del panell: «Veure-les totes» hi porta amb el mateix criteri que compta.
   const view = isAdmin(user.role) ? parseIncidentView(vista) : null;
-  const statusFilter = typeof status === "string" ? status : "TOTES";
+  const statusFilter = STATUS_FILTERS.find((filter) => filter.value === status)?.value ?? "TOTES";
+  const query = incidentSearchQuery(q);
   // Amb tres coordinadors, "les meves" és la vista de treball habitual.
   const onlyMine = assignada === "jo" && isAdmin(user.role);
   const objectFilter =
@@ -72,7 +78,7 @@ export default async function IncidenciesPage({
   const allYears = Boolean(objectFilter || view);
   const schoolYear = allYears
     ? "TOTS"
-    : typeof curs === "string"
+    : typeof curs === "string" && (curs === "TOTS" || /^\d{4}-\d{4}$/.test(curs))
       ? curs
       : currentSchoolYear;
   const schoolYearWhere =
@@ -85,26 +91,21 @@ export default async function IncidenciesPage({
           },
         };
 
-  const [incidents, oldest, openBefore] = await Promise.all([
-    db.incident.findMany({
-      where: {
-        ...(objectFilter ?? {}),
-        ...visibleToUser,
-        ...schoolYearWhere,
-        ...(onlyMine ? { assignedToId: user.id } : {}),
-        ...(view ? incidentViewWhere(view) : {}),
-        ...(statusFilter !== "TOTES" ? { status: statusFilter as IncidentStatus } : {}),
-      },
-      include: {
-        reporter: true,
-        assignedTo: true,
-        inventoryItem: true,
-        chromebook: { include: { cart: true } },
-        cart: true,
-        space: true,
-      },
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    }),
+  // Les restriccions de visibilitat i les vistes se sumen a la cerca: cap OR
+  // de text ni filtre d'estat pot ampliar el conjunt autoritzat.
+  const where: Prisma.IncidentWhereInput = {
+    AND: [
+      objectFilter ?? {},
+      visibleToUser,
+      schoolYearWhere,
+      onlyMine ? { assignedToId: user.id } : {},
+      view ? incidentViewWhere(view) : {},
+      statusFilter !== "TOTES" ? { status: statusFilter } : {},
+      incidentSearchWhere(query),
+    ],
+  };
+  const [total, oldest, openBefore] = await Promise.all([
+    db.incident.count({ where }),
     db.incident.findFirst({
       where: visibleToUser,
       orderBy: { createdAt: "asc" },
@@ -118,15 +119,33 @@ export default async function IncidenciesPage({
       : db.incident.count({
           where: {
             ...visibleToUser,
+            ...(onlyMine ? { assignedToId: user.id } : {}),
+            ...incidentSearchWhere(query),
             status: { in: ["OBERTA", "EN_CURS"] },
             createdAt: { lt: schoolYearRange(schoolYear).start },
           },
         }),
   ]);
 
+  const { page, pages, skip } = incidentPage(pagina, total);
+  const incidents = await db.incident.findMany({
+    where,
+    include: {
+      reporter: true,
+      assignedTo: true,
+      inventoryItem: true,
+      chromebook: { include: { cart: true } },
+      cart: true,
+      space: true,
+    },
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+    skip,
+    take: INCIDENT_PAGE_SIZE,
+  });
+
   const schoolYears = oldest ? schoolYearsBetween(oldest.createdAt) : [currentSchoolYear];
 
-  function filterHref(next: { status?: string; mine?: boolean; curs?: string }): Route {
+  function filterHref(next: { status?: string; mine?: boolean; curs?: string; q?: string; page?: number }): Route {
     const params = new URLSearchParams();
     const nextStatus = next.status !== undefined ? next.status : statusFilter;
     const nextMine = next.mine !== undefined ? next.mine : onlyMine;
@@ -142,9 +161,17 @@ export default async function IncidenciesPage({
     if (nextMine) params.set("assignada", "jo");
     // L'historial d'un objecte i les vistes ja són de tots els cursos: no cal dir-ho a la URL.
     if (!allYears && nextCurs !== currentSchoolYear) params.set("curs", nextCurs);
-    const query = params.toString();
-    return (query ? `/incidencies?${query}` : "/incidencies") as Route;
+    const nextQuery = next.q !== undefined ? next.q : query;
+    if (nextQuery) params.set("q", nextQuery);
+    if (next.page && next.page > 1) params.set("pagina", String(next.page));
+    const search = params.toString();
+    return (search ? `/incidencies?${search}` : "/incidencies") as Route;
   }
+
+  const returnHref = filterHref({ page });
+  const searchFilters = new URLSearchParams(filterHref({ q: "" }).split("?")[1]);
+  const detailHref = (id: string) =>
+    `/incidencies/${id}?${new URLSearchParams({ retorn: returnHref })}` as Route;
 
   // El nom surt de l'objecte i no de la primera incidència: amb un filtre d'estat
   // que no en deixa cap, el títol ha de continuar dient de quin equip és.
@@ -249,6 +276,29 @@ export default async function IncidenciesPage({
         )}
       </div>
 
+      <Form action="/incidencies" className="flex flex-wrap items-end gap-2" role="search">
+        {Array.from(searchFilters).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
+        <div className="w-full sm:max-w-md">
+          <label htmlFor="incident-search" className="mb-1.5 block text-sm font-medium">
+            Cerca incidències
+          </label>
+          <Input
+            key={query}
+            id="incident-search"
+            name="q"
+            type="search"
+            defaultValue={query}
+            maxLength={200}
+            placeholder="Títol, descripció, equip o aula…"
+            className="h-10"
+          />
+        </div>
+        <Button type="submit" className="h-10">Cerca</Button>
+        {query && <ButtonLink href={filterHref({ q: "" })} variant="ghost" className="h-10">Neteja la cerca</ButtonLink>}
+      </Form>
+
       {view && (
         <p className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
           Només les incidències {incidentViewLabels[view]}.{" "}
@@ -268,7 +318,27 @@ export default async function IncidenciesPage({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border bg-background">
+      <p className="text-sm text-muted-foreground" role="status">
+        {total === 0
+          ? "No hi ha cap incidència amb aquest filtre."
+          : `${skip + 1}–${skip + incidents.length} de ${total} ${total === 1 ? "incidència" : "incidències"}`}
+      </p>
+      <IncidentMobileList
+        admin={isAdmin(user.role)}
+        items={incidents.map((incident) => ({
+          id: incident.id,
+          title: incident.title,
+          targetLabel: targetLabel(incident),
+          status: incident.status,
+          priority: incident.priority,
+          createdAt: incident.createdAt,
+          reporterLabel: incident.reporter.name ?? incident.reporter.email,
+          assigneeLabel: incident.assignedTo ? (incident.assignedTo.name ?? incident.assignedTo.email) : null,
+          notifies: incident.reporterId !== user.id,
+          href: detailHref(incident.id),
+        }))}
+      />
+      <div className="hidden overflow-x-auto rounded-lg border bg-background md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -282,17 +352,10 @@ export default async function IncidenciesPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {incidents.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={isAdmin(user.role) ? 7 : 5} className="py-10 text-center text-muted-foreground">
-                  No hi ha cap incidència amb aquest filtre.
-                </TableCell>
-              </TableRow>
-            )}
             {incidents.map((incident) => (
               <TableRow key={incident.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/incidencies/${incident.id}`} className="hover:underline">
+                  <Link href={detailHref(incident.id)} className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-ring">
                     {incident.title}
                   </Link>
                 </TableCell>
@@ -340,6 +403,15 @@ export default async function IncidenciesPage({
           </TableBody>
         </Table>
       </div>
+      {pages > 1 && (
+        <nav aria-label="Paginació d'incidències" className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-muted-foreground">Pàgina {page} de {pages}</span>
+          <div className="flex gap-2">
+            {page > 1 && <ButtonLink href={filterHref({ page: page - 1 })} variant="outline" className="h-10">Anterior</ButtonLink>}
+            {page < pages && <ButtonLink href={filterHref({ page: page + 1 })} variant="outline" className="h-10">Següent</ButtonLink>}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
