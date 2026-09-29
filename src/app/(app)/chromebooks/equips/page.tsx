@@ -116,7 +116,7 @@ export default async function DeviceInventoryPage({ searchParams }: PageProps<"/
     if (row.cart) {
       return (
         <>
-          <Link href={`/chromebooks/${row.cart.id}`} className="font-medium hover:underline">
+          <Link href={`/chromebooks/${row.cart.id}`} className="relative z-10 font-medium hover:underline">
             {row.cart.name}
           </Link>
           <span className="block text-xs text-muted-foreground">
@@ -127,7 +127,7 @@ export default async function DeviceInventoryPage({ searchParams }: PageProps<"/
     }
     if (row.isStudentLoanable) {
       return (
-        <Link href="/alumnat" className="font-medium hover:underline">
+        <Link href="/alumnat" className="relative z-10 font-medium hover:underline">
           Préstec a l&apos;alumnat
         </Link>
       );
@@ -204,9 +204,10 @@ export default async function DeviceInventoryPage({ searchParams }: PageProps<"/
         <>
           <ul className="flex flex-col gap-2 md:hidden" aria-label="Dispositius">
             {rows.map((row) => (
-              <li key={row.id} className="rounded-lg border bg-background p-3">
+              <li key={row.id} className="relative rounded-lg border bg-background p-3 hover:bg-muted/40">
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={row.href} className="font-semibold hover:underline">
+                  {/* Tota la targeta porta a la fitxa; l'enllaç al carro va a part. */}
+                  <Link href={row.href} className="font-semibold after:absolute after:inset-0 hover:underline">
                     {row.assetTag}
                   </Link>
                   <div className="text-right">
@@ -241,9 +242,9 @@ export default async function DeviceInventoryPage({ searchParams }: PageProps<"/
               </TableHeader>
               <TableBody>
                 {rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} className="relative cursor-pointer">
                     <TableCell className="font-medium">
-                      <Link href={row.href} className="hover:underline">
+                      <Link href={row.href} className="after:absolute after:inset-0 hover:underline">
                         {row.assetTag}
                       </Link>
                     </TableCell>
