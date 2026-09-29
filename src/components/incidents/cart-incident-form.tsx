@@ -40,9 +40,10 @@ const STUDENT_POOL = "__prestec-alumnat__";
  * ho treu.
  */
 const CART_SHORTCUTS = [
-  { label: "Fora de lloc", text: "El carro no és al seu lloc." },
-  { label: "Desordenat", text: "Els dispositius estan desordenats dins el carro." },
-  { label: "Sense endollar", text: "Hi ha dispositius sense endollar, o el carro no està connectat al corrent." },
+  { label: "Chromebooks fora del carro", text: "Hi ha Chromebooks fora del carro." },
+  { label: "Carro no ordenat", text: "Els Chromebooks del carro no estan ordenats." },
+  { label: "Carro no endollat a la corrent", text: "El carro no està endollat a la corrent." },
+  { label: "Chromebooks no connectats", text: "Hi ha Chromebooks que no estan connectats al carregador del carro." },
 ];
 
 const chromebookOption = (chromebook: ChromebookOption): ObjectOption => ({

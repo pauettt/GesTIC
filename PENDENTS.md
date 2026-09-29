@@ -325,7 +325,8 @@ aquest carro». Fins ara hi entrava tota la coordinació.
   Al costat de *Demana una reserva fixa* hi ha *Reporta una incidència del
   carro*, per a tothom qui veu el carro: obre el formulari amb el carro sencer
   ja triat. Amb el carro sencer, sobre la descripció surten els problemes més
-  habituals (*Fora de lloc*, *Desordenat*, *Sense endollar*): un clic n'escriu
+  habituals (*Chromebooks fora del carro*, *Carro no ordenat*, *Carro no
+  endollat a la corrent*, *Chromebooks no connectats*): un clic n'escriu
   la frase, se'n poden combinar i es pot afegir el que calgui; un segon clic la
   treu. El títol continua sent «Carro …»: les dreceres només omplen el text.
 - **Moure equips d'un carro a un altre, uns quants alhora**. A la pàgina del

@@ -117,20 +117,20 @@ test("el professorat reporta un carro sencer des de la seva pàgina, amb les dre
   await expect(professor.locator("#cart-objectId")).toContainText("El carro sencer");
   const shortcuts = professor.getByRole("group", { name: "Problemes habituals del carro" });
   const description = professor.locator("#cart-description");
-  await shortcuts.getByRole("button", { name: "Fora de lloc" }).click();
-  await shortcuts.getByRole("button", { name: "Sense endollar" }).click();
-  await expect(shortcuts.getByRole("button", { name: "Fora de lloc", pressed: true })).toBeVisible();
+  await shortcuts.getByRole("button", { name: "Chromebooks fora del carro" }).click();
+  await shortcuts.getByRole("button", { name: "Carro no endollat a la corrent" }).click();
+  await expect(shortcuts.getByRole("button", { name: "Chromebooks fora del carro", pressed: true })).toBeVisible();
   await expect(description).toHaveValue(
-    "El carro no és al seu lloc. Hi ha dispositius sense endollar, o el carro no està connectat al corrent.",
+    "Hi ha Chromebooks fora del carro. El carro no està endollat a la corrent.",
   );
   // Un segon clic ho treu, i el que s'hi ha escrit a mà es queda.
   await description.fill(`${await description.inputValue()} És a la sala de professorat.`);
-  await shortcuts.getByRole("button", { name: "Fora de lloc" }).click();
+  await shortcuts.getByRole("button", { name: "Chromebooks fora del carro" }).click();
   await expect(description).toHaveValue(
-    "Hi ha dispositius sense endollar, o el carro no està connectat al corrent. És a la sala de professorat.",
+    "El carro no està endollat a la corrent. És a la sala de professorat.",
   );
 
   await professor.getByRole("button", { name: "Crea la incidència" }).click();
   await expect(professor.getByText("Incidència enviada.")).toBeVisible();
-  await expect(professor.getByText(/Hi ha dispositius sense endollar/)).toBeVisible();
+  await expect(professor.getByText(/El carro no està endollat a la corrent/)).toBeVisible();
 });
