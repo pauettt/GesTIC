@@ -12,7 +12,7 @@ export function AppSidebar({ role, isTutor }: { role: Role; isTutor: boolean }) 
   const sections = navSectionsFor({ role, isTutor });
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r bg-background md:flex print:hidden">
+    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-background md:flex print:hidden">
       <div className="flex h-14 items-center border-b px-6">
         <Link href="/" className="group flex items-center gap-2.5 text-lg font-bold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground text-xs font-bold shadow-xs transition-transform group-hover:scale-105">
