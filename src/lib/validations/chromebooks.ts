@@ -31,6 +31,21 @@ export const setChromebookOrderSchema = z.object({
   deviceIds: z.array(z.string().min(1)).refine((ids) => new Set(ids).size === ids.length),
 });
 
+export const moveChromebooksSchema = z
+  .object({
+    fromCartId: z.string().min(1),
+    toCartId: z.string().min(1, "Tria el carro on els vols moure"),
+    deviceIds: z
+      .array(z.string().min(1))
+      .min(1, "Tria algun dispositiu")
+      .refine((ids) => new Set(ids).size === ids.length),
+  })
+  .refine((value) => value.fromCartId !== value.toCartId, {
+    message: "Ja són en aquest carro",
+    path: ["toCartId"],
+  });
+export type MoveChromebooksInput = z.infer<typeof moveChromebooksSchema>;
+
 export const upsertChromebookSchema = z.object({
   id: z.string().optional(),
   // En una edició, canviar-lo és moure l'equip a un altre carro.

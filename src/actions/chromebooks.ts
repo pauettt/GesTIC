@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { canAccessCart, CART_ACCESS_DENIED } from "@/lib/cart-access";
@@ -18,6 +19,7 @@ import {
   deleteCartSchema,
   deleteChromebookNoteSchema,
   deleteChromebookSchema,
+  moveChromebooksSchema,
   setCartOrderSchema,
   setChromebookAvailabilitySchema,
   setChromebookOrderSchema,
@@ -31,6 +33,9 @@ export type ActionResult = { success: true } | { success: false; error: string }
 
 /** Un motiu per no reservar que ha de veure qui ho prova, dins la transacció. */
 class ReservationRefused extends Error {}
+
+/** Un motiu per no moure equips que ha de veure qui ho prova, dins la transacció. */
+class MoveRefused extends Error {}
 
 export async function setCartOrder(input: unknown): Promise<ActionResult> {
   await requireAdmin();
@@ -84,6 +89,32 @@ export async function setChromebookOrder(input: unknown): Promise<ActionResult> 
   revalidatePath(`/q/carro/${cartId}`);
   revalidatePath(`/chromebooks/${cartId}/etiquetes`);
   return { success: true };
+}
+
+/**
+ * Treu els equips que canvien de carro de l'ordre desat dels dos carros. Al de
+ * destí van al final, com un equip nou; si hi quedés una posició d'un altre
+ * cop que hi havien estat, hi tornarien a aparèixer al mig sense que ningú
+ * l'hagués triada.
+ */
+async function forgetOrderPositions(tx: Prisma.TransactionClient, cartIds: string[], deviceIds: string[]) {
+  const moved = new Set(deviceIds);
+  const carts = await tx.cart.findMany({
+    where: { id: { in: cartIds } },
+    select: { id: true, chromebookOrder: true },
+  });
+  for (const cart of carts) {
+    const kept = cart.chromebookOrder.filter((id) => !moved.has(id));
+    if (kept.length === cart.chromebookOrder.length) continue;
+    await tx.cart.update({ where: { id: cart.id }, data: { chromebookOrder: kept } });
+  }
+}
+
+/** Les pàgines que diuen quins equips té un carro. */
+function revalidateCartContents(cartId: string) {
+  revalidatePath(`/chromebooks/${cartId}`);
+  revalidatePath(`/q/carro/${cartId}`);
+  revalidatePath(`/chromebooks/${cartId}/etiquetes`);
 }
 
 /** On surt un equip: el d'un carro, a la pàgina del carro; el del pool, al préstec a l'alumnat. */
@@ -229,7 +260,12 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
         return { success: false, error: "Aquest equip és del préstec a l'alumnat" };
       }
       previousCartId = existing.cartId;
-      await db.chromebook.update({ where: { id }, data: payload });
+      await db.$transaction(async (tx) => {
+        await tx.chromebook.update({ where: { id }, data: payload });
+        if (existing.cartId && existing.cartId !== cartId) {
+          await forgetOrderPositions(tx, [existing.cartId, cartId], [id]);
+        }
+      });
     } else {
       await db.chromebook.create({ data: payload });
     }
@@ -240,9 +276,54 @@ export async function upsertChromebook(input: unknown): Promise<ActionResult> {
   revalidatePath(`/chromebooks/${cartId}`);
   if (id) revalidatePath(`/chromebooks/equips/${id}`);
   if (previousCartId && previousCartId !== cartId) {
-    revalidatePath(`/chromebooks/${previousCartId}`);
+    revalidateCartContents(previousCartId);
+    revalidateCartContents(cartId);
   }
   revalidatePath("/chromebooks");
+  return { success: true };
+}
+
+/**
+ * Mou uns quants equips d'un carro a un altre. Hi van amb tot el que porten:
+ * les notes, les incidències i les reserves que algú n'hagi fet sol, que
+ * continuen a nom seu al carro nou. O es mouen tots o no se'n mou cap: si algun
+ * ja no és al carro d'origen, la pàgina era vella i cal tornar-ho a mirar.
+ */
+export async function moveChromebooks(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = moveChromebooksSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
+  }
+  const { fromCartId, toCartId, deviceIds } = parsed.data;
+
+  const destination = await db.cart.findUnique({ where: { id: toCartId }, select: { id: true } });
+  if (!destination) return { success: false, error: "El carro de destí ja no existeix" };
+
+  try {
+    await db.$transaction(async (tx) => {
+      const moved = await tx.chromebook.updateMany({
+        where: { id: { in: deviceIds }, cartId: fromCartId },
+        data: { cartId: toCartId },
+      });
+      if (moved.count !== deviceIds.length) {
+        throw new MoveRefused("Els dispositius del carro han canviat. Recarrega la pàgina abans de moure'ls.");
+      }
+      await forgetOrderPositions(tx, [fromCartId, toCartId], deviceIds);
+    });
+  } catch (error) {
+    if (error instanceof MoveRefused) return { success: false, error: error.message };
+    throw error;
+  }
+
+  revalidateCartContents(fromCartId);
+  revalidateCartContents(toCartId);
+  // La fitxa de cada equip diu de quin carro és.
+  revalidatePath("/chromebooks/equips/[id]", "page");
+  // Les targetes dels carros i l'inventari per aula en diuen quants equips tenen.
+  revalidatePath("/chromebooks");
+  revalidatePath("/inventari");
+  revalidatePath("/incidencies/nova");
   return { success: true };
 }
 

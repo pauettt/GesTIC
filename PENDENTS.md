@@ -308,6 +308,19 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ## ✅ Fet
 
+### 2026-09-29
+
+- **Moure equips d'un carro a un altre, uns quants alhora**. A la pàgina del
+  carro, *Mou a un altre carro*: es marquen els dispositius (o *Marca'ls tots*),
+  es tria el carro de destí i *Mou-ne N*. Abans només es podia d'un en un, des
+  d'*Edita → Carro*, que continua funcionant. O es mouen tots o cap: si algun ja
+  no era al carro, demana recarregar la pàgina. S'hi emporten les notes, les
+  incidències i també les reserves de l'equip sol, encara que el carro de destí
+  estigui reservat sencer aquelles hores: s'ha decidit així perquè moure un
+  equip reservat és una decisió de la coordinació, que sap on és. Al carro de
+  destí van al final de l'ordre desat, i en surten del d'origen, també quan es
+  mouen des d'*Edita*.
+
 ### 2026-09-28
 
 - **Navegació directa a les gestions de préstec**. Des del panell, cada

@@ -257,6 +257,19 @@ export async function seed(connectionString: string): Promise<{
       });
     }
 
+    // Dos carros per moure equips de l'un a l'altre sense tocar els recomptes
+    // de cap altra prova. El de destí té l'ordre desat: els que hi arriben
+    // s'hi han de posar al final.
+    const moveFromCart = await db.cart.create({ data: { name: "Carro Origen E2E" } });
+    const moveDevices = {} as Fixtures["moveDevices"];
+    for (const assetTag of ["MOU-01", "MOU-02", "MOU-03"] as const) {
+      const chromebook = await db.chromebook.create({ data: { assetTag, cartId: moveFromCart.id } });
+      moveDevices[assetTag] = chromebook.id;
+    }
+    const moveToCart = await db.cart.create({ data: { name: "Carro Destí E2E" } });
+    const moveToDevice = await db.chromebook.create({ data: { assetTag: "TRA-01", cartId: moveToCart.id } });
+    await db.cart.update({ where: { id: moveToCart.id }, data: { chromebookOrder: [moveToDevice.id] } });
+
     for (const [order, video] of TUTORIAL_VIDEOS.entries()) {
       const tutorialCategory = await db.tutorialCategory.create({ data: { name: video.category, order } });
       await db.tutorialVideo.create({
@@ -311,6 +324,9 @@ export async function seed(connectionString: string): Promise<{
         reservationCartId: reservationCart.id,
         recurringCartId: recurringCart.id,
         incidentCartId: incidentCart.id,
+        moveFromCartId: moveFromCart.id,
+        moveToCartId: moveToCart.id,
+        moveDevices,
         fixedWeek: madridDateKey(fixedMonday),
         reservationDevices,
         poolChromebooks,

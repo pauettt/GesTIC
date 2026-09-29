@@ -75,6 +75,10 @@ export type Fixtures = {
   recurringCartId: string;
   /** Carro a part amb incidències del carro sencer (`CART_INCIDENT_TITLES`). */
   incidentCartId: string;
+  /** Carros a part per moure'n equips: l'origen té els MOU-, el destí el TRA-01. */
+  moveFromCartId: string;
+  moveToCartId: string;
+  moveDevices: Record<"MOU-01" | "MOU-02" | "MOU-03", string>;
   /** Dilluns de la primera setmana de la prova de reserves fixes, "YYYY-MM-DD". */
   fixedWeek: string;
   poolChromebooks: Record<"ALU-01" | "ALU-02", string>;
