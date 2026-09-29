@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LaptopIcon, QrCodeIcon } from "lucide-react";
+import { LaptopIcon, QrCodeIcon, TicketIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { canAccessCart } from "@/lib/cart-access";
@@ -27,6 +27,7 @@ import { CancelRecurringButton, RecurringRequestDialog } from "@/components/chro
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { ItemIncidentHistory } from "@/components/inventory/item-histories";
 import { WeeklySchedule } from "@/components/chromebooks/weekly-schedule";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Separator } from "@/components/ui/separator";
 
 export default async function CartDetailPage({
@@ -236,11 +237,18 @@ export default async function CartDetailPage({
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Horari d&apos;ocupació</h2>
-          <RecurringRequestDialog
-            cartId={cart.id}
-            cartName={cart.name}
-            period={`${course.firstDay > toDateParam(now) ? "de l'1 de setembre" : "des d'ara"} fins al ${courseEndLabel(course.schoolYear)}`}
-          />
+          <div className="flex flex-wrap gap-2">
+            {/* Qui el té davant i el troba fora de lloc o sense endollar, ho diu d'aquí mateix. */}
+            <ButtonLink href={`/incidencies/nova?tipus=carro&carro=${cart.id}`} variant="outline" size="sm">
+              <TicketIcon className="size-4" />
+              Reporta una incidència del carro
+            </ButtonLink>
+            <RecurringRequestDialog
+              cartId={cart.id}
+              cartName={cart.name}
+              period={`${course.firstDay > toDateParam(now) ? "de l'1 de setembre" : "des d'ara"} fins al ${courseEndLabel(course.schoolYear)}`}
+            />
+          </div>
         </div>
         <p className="mb-3 text-sm text-muted-foreground">
           <span className={cn("font-medium", available < inService.length ? "text-red-700" : "text-foreground")}>

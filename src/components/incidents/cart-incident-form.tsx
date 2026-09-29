@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckIcon } from "lucide-react";
 
 import { createIncident } from "@/actions/incidents";
 import { useServerAction } from "@/hooks/use-server-action";
@@ -32,6 +33,17 @@ type ObjectOption =
  * Chromebooks. El servidor no el fa servir: per a un Chromebook només mira quin.
  */
 const STUDENT_POOL = "__prestec-alumnat__";
+
+/**
+ * El que més es repeteix amb un carro sencer. Un clic ho escriu a la
+ * descripció, on es pot matisar; se'n poden triar uns quants, i un segon clic
+ * ho treu.
+ */
+const CART_SHORTCUTS = [
+  { label: "Fora de lloc", text: "El carro no és al seu lloc." },
+  { label: "Desordenat", text: "Els dispositius estan desordenats dins el carro." },
+  { label: "Sense endollar", text: "Hi ha dispositius sense endollar, o el carro no està connectat al corrent." },
+];
 
 const chromebookOption = (chromebook: ChromebookOption): ObjectOption => ({
   value: `chromebook:${chromebook.id}`,
@@ -87,6 +99,7 @@ export function CartIncidentForm({
     control,
     register,
     handleSubmit,
+    getValues,
     setValue,
     formState: { errors },
   } = useForm<CreateIncidentInput>({
@@ -104,6 +117,7 @@ export function CartIncidentForm({
   const { run, isPending } = useServerAction(createIncident);
   const cartId = useWatch({ control, name: "cartId" });
   const targetType = useWatch({ control, name: "targetType" });
+  const description = useWatch({ control, name: "description" }) ?? "";
   const isStudentPool = cartId === STUDENT_POOL;
   const selectedCart = carts.find((cart) => cart.id === cartId);
 
@@ -135,6 +149,14 @@ export function CartIncidentForm({
     setValue("targetType", option?.targetType ?? "CART");
     setValue("chromebookId", option?.targetType === "CHROMEBOOK" ? option.chromebookId : "");
     setValue("category", undefined);
+  }
+
+  function toggleShortcut(text: string) {
+    const current = getValues("description") ?? "";
+    const next = current.includes(text)
+      ? current.replace(text, "").replace(/ {2,}/g, " ").trim()
+      : [current.trim(), text].filter(Boolean).join(" ");
+    setValue("description", next, { shouldDirty: true, shouldValidate: Boolean(errors.description) });
   }
 
   function onSubmit(values: CreateIncidentInput) {
@@ -197,6 +219,26 @@ export function CartIncidentForm({
 
             <Field data-invalid={Boolean(errors.description)}>
               <FieldLabel htmlFor="cart-description">4. Descripció breu</FieldLabel>
+              {objectValue === "cart" && (
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Problemes habituals del carro">
+                  {CART_SHORTCUTS.map((shortcut) => {
+                    const chosen = description.includes(shortcut.text);
+                    return (
+                      <Button
+                        key={shortcut.label}
+                        type="button"
+                        size="sm"
+                        variant={chosen ? "secondary" : "outline"}
+                        aria-pressed={chosen}
+                        onClick={() => toggleShortcut(shortcut.text)}
+                      >
+                        {chosen && <CheckIcon className="size-3.5" />}
+                        {shortcut.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
               <Textarea
                 id="cart-description"
                 rows={4}

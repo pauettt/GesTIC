@@ -105,3 +105,32 @@ test("des del QR d'un equip, «amb més detall» obre el formulari amb l'equip j
   await professor.getByRole("link", { name: "Canvia el tipus d'incidència" }).click();
   await expect(professor.getByText("On és el problema?")).toBeVisible();
 });
+
+test("el professorat reporta un carro sencer des de la seva pàgina, amb les dreceres habituals", async ({ browser }) => {
+  // Un carro sense incidències de les altres proves: aquesta no els canvia els recomptes.
+  const { moveToCartId } = readFixtures();
+  const professor = await pageAs(browser, "professor");
+  await professor.goto(`/chromebooks/${moveToCartId}`);
+  await professor.getByRole("link", { name: "Reporta una incidència del carro" }).click();
+
+  // Arriba amb el carro sencer ja triat i les dreceres a la vista.
+  await expect(professor.locator("#cart-objectId")).toContainText("El carro sencer");
+  const shortcuts = professor.getByRole("group", { name: "Problemes habituals del carro" });
+  const description = professor.locator("#cart-description");
+  await shortcuts.getByRole("button", { name: "Fora de lloc" }).click();
+  await shortcuts.getByRole("button", { name: "Sense endollar" }).click();
+  await expect(shortcuts.getByRole("button", { name: "Fora de lloc", pressed: true })).toBeVisible();
+  await expect(description).toHaveValue(
+    "El carro no és al seu lloc. Hi ha dispositius sense endollar, o el carro no està connectat al corrent.",
+  );
+  // Un segon clic ho treu, i el que s'hi ha escrit a mà es queda.
+  await description.fill(`${await description.inputValue()} És a la sala de professorat.`);
+  await shortcuts.getByRole("button", { name: "Fora de lloc" }).click();
+  await expect(description).toHaveValue(
+    "Hi ha dispositius sense endollar, o el carro no està connectat al corrent. És a la sala de professorat.",
+  );
+
+  await professor.getByRole("button", { name: "Crea la incidència" }).click();
+  await expect(professor.getByText("Incidència enviada.")).toBeVisible();
+  await expect(professor.getByText(/Hi ha dispositius sense endollar/)).toBeVisible();
+});
