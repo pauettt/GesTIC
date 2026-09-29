@@ -23,3 +23,11 @@ export function moveCart(order: readonly string[], id: string, targetId: string)
   next.splice(to, 0, id);
   return next;
 }
+
+/** L'ordre desat dels carros (el camp `order`); buit si la coordinació no n'ha desat cap. */
+export function savedCartOrder(carts: readonly { id: string; order: number | null }[]): string[] {
+  return carts
+    .filter((cart) => cart.order !== null)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((cart) => cart.id);
+}

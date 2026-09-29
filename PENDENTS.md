@@ -310,6 +310,17 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ### 2026-09-29
 
+- **Inventari de dispositius** (*Carros → Dispositius*, `/chromebooks/equips`),
+  només per a la coordinació. Tots els equips, dels carros i del préstec a
+  l'alumnat, amb l'identificador, el número de sèrie, el tipus i model, a quin
+  carro són (i on és el carro), la posició que hi ocupen i l'estat, amb qui el
+  té si és per una reserva. Es busca per número de sèrie (en minúscules o a
+  mitges), identificador, marca, model o carro, i es filtra per carro. La
+  posició és la de la graella del carro: l'ordre desat o el del número, comptant
+  els donats de baixa. Un equip d'aquests només pot ser en un carro o al
+  préstec a l'alumnat (els que no són enlloc, que ara no es poden crear, surten
+  al final). Un equip fix d'una aula es dona d'alta a l'*Inventari TIC*, amb
+  l'aula i la IP, i aquí no hi surt.
 - **Incidència del carro sencer, amb dreceres i des de la pàgina del carro**.
   Al costat de *Demana una reserva fixa* hi ha *Reporta una incidència del
   carro*, per a tothom qui veu el carro: obre el formulari amb el carro sencer

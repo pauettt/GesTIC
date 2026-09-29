@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { LaptopIcon, LayoutGridIcon, ListIcon, RepeatIcon } from "lucide-react";
+import { LaptopIcon, LayoutGridIcon, ListIcon, RepeatIcon, SearchIcon } from "lucide-react";
 
 import { db } from "@/lib/db";
 import { visibleCartsWhere } from "@/lib/cart-access";
@@ -258,6 +258,12 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
               </>
             )}
           </ButtonLink>
+          {admin && (
+            <ButtonLink variant="outline" href="/chromebooks/equips">
+              <SearchIcon className="size-4" />
+              Dispositius
+            </ButtonLink>
+          )}
           <ButtonLink variant="outline" href="/chromebooks/reserves-fixes">
             <RepeatIcon className="size-4" />
             Reserves fixes

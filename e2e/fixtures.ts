@@ -98,7 +98,9 @@ export async function seed(connectionString: string): Promise<{
 
     const cartChromebooks = {} as Fixtures["cartChromebooks"];
     for (const assetTag of ["E2E-01", "E2E-02", "E2E-03", "E2E-04"] as const) {
-      const chromebook = await db.chromebook.create({ data: { assetTag, cartId: cart.id } });
+      // Només un amb número de sèrie: l'inventari de dispositius l'ha de trobar per aquí.
+      const serialNumber = assetTag === "E2E-03" ? "SN-E2E-03" : null;
+      const chromebook = await db.chromebook.create({ data: { assetTag, serialNumber, cartId: cart.id } });
       cartChromebooks[assetTag] = chromebook.id;
     }
 
