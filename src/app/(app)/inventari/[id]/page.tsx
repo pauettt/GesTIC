@@ -82,6 +82,7 @@ export default async function InventoryItemDetailPage({ params }: PageProps<"/in
             </div>
 
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+              {item.label && <DataRow label="Etiqueta" value={item.label} />}
               <DataRow label="Ubicació" value={item.space?.name ?? "—"} />
               <DataRow label="Núm. de sèrie" value={item.serialNumber ?? "—"} />
               {canManage && (

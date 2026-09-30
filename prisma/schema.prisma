@@ -230,6 +230,9 @@ model InventoryCategory {
 model InventoryItem {
   id            String              @id @default(cuid())
   categoryId    String
+  /// L'etiqueta que porta enganxada l'equip (PORT-03, PROJ-A004): el que el
+  /// distingeix de deu d'iguals. Única, perquè serveix per trobar-lo.
+  label         String?             @unique
   brand         String
   model         String
   serialNumber  String?             @unique

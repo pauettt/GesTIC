@@ -114,7 +114,7 @@ async function RoomForm() {
     db.inventoryItem.findMany({
       where: { status: { not: "BAIXA" } },
       orderBy: { brand: "asc" },
-      select: { id: true, brand: true, model: true, spaceId: true },
+      select: { id: true, label: true, brand: true, model: true, spaceId: true },
     }),
     loadCarts(),
   ]);

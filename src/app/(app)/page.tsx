@@ -38,6 +38,7 @@ import { PendingSummary } from "@/components/panell/pending-summary";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
 import { cn } from "@/lib/utils";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MODULE_CARDS: Array<{
@@ -324,7 +325,7 @@ export default async function HomePage() {
                     <li key={loan.id} className="flex items-center justify-between gap-3 py-2">
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium">
-                          {loan.item.brand} {loan.item.model}
+                          {inventoryItemName(loan.item)}
                         </span>
                         <span className="block text-xs text-muted-foreground">
                           Fins al {formatDate(loan.endDate)}

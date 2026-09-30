@@ -263,8 +263,13 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
               <TableRow key={item.id}>
                 <TableCell className="font-medium">
                   <Link href={`/inventari/${item.id}`} className="hover:underline">
-                    {item.brand} {item.model}
+                    {item.label ?? `${item.brand} ${item.model}`}
                   </Link>
+                  {item.label && (
+                    <div className="text-xs font-normal text-muted-foreground">
+                      {item.brand} {item.model}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{item.category.name}</TableCell>
                 <TableCell className="text-muted-foreground">{item.space?.name ?? "—"}</TableCell>
@@ -347,6 +352,7 @@ function itemValues(item: InventoryItem) {
   return {
     id: item.id,
     categoryId: item.categoryId,
+    label: item.label ?? "",
     brand: item.brand,
     model: item.model,
     serialNumber: item.serialNumber ?? "",

@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/date";
 import { daysOverdue, isOverdue } from "@/lib/loans";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { LoanAnchorScroll } from "@/components/inventory/loan-anchor-scroll";
 import {
   MarkLoanReturnedButton,
@@ -61,7 +62,7 @@ export function PendingLoanRequests({ requests }: { requests: LoanWithContext[] 
               >
                 <TableCell className="font-medium">{who(request.requester)}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {request.item.brand} {request.item.model}
+                  {inventoryItemName(request.item)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{period(request)}</TableCell>
                 <TableCell className="text-muted-foreground">{request.purpose ?? "—"}</TableCell>
@@ -115,7 +116,7 @@ export function ActiveLoans({ loans }: { loans: LoanWithContext[] }) {
                 >
                   <TableCell className="font-medium">{who(loan.requester)}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {loan.item.brand} {loan.item.model}
+                    {inventoryItemName(loan.item)}
                   </TableCell>
                   <TableCell className={late ? "text-destructive" : "text-muted-foreground"}>
                     {period(loan)}

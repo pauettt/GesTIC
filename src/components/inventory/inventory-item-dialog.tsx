@@ -43,7 +43,8 @@ type Category = { id: string; name: string };
 /**
  * Amb `item`, edita aquell equip. Amb `copyFrom`, en crea un de nou que parteix
  * de les seves dades: de deu projectors iguals només canvia l'aula. El número de
- * sèrie, la IP i el nom a la xarxa són de cada equip i per això no es copien.
+ * sèrie, l'etiqueta, la IP i el nom a la xarxa són de cada equip i per això no es
+ * copien.
  */
 export function InventoryItemDialog({
   spaces,
@@ -62,9 +63,10 @@ export function InventoryItemDialog({
   const initialValues = (): UpsertInventoryItemInput =>
     item ??
     (copyFrom
-      ? { ...copyFrom, id: undefined, serialNumber: "", ipAddress: "", hostname: "" }
+      ? { ...copyFrom, id: undefined, label: "", serialNumber: "", ipAddress: "", hostname: "" }
       : {
           categoryId: categories[0]?.id ?? "",
+          label: "",
           brand: "",
           model: "",
           serialNumber: "",
@@ -173,10 +175,17 @@ export function InventoryItemDialog({
               </Field>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="serialNumber">Número de sèrie</FieldLabel>
-              <Input id="serialNumber" {...register("serialNumber")} />
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field data-invalid={Boolean(errors.label)}>
+                <FieldLabel htmlFor="label">Etiqueta</FieldLabel>
+                <Input id="label" placeholder="PORT-03" {...register("label")} />
+                <FieldError errors={errors.label ? [errors.label] : undefined} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="serialNumber">Número de sèrie</FieldLabel>
+                <Input id="serialNumber" {...register("serialNumber")} />
+              </Field>
+            </div>
 
             {/* Per al material de xarxa: la secció «Xarxa» surt d'aquests dos camps. */}
             <div className="grid grid-cols-2 gap-4">

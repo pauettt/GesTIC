@@ -15,6 +15,7 @@ import { runAfterResponse } from "@/lib/background";
 import { getBaseUrl } from "@/lib/url";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAdmin, requireAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import {
   googleServiceLabels,
   incidentCategoryDefaultPriority,
@@ -55,7 +56,7 @@ export async function createIncident(input: unknown): Promise<ActionResult> {
   if (data.targetType === "INVENTORY_ITEM" && data.inventoryItemId) {
     const item = await db.inventoryItem.findUnique({ where: { id: data.inventoryItemId } });
     if (!item) return { success: false, error: "Aquest equip ja no és a l'inventari" };
-    title = `${item.brand} ${item.model}${spaceSuffix}`;
+    title = `${inventoryItemName(item)}${spaceSuffix}`;
   } else if (data.targetType === "CART" && data.cartId) {
     const cart = await db.cart.findUnique({ where: { id: data.cartId } });
     if (!cart) return { success: false, error: "Aquest carro ja no existeix" };

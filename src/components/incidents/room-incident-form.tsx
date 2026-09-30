@@ -10,6 +10,7 @@ import { useServerAction } from "@/hooks/use-server-action";
 import { toSelectItems } from "@/lib/utils";
 import { deviceTypeLabels } from "@/lib/devices";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validations/incident";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { Button } from "@/components/ui/button";
 import { CategoryField } from "@/components/incidents/category-field";
 import { PriorityField } from "@/components/incidents/priority-field";
@@ -19,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { IncidentPhotosField } from "@/components/incidents/incident-photos-field";
 import type { DeviceType, IncidentTargetType } from "@prisma/client";
 
-type InventoryItem = { id: string; brand: string; model: string; spaceId: string | null };
+type InventoryItem = { id: string; label: string | null; brand: string; model: string; spaceId: string | null };
 type Cart = {
   id: string;
   name: string;
@@ -80,7 +81,7 @@ export function RoomIncidentForm({
       .forEach((item) => {
         options.push({
           value: `item:${item.id}`,
-          label: `${item.brand} ${item.model}`,
+          label: inventoryItemName(item),
           targetType: "INVENTORY_ITEM",
           inventoryItemId: item.id,
         });

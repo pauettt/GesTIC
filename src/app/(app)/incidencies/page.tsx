@@ -21,6 +21,7 @@ import {
   IncidentStatusSelect,
 } from "@/components/incidents/incident-badge-selects";
 import { INCIDENT_PAGE_SIZE, incidentPage, incidentSearchQuery, incidentSearchWhere } from "@/lib/incident-list";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { IncidentMobileList } from "@/components/incidents/incident-mobile-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,7 +180,7 @@ export default async function IncidenciesPage({
 
   function targetLabel(incident: (typeof incidents)[number]) {
     const base = incident.inventoryItem
-      ? `${incident.inventoryItem.brand} ${incident.inventoryItem.model}`
+      ? inventoryItemName(incident.inventoryItem)
       : incident.chromebook
         ? `${deviceTypeLabels[incident.chromebook.deviceType]} ${incident.chromebook.assetTag}`
         : incident.cart
@@ -422,9 +423,9 @@ async function objectLabel(
   if ("inventoryItemId" in filter) {
     const item = await db.inventoryItem.findUnique({
       where: { id: filter.inventoryItemId },
-      select: { brand: true, model: true },
+      select: { label: true, brand: true, model: true },
     });
-    return item ? `${item.brand} ${item.model}` : "aquest objecte";
+    return item ? inventoryItemName(item) : "aquest objecte";
   }
   if ("chromebookId" in filter) {
     const chromebook = await db.chromebook.findUnique({

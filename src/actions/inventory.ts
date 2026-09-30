@@ -42,6 +42,7 @@ export async function upsertInventoryItem(input: unknown): Promise<ActionResult>
 
   const payload = {
     categoryId: data.categoryId,
+    label: data.label || null,
     brand: data.brand,
     model: data.model,
     serialNumber: data.serialNumber || null,
@@ -63,7 +64,7 @@ export async function upsertInventoryItem(input: unknown): Promise<ActionResult>
       await db.inventoryItem.create({ data: payload });
     }
   } catch {
-    return { success: false, error: "El número de sèrie o la IP ja són d'un altre equip" };
+    return { success: false, error: "L'etiqueta, el número de sèrie o la IP ja són d'un altre equip" };
   }
 
   revalidatePath("/inventari");

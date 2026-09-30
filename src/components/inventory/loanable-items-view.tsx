@@ -4,6 +4,7 @@ import { HandCoinsIcon } from "lucide-react";
 import { formatDate } from "@/lib/date";
 import { isCancellable } from "@/lib/loans";
 import { loanRequestStatusLabels, loanRequestStatusVariants } from "@/lib/labels";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { InventorySearch } from "@/components/inventory/inventory-search";
 import { LoanRequestDialog } from "@/components/inventory/loan-request-dialog";
 import { CancelLoanRequestButton } from "@/components/inventory/loan-request-actions";
@@ -66,13 +67,13 @@ export function LoanableItemsView({
               <TableRow key={item.id}>
                 <TableCell className="font-medium">
                   <Link href={`/inventari/${item.id}`} className="hover:underline">
-                    {item.brand} {item.model}
+                    {inventoryItemName(item)}
                   </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{item.category.name}</TableCell>
                 <TableCell className="text-muted-foreground">{item.space?.name ?? "—"}</TableCell>
                 <TableCell>
-                  <LoanRequestDialog itemId={item.id} itemLabel={`${item.brand} ${item.model}`} />
+                  <LoanRequestDialog itemId={item.id} itemLabel={inventoryItemName(item)} />
                 </TableCell>
               </TableRow>
             ))}
@@ -103,7 +104,7 @@ export function LoanableItemsView({
               {myRequests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium">
-                    {request.item.brand} {request.item.model}
+                    {inventoryItemName(request.item)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(request.startDate)} – {formatDate(request.endDate)}

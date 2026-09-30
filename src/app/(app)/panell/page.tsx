@@ -23,6 +23,7 @@ import { getHolidays } from "@/lib/holidays-data";
 import { getCourseStats, getPendingWork } from "@/lib/panell-data";
 import { incidentPriorityLabels, incidentPriorityVariants } from "@/lib/labels";
 import { requireAdmin } from "@/lib/permissions";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 import { EmailFailuresAlert } from "@/components/admin/email-failures-alert";
 import { HolidaysDialog } from "@/components/holidays/holidays-dialog";
 import { CourseMetrics } from "@/components/panell/course-metrics";
@@ -119,7 +120,7 @@ export default async function PanellPage() {
           items={work.pendingLoans.items.map((loan) => ({
             id: loan.id,
             href: `/inventari#prestec-${loan.id}` as Route,
-            main: `${loan.item.brand} ${loan.item.model}`,
+            main: inventoryItemName(loan.item),
             meta: `${who(loan.requester)} · ${formatDate(loan.startDate)} – ${formatDate(loan.endDate)}`,
             badge: null,
           }))}
@@ -136,7 +137,7 @@ export default async function PanellPage() {
           items={work.overdueLoans.map((loan) => ({
             id: loan.id,
             href: `/inventari#prestec-${loan.id}` as Route,
-            main: `${loan.item.brand} ${loan.item.model}`,
+            main: inventoryItemName(loan.item),
             meta: `${who(loan.requester)} · havia de tornar el ${formatDate(loan.endDate)}`,
             badge: { label: `${daysOverdue(loan.endDate)} dies`, variant: "destructive" as const },
           }))}

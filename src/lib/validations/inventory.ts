@@ -18,6 +18,7 @@ export const upsertInventoryItemSchema = z.object({
     .refine((value) => !value || isBlobUrl(value), "La imatge no és vàlida")
     .optional()
     .or(z.literal("")),
+  label: z.string().trim().max(50).optional().or(z.literal("")),
   brand: z.string().trim().min(1, "Indica la marca").max(100),
   model: z.string().trim().min(1, "Indica el model").max(100),
   serialNumber: z.string().trim().max(150).optional().or(z.literal("")),

@@ -14,6 +14,7 @@ export async function GET() {
 
   const items = await db.inventoryItem.findMany({
     select: {
+      label: true,
       brand: true,
       model: true,
       serialNumber: true,
@@ -32,6 +33,7 @@ export async function GET() {
   const rows = [
     [
       "Categoria",
+      "Etiqueta",
       "Marca",
       "Model",
       "Núm. sèrie",
@@ -45,6 +47,7 @@ export async function GET() {
     ],
     ...items.map((item) => [
       item.category.name,
+      item.label ?? "",
       item.brand,
       item.model,
       item.serialNumber ?? "",

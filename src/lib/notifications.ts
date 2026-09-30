@@ -33,6 +33,7 @@ import {
 } from "@/lib/labels";
 import { courseEndLabel, slotLabel } from "@/lib/recurring-reservations";
 import { getBaseUrl } from "@/lib/url";
+import { inventoryItemName } from "@/lib/inventory-item-name";
 
 /**
  * Avisos automàtics. **Cap d'aquestes funcions no llança mai**: si el correu
@@ -107,7 +108,7 @@ export async function notifyLoanRequested(loanRequestId: string) {
     await sendEmail({
       to,
       ...buildLoanRequestedEmail({
-        itemLabel: `${loan.item.brand} ${loan.item.model}`,
+        itemLabel: inventoryItemName(loan.item),
         requesterName: loan.requester.name ?? loan.requester.email,
         period: `${formatDate(loan.startDate)} – ${formatDate(loan.endDate)}`,
         purpose: loan.purpose,
@@ -129,7 +130,7 @@ export async function notifyLoanDecision(loanRequestId: string, approved: boolea
     await sendEmail({
       to: loan.requester.email,
       ...buildLoanDecisionEmail({
-        itemLabel: `${loan.item.brand} ${loan.item.model}`,
+        itemLabel: inventoryItemName(loan.item),
         approved,
         period: `${formatDate(loan.startDate)} – ${formatDate(loan.endDate)}`,
         url: `${baseUrl}/inventari`,
@@ -150,7 +151,7 @@ export async function sendLoanOverdueReminder(loanRequestId: string) {
   return sendEmail({
     to: loan.requester.email,
     ...buildLoanOverdueEmail({
-      itemLabel: `${loan.item.brand} ${loan.item.model}`,
+      itemLabel: inventoryItemName(loan.item),
       period: `${formatDate(loan.startDate)} – ${formatDate(loan.endDate)}`,
       daysLate: daysOverdue(loan.endDate),
       url: `${baseUrl}/inventari`,
