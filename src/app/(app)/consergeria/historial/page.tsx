@@ -136,7 +136,7 @@ export default async function HistorialPage({
     db.keyLoan.findMany({
       where,
       include: {
-        key: { include: { cart: true } },
+        key: { include: { cart: { include: { space: true } } } },
         borrower: true,
         deliveredBy: true,
         returnedBy: true,
@@ -427,9 +427,13 @@ export default async function HistorialPage({
                 <TableCell className="font-medium">
                   {loan.key.number}
                   <div className="text-xs text-muted-foreground">
-                    {loan.key.cart?.name ?? loan.key.name}
+                    {loan.key.name}
                     {loan.key.archivedAt && " · arxivada"}
                   </div>
+                  {/* Els conserges s'orienten per l'aula, no pel carro. */}
+                  {loan.key.cart?.space && (
+                    <div className="text-xs text-muted-foreground">{loan.key.cart.space.name}</div>
+                  )}
                 </TableCell>
                 <TableCell>{loan.borrower.name ?? loan.borrower.email}</TableCell>
                 <TableCell className="text-muted-foreground">
