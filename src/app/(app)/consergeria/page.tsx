@@ -29,7 +29,7 @@ export default async function ConsergeriaPage() {
       where: { status: "CONFIRMADA", startDate: { gte: addDays(now, -7) } },
       // Les claus arxivades ja no s'entreguen: el carro queda sense clau associada.
       include: {
-        cart: { include: { keys: { where: { archivedAt: null } } } },
+        cart: { include: { keys: { where: { archivedAt: null } }, space: true } },
         user: true,
         keyLoans: { select: { returnedAt: true } },
       },
@@ -226,6 +226,7 @@ export default async function ConsergeriaPage() {
                 <TableRow>
                   <TableHead>Hora</TableHead>
                   <TableHead>Carro</TableHead>
+                  <TableHead>Aula</TableHead>
                   <TableHead>Professor/a</TableHead>
                   <TableHead>Clau</TableHead>
                   <TableHead></TableHead>
@@ -234,7 +235,7 @@ export default async function ConsergeriaPage() {
               <TableBody>
                 {deskReservations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                       {todayReservations.length === 0
                         ? "Avui no hi ha cap carro reservat."
                         : "Ja no queda cap clau per entregar avui."}
@@ -251,6 +252,11 @@ export default async function ConsergeriaPage() {
                         {formatTime(reservation.startDate)}–{formatTime(reservation.endDate)}
                       </TableCell>
                       <TableCell>{reservation.cart.name}</TableCell>
+                      <TableCell>
+                        {reservation.cart.space?.name ?? (
+                          <span className="text-muted-foreground">Sense aula</span>
+                        )}
+                      </TableCell>
                       <TableCell>{reservation.user.name ?? reservation.user.email}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {cartKey ? `${cartKey.number} — ${cartKey.name}` : "Sense clau associada"}
