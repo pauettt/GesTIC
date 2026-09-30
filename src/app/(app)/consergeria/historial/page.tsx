@@ -145,7 +145,7 @@ export default async function HistorialPage({
       },
       orderBy: { deliveredAt: "desc" },
     }),
-    db.key.findMany({ orderBy: { number: "asc" }, include: { cart: true } }),
+    db.key.findMany({ orderBy: { number: "asc" }, include: { cart: { include: { space: true } } } }),
   ]);
 
   function href(next: {
@@ -389,6 +389,10 @@ export default async function HistorialPage({
                 href={href({ clau: clau === key.id ? "" : key.id })}
               >
                 {key.number}
+                {/* La d'un carro es busca per l'aula on és: «C2 — Petita 2». */}
+                {key.cart?.space && (
+                  <span className="font-normal">— {key.cart.space.roomName ?? key.cart.space.name}</span>
+                )}
                 {key.archivedAt && <span className="font-normal opacity-70">(arxivada)</span>}
               </ButtonLink>
             ))}
