@@ -145,7 +145,20 @@ export default async function HistorialPage({
       },
       orderBy: { deliveredAt: "desc" },
     }),
-    db.key.findMany({ orderBy: { number: "asc" }, include: { cart: { include: { space: true } } } }),
+    // Com a filtre, només les claus que han sortit en el dia o la setmana que es
+    // mira: la resta no hi tenen res a trobar. La triada s'hi queda per poder-la treure.
+    db.key.findMany({
+      where: {
+        OR: [
+          { loans: { some: { deliveredAt: { gte: periodStart, lt: periodEnd } } } },
+          ...(typeof clau === "string" ? [{ id: clau }] : []),
+          // La del carro que es mira, per posar-ne el nom al títol.
+          ...(typeof carro === "string" ? [{ cartId: carro }] : []),
+        ],
+      },
+      orderBy: { number: "asc" },
+      include: { cart: { include: { space: true } } },
+    }),
   ]);
 
   function href(next: {
@@ -204,12 +217,7 @@ export default async function HistorialPage({
   }
 
   const filteredCart = typeof carro === "string" ? keys.find((k) => k.cartId === carro)?.cart : null;
-  // Les arxivades només surten com a filtre si tenen préstecs en el que es mira:
-  // són història, i amb el temps n'hi haurà cada cop més.
-  const keysWithLoans = new Set(loans.map((loan) => loan.keyId));
-  const keyFilters = keys
-    .filter((key) => !key.archivedAt || keysWithLoans.has(key.id))
-    .sort(byKeyNumber);
+  const keyFilters = keys.sort(byKeyNumber);
   // Separades en dos grups: amb moltes claus, la d'un carro es busca entre carros
   // i la resta (aules, magatzems...) entre elles.
   const keyGroups = [
