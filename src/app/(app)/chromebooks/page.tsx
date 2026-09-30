@@ -306,15 +306,20 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
           {cartSearch.status === "ok" && (
             <CartSearchResults
               search={cartSearch.search}
-              carts={orderedCarts.map((cart) => ({
-                id: cart.id,
-                name: cart.name,
-                space: cart.space,
-                available: cart.chromebooks.filter((cb) =>
+              carts={orderedCarts.map((cart) => {
+                const free = cart.chromebooks.filter((cb) =>
                   isFreeDuring(cb, cartSearch.search.startDate, cartSearch.search.endDate, now),
-                ).length,
-                busy: busyCartIds.has(cart.id),
-              }))}
+                );
+                return {
+                  id: cart.id,
+                  name: cart.name,
+                  space: cart.space,
+                  available: free.length,
+                  // Un carro de portàtils no serveix igual que un de Chromebooks.
+                  summary: deviceSummary(free),
+                  busy: busyCartIds.has(cart.id),
+                };
+              })}
             />
           )}
         </CardContent>
@@ -343,7 +348,7 @@ function CartSearchResults({
   carts,
 }: {
   search: CartSearch;
-  carts: { id: string; name: string; space: CartRoom; available: number; busy: boolean }[];
+  carts: { id: string; name: string; space: CartRoom; available: number; summary: string; busy: boolean }[];
 }) {
   const free = carts.filter((cart) => !cart.busy);
   const matching = free
@@ -377,7 +382,9 @@ function CartSearchResults({
                 </Link>
                 <CartPlace space={cart.space} className="text-sm" />
                 <p className="text-sm text-muted-foreground">
-                  {cart.available} {cart.available === 1 ? "equip disponible" : "equips disponibles"}
+                  {cart.available === 0
+                    ? "Cap equip disponible"
+                    : `${cart.summary} ${cart.available === 1 ? "disponible" : "disponibles"}`}
                 </p>
               </div>
               <QuickReserveButton
