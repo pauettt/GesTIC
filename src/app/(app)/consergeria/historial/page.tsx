@@ -49,7 +49,13 @@ export default async function HistorialPage({
   // Comprovem si s'ha demanat un dia concret ("YYYY-MM-DD")
   const requestedDayStr = typeof dia === "string" ? dia : typeof day === "string" ? day : null;
   const parsedDay = requestedDayStr ? new Date(requestedDayStr) : null;
-  const validDay = parsedDay && !Number.isNaN(parsedDay.getTime()) ? parsedDay : null;
+  const requestedValidDay = parsedDay && !Number.isNaN(parsedDay.getTime()) ? parsedDay : null;
+  // Sense cap data a la URL s'obre avui: és el que consergeria mira gairebé
+  // sempre. L'historial d'un carro sí que s'obre per setmanes, que un sol dia
+  // sovint queda buit.
+  const noDateRequested =
+    !requestedDayStr && typeof setmana !== "string" && typeof week !== "string";
+  const validDay = requestedValidDay ?? (noDateRequested && typeof carro !== "string" ? now : null);
 
   let activeDay: Date | null = null;
   let weekStart: Date;
@@ -200,7 +206,8 @@ export default async function HistorialPage({
       } else {
         nextWeek = toDateParam(weekStart);
       }
-    } else if (!isCurrentWeek || activeDay) {
+    } else {
+      // Sempre explícita: sense data, la pàgina s'obriria a avui i no a la setmana.
       nextWeek = toDateParam(weekStart);
     }
 
