@@ -18,6 +18,7 @@ import {
   toDateParam,
   zonedDateTime,
 } from "@/lib/date";
+import { byKeyNumber } from "@/lib/keys";
 import { requireKeyAccess } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -206,7 +207,15 @@ export default async function HistorialPage({
   // Les arxivades només surten com a filtre si tenen préstecs en el que es mira:
   // són història, i amb el temps n'hi haurà cada cop més.
   const keysWithLoans = new Set(loans.map((loan) => loan.keyId));
-  const keyFilters = keys.filter((key) => !key.archivedAt || keysWithLoans.has(key.id));
+  const keyFilters = keys
+    .filter((key) => !key.archivedAt || keysWithLoans.has(key.id))
+    .sort(byKeyNumber);
+  // Separades en dos grups: amb moltes claus, la d'un carro es busca entre carros
+  // i la resta (aules, magatzems...) entre elles.
+  const keyGroups = [
+    { label: "Carros", keys: keyFilters.filter((key) => key.cartId) },
+    { label: "Altres claus", keys: keyFilters.filter((key) => !key.cartId) },
+  ].filter((group) => group.keys.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -357,26 +366,33 @@ export default async function HistorialPage({
       </div>
 
       {/* Filtres per clau */}
-      <div className="flex flex-wrap items-center gap-2">
-        <ButtonLink
-          size="sm"
-          variant={!clau && !activeTeacherId ? "default" : "outline"}
-          current={!clau && !activeTeacherId}
-          href={href({ clau: "", professor: "" })}
-        >
-          Tot
-        </ButtonLink>
-        {keyFilters.map((key) => (
+      <div className="flex flex-col gap-3">
+        <div>
           <ButtonLink
-            key={key.id}
             size="sm"
-            variant={clau === key.id ? "default" : "outline"}
-            current={clau === key.id}
-            href={href({ clau: clau === key.id ? "" : key.id })}
+            variant={!clau && !activeTeacherId ? "default" : "outline"}
+            current={!clau && !activeTeacherId}
+            href={href({ clau: "", professor: "" })}
           >
-            {key.number}
-            {key.archivedAt && <span className="font-normal opacity-70">(arxivada)</span>}
+            Tot
           </ButtonLink>
+        </div>
+        {keyGroups.map((group) => (
+          <div key={group.label} className="flex flex-wrap items-center gap-2">
+            <span className="w-24 shrink-0 text-sm text-muted-foreground">{group.label}:</span>
+            {group.keys.map((key) => (
+              <ButtonLink
+                key={key.id}
+                size="sm"
+                variant={clau === key.id ? "default" : "outline"}
+                current={clau === key.id}
+                href={href({ clau: clau === key.id ? "" : key.id })}
+              >
+                {key.number}
+                {key.archivedAt && <span className="font-normal opacity-70">(arxivada)</span>}
+              </ButtonLink>
+            ))}
+          </div>
         ))}
       </div>
 
