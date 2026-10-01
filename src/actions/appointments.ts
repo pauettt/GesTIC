@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { zonedDateTime } from "@/lib/date";
 import { notifyAppointmentBooked, notifyAppointmentCancelled } from "@/lib/notifications";
 import { runAfterResponse } from "@/lib/background";
-import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
+import { getPeriodById, isPastPeriod, isSchoolDay, MORNING_PERIODS } from "@/lib/schedule";
 import { isAdmin, requireSuperAdmin, requireUser } from "@/lib/permissions";
 import {
   bookAppointmentSchema,
@@ -42,8 +42,9 @@ export async function openAppointmentSlot(input: unknown): Promise<ActionResult>
     return { success: false, error: "Només es poden obrir hores de dilluns a divendres" };
   }
 
-  const period = getPeriodById(parsed.data.periodId);
-  if (!period) return { success: false, error: "Aquesta sessió no existeix a l'horari del centre" };
+  // Les cites són de matí: la vesprada només és per als carros.
+  const period = getPeriodById(parsed.data.periodId, MORNING_PERIODS);
+  if (!period) return { success: false, error: "Les cites només es poden obrir en una sessió de matí" };
 
   const startDate = zonedDateTime(parsed.data.date, period.start);
   const endDate = zonedDateTime(parsed.data.date, period.end);

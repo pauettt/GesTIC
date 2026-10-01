@@ -77,9 +77,15 @@ export function sessionSpan(dateKey: string, fromPeriodId: number, toPeriodId: n
   };
 }
 
-/** «3a hora», o «3a a 5a hora» si n'agafa més d'una. */
+/**
+ * «3a hora», o «3a a 5a hora» si n'agafa més d'una. Si passa del matí a la
+ * vesprada, cada sessió amb el seu nom: «7a hora a 1a de vesprada».
+ */
 export function spanLabel(first: SchoolPeriod, last: SchoolPeriod) {
-  return first.id === last.id ? first.label : `${first.label.replace(" hora", "")} a ${last.label}`;
+  if (first.id === last.id) return first.label;
+  const [firstNumber, ...firstRest] = first.label.split(" ");
+  const sameKind = firstRest.join(" ") === last.label.split(" ").slice(1).join(" ");
+  return `${sameKind ? firstNumber : first.label} a ${last.label}`;
 }
 
 /** Les sessions d'una reserva desada, per dir-les com les ha triat qui l'ha fet. */

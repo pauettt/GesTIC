@@ -6,9 +6,8 @@ import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zoned
 import { occupies, type DeviceBooking } from "@/lib/device-reservations";
 import { holidayOn, type Holiday } from "@/lib/holidays";
 import {
+  breakBefore,
   isPastPeriod,
-  RECESS,
-  RECESS_BEFORE_PERIOD_INDEX,
   SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
   SCHOOL_WEEKDAYS_SHORT,
@@ -138,8 +137,6 @@ export function WeeklySchedule({
           cartId={cartId}
           days={scheduleDays}
           periods={SCHOOL_PERIODS}
-          recessBeforeIndex={RECESS_BEFORE_PERIOD_INDEX}
-          recessLabel={`${RECESS.label} · ${RECESS.start}–${RECESS.end}`}
           initialDayKey={initialDay.dayKey}
         />
       </div>
@@ -166,43 +163,46 @@ export function WeeklySchedule({
             </tr>
           </thead>
           <tbody>
-            {SCHOOL_PERIODS.map((period, index) => (
-              <Fragment key={period.id}>
-                {index === RECESS_BEFORE_PERIOD_INDEX && (
-                  <tr key="recess" className="border-b bg-muted/60">
-                    <td colSpan={days.length + 1} className="p-1.5 text-center font-medium text-muted-foreground">
-                      {RECESS.label} · {RECESS.start}–{RECESS.end}
-                    </td>
-                  </tr>
-                )}
-                <tr key={period.id} className="border-b last:border-b-0">
-                  <td className="p-2 align-top whitespace-nowrap text-muted-foreground">
-                    <div className="font-medium text-foreground">{period.label}</div>
-                    {period.start}–{period.end}
-                  </td>
-                  {days.map((day) => {
-                    const dayKey = madridDateKey(day.date);
-                    const reservation = findReservation(dayKey, period.start);
-                    const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
-                    return (
-                      <td key={day.label} className="p-1 align-top">
-                        <ReservationCell
-                          cartId={cartId}
-                          dayKey={dayKey}
-                          dayLabel={day.label}
-                          period={period}
-                          reservation={reservation}
-                          canCancel={canCancel(reservation)}
-                          isPast={isPast}
-                          holiday={Boolean(day.holiday)}
-                          devicesOut={isPast ? 0 : devicesOut(dayKey, period)}
-                        />
+            {SCHOOL_PERIODS.map((period) => {
+              const pause = breakBefore(period.id);
+              return (
+                <Fragment key={period.id}>
+                  {pause && (
+                    <tr key="break" className="border-b bg-muted/60">
+                      <td colSpan={days.length + 1} className="p-1.5 text-center font-medium text-muted-foreground">
+                        {pause.label} · {pause.start}–{pause.end}
                       </td>
-                    );
-                  })}
-                </tr>
-              </Fragment>
-            ))}
+                    </tr>
+                  )}
+                  <tr key={period.id} className="border-b last:border-b-0">
+                    <td className="p-2 align-top whitespace-nowrap text-muted-foreground">
+                      <div className="font-medium text-foreground">{period.label}</div>
+                      {period.start}–{period.end}
+                    </td>
+                    {days.map((day) => {
+                      const dayKey = madridDateKey(day.date);
+                      const reservation = findReservation(dayKey, period.start);
+                      const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
+                      return (
+                        <td key={day.label} className="p-1 align-top">
+                          <ReservationCell
+                            cartId={cartId}
+                            dayKey={dayKey}
+                            dayLabel={day.label}
+                            period={period}
+                            reservation={reservation}
+                            canCancel={canCancel(reservation)}
+                            isPast={isPast}
+                            holiday={Boolean(day.holiday)}
+                            devicesOut={isPast ? 0 : devicesOut(dayKey, period)}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

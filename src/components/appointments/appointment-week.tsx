@@ -6,9 +6,9 @@ import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zoned
 import { holidayOn, type Holiday } from "@/lib/holidays";
 import {
   isPastPeriod,
+  breakBefore,
+  MORNING_PERIODS,
   RECESS,
-  RECESS_BEFORE_PERIOD_INDEX,
-  SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
 } from "@/lib/schedule";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -92,9 +92,9 @@ export function AppointmentWeek({
             </tr>
           </thead>
           <tbody>
-            {SCHOOL_PERIODS.map((period, index) => (
+            {MORNING_PERIODS.map((period) => (
               <Fragment key={period.id}>
-                {index === RECESS_BEFORE_PERIOD_INDEX && (
+                {breakBefore(period.id) === RECESS && (
                   <tr key="recess" className="border-b bg-muted/60">
                     <td colSpan={days.length + 1} className="p-1.5 text-center font-medium text-muted-foreground">
                       {RECESS.label} · {RECESS.start}–{RECESS.end}

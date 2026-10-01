@@ -34,6 +34,15 @@ describe("sessionSpan", () => {
     expect(bookingSpanLabel(booking)).toBe("3a a 4a hora (09:50–12:10)");
     expect(bookingSpanLabel({ startDate: at("09:50"), endDate: at("10:45") })).toBe("3a hora (09:50–10:45)");
   });
+
+  it("a la vesprada, i del matí a la vesprada, cada sessió amb el seu nom", () => {
+    expect(bookingSpanLabel({ startDate: at("15:35"), endDate: at("17:25") })).toBe(
+      "1a a 2a de vesprada (15:35–17:25)",
+    );
+    expect(bookingSpanLabel({ startDate: at("14:00"), endDate: at("16:30") })).toBe(
+      "7a hora a 1a de vesprada (14:00–16:30)",
+    );
+  });
 });
 
 describe("occupies", () => {

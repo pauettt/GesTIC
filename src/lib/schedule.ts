@@ -7,9 +7,9 @@ export type SchoolPeriod = {
   end: string;
 };
 
-// Horari del centre: dilluns a divendres, 8:00-14:55, classes de 55 minuts,
-// pati de 30 minuts (10:45-11:15).
-export const SCHOOL_PERIODS: SchoolPeriod[] = [
+// Horari del centre, de dilluns a divendres. Al matí, 8:00-14:55, classes de 55
+// minuts i pati de 30 minuts (10:45-11:15).
+export const MORNING_PERIODS: SchoolPeriod[] = [
   { id: 1, label: "1a hora", start: "08:00", end: "08:55" },
   { id: 2, label: "2a hora", start: "08:55", end: "09:50" },
   { id: 3, label: "3a hora", start: "09:50", end: "10:45" },
@@ -19,10 +19,32 @@ export const SCHOOL_PERIODS: SchoolPeriod[] = [
   { id: 7, label: "7a hora", start: "14:00", end: "14:55" },
 ];
 
-// Índex (basat en 0) de SCHOOL_PERIODS abans del qual s'insereix el pati a la graella.
-export const RECESS_BEFORE_PERIOD_INDEX = 3;
+// A la vesprada, 15:35-19:15, quatre classes de 55 minuts seguides.
+export const AFTERNOON_PERIODS: SchoolPeriod[] = [
+  { id: 8, label: "1a de vesprada", start: "15:35", end: "16:30" },
+  { id: 9, label: "2a de vesprada", start: "16:30", end: "17:25" },
+  { id: 10, label: "3a de vesprada", start: "17:25", end: "18:20" },
+  { id: 11, label: "4a de vesprada", start: "18:20", end: "19:15" },
+];
 
-export const RECESS = { label: "Pati", start: "10:45", end: "11:15" };
+/**
+ * Totes les sessions del centre, matí i vesprada: les dels carros. L'agenda de
+ * cites de la coordinació només és de matí i fa servir `MORNING_PERIODS`.
+ */
+export const SCHOOL_PERIODS: SchoolPeriod[] = [...MORNING_PERIODS, ...AFTERNOON_PERIODS];
+
+export type SchoolBreak = { label: string; start: string; end: string };
+
+export const RECESS: SchoolBreak = { label: "Pati", start: "10:45", end: "11:15" };
+
+export const LUNCH: SchoolBreak = { label: "Dinar", start: "14:55", end: "15:35" };
+
+/** La pausa que va just abans d'una sessió a les graelles: el pati abans de 4a hora i el dinar abans de la vesprada. */
+export function breakBefore(periodId: number): SchoolBreak | undefined {
+  if (periodId === MORNING_PERIODS[3].id) return RECESS;
+  if (periodId === AFTERNOON_PERIODS[0].id) return LUNCH;
+  return undefined;
+}
 
 export const SCHOOL_WEEKDAYS = ["Dilluns", "Dimarts", "Dimecres", "Dijous", "Divendres"];
 
@@ -38,8 +60,9 @@ export function isPastPeriod(periodEnd: Date, now: Date = new Date()) {
   return periodEnd < now;
 }
 
-export function getPeriodById(id: number): SchoolPeriod | undefined {
-  return SCHOOL_PERIODS.find((period) => period.id === id);
+/** `periods`, per buscar-la només entre les d'una part del dia, com les cites, que són de matí. */
+export function getPeriodById(id: number, periods: readonly SchoolPeriod[] = SCHOOL_PERIODS): SchoolPeriod | undefined {
+  return periods.find((period) => period.id === id);
 }
 
 /**
@@ -56,14 +79,15 @@ export function isSchoolDay(dateKey: string): boolean {
  * Setmana que ha de sortir per defecte en una graella horària.
  *
  * Si de la setmana en curs ja no en queda cap hora viva —un dissabte, o
- * divendres a les tres— s'obre damunt la següent. Si no, el primer que veu qui
+ * divendres al vespre— s'obre damunt la següent. Si no, el primer que veu qui
  * hi entra és una graella sencera apagada on no es pot clicar res, i sembla que
- * l'aplicació estigui trencada o que li faltin permisos.
+ * l'aplicació estigui trencada o que li faltin permisos. Les cites hi passen
+ * `MORNING_PERIODS`: la seva graella s'acaba a les tres.
  */
-export function defaultWeekStart(now: Date = new Date()): Date {
+export function defaultWeekStart(now: Date = new Date(), periods: readonly SchoolPeriod[] = SCHOOL_PERIODS): Date {
   const weekStart = startOfWeek(now);
   const friday = addDays(weekStart, 4);
-  const lastPeriod = SCHOOL_PERIODS[SCHOOL_PERIODS.length - 1];
+  const lastPeriod = periods[periods.length - 1];
   const weekEnd = zonedDateTime(madridDateKey(friday), lastPeriod.end);
   return isPastPeriod(weekEnd, now) ? addDays(weekStart, 7) : weekStart;
 }

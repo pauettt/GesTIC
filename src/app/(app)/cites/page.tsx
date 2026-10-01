@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { addDays, formatDateTimeFull, startOfWeek } from "@/lib/date";
 import { getHolidays } from "@/lib/holidays-data";
 import { courseEndLabel, recurringCourse } from "@/lib/recurring-reservations";
-import { defaultWeekStart } from "@/lib/schedule";
+import { defaultWeekStart, MORNING_PERIODS } from "@/lib/schedule";
 import { isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
 import { AppointmentWeek } from "@/components/appointments/appointment-week";
 import { AvailabilityDialog } from "@/components/appointments/availability-dialog";
@@ -24,7 +24,7 @@ export default async function CitesPage({ searchParams }: PageProps<"/cites">) {
   // la vinent. Una data inventada tampoc no ha de tombar la pàgina.
   const requested = typeof week === "string" ? new Date(week) : null;
   const weekStart =
-    requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart();
+    requested && !Number.isNaN(requested.getTime()) ? startOfWeek(requested) : defaultWeekStart(new Date(), MORNING_PERIODS);
   const weekEnd = addDays(weekStart, 7);
 
   // L'agenda la porta el superadministrador —el compte de coordinació TIC—: només

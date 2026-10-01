@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServerAction } from "@/hooks/use-server-action";
 import { missingDevicesLabel } from "@/lib/device-reservations";
+import { breakBefore } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 /** `devicesOut`: quants equips no hi seran perquè algú els té reservats a part. */
@@ -49,15 +50,11 @@ export function DaySchedule({
   cartId,
   days,
   periods,
-  recessBeforeIndex,
-  recessLabel,
   initialDayKey,
 }: {
   cartId: string;
   days: ScheduleDay[];
   periods: Period[];
-  recessBeforeIndex: number;
-  recessLabel: string;
   initialDayKey: string;
 }) {
   const [dayKey, setDayKey] = useState(initialDayKey);
@@ -115,11 +112,12 @@ export function DaySchedule({
         {periods.map((period, index) => {
           const slot = day.slots[index];
           const isSelected = selected.includes(period.id);
+          const pause = breakBefore(period.id);
           return (
             <li key={period.id} className="flex flex-col gap-1.5">
-              {index === recessBeforeIndex && (
+              {pause && (
                 <p className="rounded-md bg-muted/60 py-1 text-center text-xs text-muted-foreground">
-                  {recessLabel}
+                  {pause.label} · {pause.start}–{pause.end}
                 </p>
               )}
               <div className="flex items-center gap-3">

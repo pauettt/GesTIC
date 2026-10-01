@@ -21,10 +21,11 @@ function minutesOf(time: string) {
 }
 
 /**
- * La pausa més llarga entre dues sessions seguides de l'horari és el pati. Una
- * reserva que comença dins d'aquest marge continua el bloc: abans només
+ * Una reserva que comença dins del marge del pati continua el bloc: abans només
  * s'encadenaven les que començaven just quan acabava l'anterior, i qui tenia el
- * carro a 3a i 4a hora sortia com a "Per tornar" en ple pati.
+ * carro a 3a i 4a hora sortia com a "Per tornar" en ple pati. El dinar és més
+ * llarg i talla el bloc: qui té el carro a 7a hora i a la vesprada torna la
+ * clau en acabar el matí.
  */
 const MAX_GAP_MS = (minutesOf(RECESS.end) - minutesOf(RECESS.start)) * 60_000;
 

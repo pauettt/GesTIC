@@ -308,6 +308,20 @@ aquest carro». Fins ara hi entrava tota la coordinació.
 
 ## ✅ Fet
 
+### 2026-10-01
+
+- **Sessions de vesprada als carros**. Com que a la vesprada també hi ha
+  classe, els carros es poden reservar en quatre sessions més: *1a de vesprada*
+  (15:35–16:30), *2a* (16:30–17:25), *3a* (17:25–18:20) i *4a* (18:20–19:15).
+  Surten a la graella del carro (amb una fila *Dinar · 14:55–15:35* entre el
+  matí i la vesprada), al cercador, a les reserves fixes i a les d'un equip
+  sol. A partir de les tres, el cercador proposa la sessió de vesprada que toca,
+  i la graella del carro no salta a la setmana vinent fins divendres al vespre.
+  Les **cites de la coordinació** continuen sent només de matí: ni la graella ni
+  les hores fixes no ensenyen la vesprada, i les accions la rebutgen. Les
+  **claus**: el dinar talla el bloc de reserves seguides, i qui té el carro a 7a
+  hora i a la vesprada torna la clau en acabar el matí.
+
 ### 2026-09-29
 
 - **Inventari de dispositius** (*Carros → Dispositius*, `/chromebooks/equips`),

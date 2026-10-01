@@ -30,6 +30,14 @@ describe("blockEnd", () => {
     expect(blockEnd(slot(3), [slot(3), slot(4)])).toEqual(slot(4).endDate);
   });
 
+  it("el dinar talla el bloc: la clau es torna en acabar el matí", () => {
+    expect(blockEnd(slot(7), [slot(7), slot(8)])).toEqual(slot(7).endDate);
+  });
+
+  it("encadena les sessions seguides de la vesprada", () => {
+    expect(blockEnd(slot(8), [slot(8), slot(9), slot(10)])).toEqual(slot(10).endDate);
+  });
+
   it("no depèn de l'ordre en què arriben les reserves", () => {
     expect(blockEnd(slot(1), [slot(3), slot(2), slot(1)])).toEqual(slot(3).endDate);
   });

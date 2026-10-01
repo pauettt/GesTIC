@@ -8,7 +8,7 @@ import { formatShortDate } from "@/lib/date";
 import { getHolidays } from "@/lib/holidays-data";
 import { requireSuperAdmin } from "@/lib/permissions";
 import { occurrences, recurringCourse } from "@/lib/recurring-reservations";
-import { getPeriodById } from "@/lib/schedule";
+import { getPeriodById, MORNING_PERIODS } from "@/lib/schedule";
 import {
   addAppointmentAvailabilitySchema,
   removeAppointmentAvailabilitySchema,
@@ -39,8 +39,9 @@ export async function addAppointmentAvailability(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dades no vàlides" };
   }
   const { coordinatorId, weekday, periodId } = parsed.data;
-  if (!getPeriodById(periodId)) {
-    return { success: false, error: "Aquesta sessió no existeix a l'horari del centre" };
+  // Les cites són de matí: la vesprada només és per als carros.
+  if (!getPeriodById(periodId, MORNING_PERIODS)) {
+    return { success: false, error: "Les hores de cites només poden ser de matí" };
   }
   const coordinator = await db.user.findFirst({
     where: { id: coordinatorId, ...activeCoordinator },

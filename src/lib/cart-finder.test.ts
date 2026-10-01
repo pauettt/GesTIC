@@ -31,7 +31,7 @@ describe("parseCartSearch", () => {
 
   it("rebutja el cap de setmana, les sessions que no existeixen i un mínim que no és un número", () => {
     expect(parseCartSearch({ dia: "2026-09-26", sessio: "1" }, tuesdayTen).status).toBe("invalid");
-    expect(parseCartSearch({ dia: "2026-09-23", sessio: "9" }, tuesdayTen).status).toBe("invalid");
+    expect(parseCartSearch({ dia: "2026-09-23", sessio: "99" }, tuesdayTen).status).toBe("invalid");
     const loose = parseCartSearch({ dia: "2026-09-23", sessio: "1", equips: "molts" }, tuesdayTen);
     expect(loose.status === "ok" && loose.search.minDevices).toBe(0);
   });
@@ -42,8 +42,12 @@ describe("defaultCartSearch", () => {
     expect(defaultCartSearch(tuesdayTen)).toEqual({ dateKey: "2026-09-22", periodId: 3 });
   });
 
-  it("a la tarda o en cap de setmana, la primera del proper dia lectiu", () => {
-    expect(defaultCartSearch(zonedDateTime("2026-09-22", "16:00"))).toEqual({
+  it("a la vesprada, la sessió de vesprada en curs", () => {
+    expect(defaultCartSearch(zonedDateTime("2026-09-22", "16:00"))).toEqual({ dateKey: "2026-09-22", periodId: 8 });
+  });
+
+  it("al vespre o en cap de setmana, la primera del proper dia lectiu", () => {
+    expect(defaultCartSearch(zonedDateTime("2026-09-22", "19:30"))).toEqual({
       dateKey: "2026-09-23",
       periodId: 1,
     });
@@ -65,8 +69,8 @@ describe("amb festius", () => {
   });
 
   it("proposa el primer dia lectiu després del festiu", () => {
-    // Divendres 9 a la tarda: el dilluns 12 és festiu, i per tant el dimarts 13.
-    expect(defaultCartSearch(zonedDateTime("2026-10-09", "16:00"), [pilar])).toEqual({
+    // Divendres 9 al vespre: el dilluns 12 és festiu, i per tant el dimarts 13.
+    expect(defaultCartSearch(zonedDateTime("2026-10-09", "19:30"), [pilar])).toEqual({
       dateKey: "2026-10-13",
       periodId: 1,
     });
