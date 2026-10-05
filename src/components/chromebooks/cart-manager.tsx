@@ -60,28 +60,19 @@ function CartCardBody({ cart }: { cart: CartItem }) {
     <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/50 hover:bg-muted/40">
       {/*
        * La foto surt sencera, sigui vertical o horitzontal: retallar-la per omplir
-       * la franja en deixava només el mig. Els costats que sobren s'omplen amb la
-       * mateixa foto ampliada i desenfocada, perquè no quedin buits.
+       * la franja en deixava només el mig. El 4:3 dona prou alçada a un carro
+       * fotografiat dret, i el que sobra queda del gris de la targeta: amb la foto
+       * desenfocada al fons, les parts fosques del carro hi feien taques.
        */}
-      <div className="relative flex aspect-video items-center justify-center overflow-hidden border-b bg-muted">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b bg-muted">
         {cart.imageUrl ? (
-          <>
-            <Image
-              src={cart.imageUrl}
-              alt=""
-              aria-hidden
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="scale-110 object-cover opacity-60 blur-xl"
-            />
-            <Image
-              src={cart.imageUrl}
-              alt={cart.name}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-contain"
-            />
-          </>
+          <Image
+            src={cart.imageUrl}
+            alt={cart.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+            className="object-contain"
+          />
         ) : (
           <LaptopIcon className="size-8 text-muted-foreground" />
         )}
@@ -267,7 +258,7 @@ export function CartManager({
         <CartListView carts={displayedCarts} emptyMessage={emptyMessage} />
       ) : (
         <div
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
           aria-label="Llista de carros"
         onDragOver={(event) => {
           if (!draggedId.current || isPending) return;
