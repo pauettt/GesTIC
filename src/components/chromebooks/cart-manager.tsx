@@ -58,15 +58,30 @@ export function CartName({ cart }: { cart: { name: string; space: CartItem["spac
 function CartCardBody({ cart }: { cart: CartItem }) {
   return (
     <Card className="h-full overflow-hidden pt-0 transition-colors hover:border-primary/50 hover:bg-muted/40">
-      <div className="relative flex h-36 items-center justify-center border-b bg-muted">
+      {/*
+       * La foto surt sencera, sigui vertical o horitzontal: retallar-la per omplir
+       * la franja en deixava només el mig. Els costats que sobren s'omplen amb la
+       * mateixa foto ampliada i desenfocada, perquè no quedin buits.
+       */}
+      <div className="relative flex aspect-video items-center justify-center overflow-hidden border-b bg-muted">
         {cart.imageUrl ? (
-          <Image
-            src={cart.imageUrl}
-            alt={cart.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover"
-          />
+          <>
+            <Image
+              src={cart.imageUrl}
+              alt=""
+              aria-hidden
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="scale-110 object-cover opacity-60 blur-xl"
+            />
+            <Image
+              src={cart.imageUrl}
+              alt={cart.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-contain"
+            />
+          </>
         ) : (
           <LaptopIcon className="size-8 text-muted-foreground" />
         )}
