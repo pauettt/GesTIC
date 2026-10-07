@@ -54,6 +54,7 @@ export async function upsertInventoryItem(input: unknown): Promise<ActionResult>
     imageUrl: data.imageUrl || null,
     purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null,
     warrantyUntil: data.warrantyUntil ? new Date(data.warrantyUntil) : null,
+    contract: data.contract || null,
     notes: data.notes || null,
   };
 

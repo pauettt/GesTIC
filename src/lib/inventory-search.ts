@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 /**
  * Filtre de cerca lliure sobre l'inventari: etiqueta, marca, model, número de sèrie, IP,
- * nom a la xarxa o nom de l'aula. Sense distingir majúscules ni accents del teclat de l'usuari.
+ * nom a la xarxa, contracte o nom de l'aula. Sense distingir majúscules ni accents del teclat de l'usuari.
  */
 export function inventorySearchFilter(query: string | undefined): Prisma.InventoryItemWhereInput {
   const q = query?.trim();
@@ -17,6 +17,7 @@ export function inventorySearchFilter(query: string | undefined): Prisma.Invento
       { serialNumber: contains },
       { ipAddress: contains },
       { hostname: contains },
+      { contract: contains },
       { space: { name: contains } },
       { category: { name: contains } },
     ],

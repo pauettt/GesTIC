@@ -34,6 +34,7 @@ export const upsertInventoryItemSchema = z.object({
   isLoanable: z.boolean(),
   purchaseDate: optionalDate,
   warrantyUntil: optionalDate,
+  contract: z.string().trim().max(100).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 

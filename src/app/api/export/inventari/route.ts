@@ -24,6 +24,7 @@ export async function GET() {
       status: true,
       purchaseDate: true,
       warrantyUntil: true,
+      contract: true,
       category: { select: { name: true } },
       space: { select: { name: true } },
     },
@@ -44,6 +45,7 @@ export async function GET() {
       "Estat",
       "Data de compra",
       "Garantia fins",
+      "Contracte",
     ],
     ...items.map((item) => [
       item.category.name,
@@ -58,6 +60,7 @@ export async function GET() {
       inventoryItemStatusLabels[item.status],
       item.purchaseDate?.toISOString().slice(0, 10) ?? "",
       item.warrantyUntil?.toISOString().slice(0, 10) ?? "",
+      item.contract ?? "",
     ]),
   ];
 

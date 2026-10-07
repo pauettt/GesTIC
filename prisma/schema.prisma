@@ -249,6 +249,9 @@ model InventoryItem {
   isLoanable    Boolean             @default(false)
   purchaseDate  DateTime?
   warrantyUntil DateTime?
+  /// El contracte o lot pel qual va arribar l'equip. Text lliure: el diàleg
+  /// proposa els que ja hi ha perquè un mateix lot s'escrigui igual a tots.
+  contract      String?
   notes         String?             @db.Text
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt

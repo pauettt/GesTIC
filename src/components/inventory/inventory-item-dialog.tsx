@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
@@ -44,22 +44,26 @@ type Category = { id: string; name: string };
  * Amb `item`, edita aquell equip. Amb `copyFrom`, en crea un de nou que parteix
  * de les seves dades: de deu projectors iguals només canvia l'aula. El número de
  * sèrie, l'etiqueta, la IP i el nom a la xarxa són de cada equip i per això no es
- * copien.
+ * copien; el contracte sí, que un lot sol arribar sencer.
  */
 export function InventoryItemDialog({
   spaces,
   categories,
+  contracts,
   item,
   copyFrom,
   trigger,
 }: {
   spaces: Space[];
   categories: Category[];
+  /** Els contractes que ja tenen altres equips, per proposar-los en escriure. */
+  contracts: string[];
   item?: UpsertInventoryItemInput;
   copyFrom?: UpsertInventoryItemInput;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const contractListId = useId();
   const initialValues = (): UpsertInventoryItemInput =>
     item ??
     (copyFrom
@@ -78,6 +82,7 @@ export function InventoryItemDialog({
           isLoanable: false,
           purchaseDate: "",
           warrantyUntil: "",
+          contract: "",
           notes: "",
         });
   const {
@@ -268,6 +273,17 @@ export function InventoryItemDialog({
                 <Input id="warrantyUntil" type="date" {...register("warrantyUntil")} />
               </Field>
             </div>
+
+            <Field data-invalid={Boolean(errors.contract)}>
+              <FieldLabel htmlFor="contract">Contracte</FieldLabel>
+              <Input id="contract" list={contractListId} autoComplete="off" {...register("contract")} />
+              <datalist id={contractListId}>
+                {contracts.map((contract) => (
+                  <option key={contract} value={contract} />
+                ))}
+              </datalist>
+              <FieldError errors={errors.contract ? [errors.contract] : undefined} />
+            </Field>
 
             <Field>
               <FieldLabel htmlFor="notes">Notes</FieldLabel>

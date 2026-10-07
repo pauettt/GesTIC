@@ -98,6 +98,7 @@ export default async function InventoryItemDetailPage({ params }: PageProps<"/in
                     label="Garantia fins"
                     value={item.warrantyUntil ? formatDate(item.warrantyUntil) : "—"}
                   />
+                  {item.contract && <DataRow label="Contracte" value={item.contract} />}
                   <DataRow label="Alta a l'inventari" value={formatDate(item.createdAt)} />
                 </>
               )}

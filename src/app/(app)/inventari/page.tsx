@@ -90,8 +90,16 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
   // ho diu l'avís de dalt; i un carro no és de cap categoria ni es presta.
   const showCarts = Boolean(space || location || searchText) && !categoryFilter && !onlyLoanable;
 
-  const [items, categories, pendingLoanRequests, activeLoanRequests, chromebookCount, cartCount, rawCarts] =
-    await Promise.all([
+  const [
+    items,
+    categories,
+    contractRows,
+    pendingLoanRequests,
+    activeLoanRequests,
+    chromebookCount,
+    cartCount,
+    rawCarts,
+  ] = await Promise.all([
     db.inventoryItem.findMany({
       where: {
         ...(typeof categoryFilter === "string" ? { categoryId: categoryFilter } : {}),
@@ -105,6 +113,13 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
     db.inventoryCategory.findMany({
       orderBy: [{ order: "asc" }, { name: "asc" }],
       include: { _count: { select: { items: true } } },
+    }),
+    // Els contractes ja escrits, perquè el diàleg els proposi.
+    db.inventoryItem.findMany({
+      where: { contract: { not: null } },
+      distinct: ["contract"],
+      select: { contract: true },
+      orderBy: { contract: "asc" },
     }),
     db.loanRequest.findMany({
       where: { status: "PENDENT" },
@@ -131,6 +146,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
       : Promise.resolve([]),
   ]);
 
+  const contracts = contractRows.flatMap((row) => (row.contract ? [row.contract] : []));
   const customCartOrder = rawCarts.some((c) => c.order !== null);
   const savedCartOrder = customCartOrder
     ? [...rawCarts].filter((c) => c.order !== null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((c) => c.id)
@@ -163,7 +179,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
             <p className="text-xs sm:text-sm text-muted-foreground">Equipament TIC del centre.</p>
           </div>
         </div>
-        <InventoryItemDialog spaces={spaces} categories={categories} />
+        <InventoryItemDialog spaces={spaces} categories={categories} contracts={contracts} />
       </div>
 
       {/* Els Chromebooks tenen les seves seccions: sense l'avís semblaria que no són a l'inventari. */}
@@ -291,6 +307,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
                     <InventoryItemDialog
                       spaces={spaces}
                       categories={categories}
+                      contracts={contracts}
                       item={itemValues(item)}
                       trigger={
                         <button className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted">
@@ -301,6 +318,7 @@ export default async function InventariPage({ searchParams }: PageProps<"/invent
                     <InventoryItemDialog
                       spaces={spaces}
                       categories={categories}
+                      contracts={contracts}
                       copyFrom={itemValues(item)}
                       trigger={
                         <button className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted">
@@ -364,6 +382,7 @@ function itemValues(item: InventoryItem) {
     imageUrl: item.imageUrl ?? "",
     purchaseDate: item.purchaseDate?.toISOString().slice(0, 10) ?? "",
     warrantyUntil: item.warrantyUntil?.toISOString().slice(0, 10) ?? "",
+    contract: item.contract ?? "",
     notes: item.notes ?? "",
   };
 }
