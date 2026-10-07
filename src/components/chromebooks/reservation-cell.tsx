@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useServerAction } from "@/hooks/use-server-action";
-import { missingDevicesLabel } from "@/lib/device-reservations";
+import { MissingDevices } from "@/components/chromebooks/missing-devices";
+import type { MissingDevice } from "@/lib/device-reservations";
 import type { SchoolPeriod } from "@/lib/schedule";
 
 type Reservation = {
@@ -27,6 +28,7 @@ export function ReservationCell({
   reservation,
   canCancel,
   isPast,
+  locked,
   holiday,
   devicesOut,
 }: {
@@ -38,10 +40,12 @@ export function ReservationCell({
   canCancel: boolean;
   /** Sessió que ja ha acabat: es mostra apagada i no es pot reservar. */
   isPast: boolean;
+  /** Massa endavant perquè el professorat la reservi: es mostra com una de passada. */
+  locked: boolean;
   /** Dia festiu: no hi ha classe i no es pot reservar. */
   holiday: boolean;
-  /** Quants equips no hi seran perquè algú els té reservats a part. */
-  devicesOut: number;
+  /** Els equips que no hi seran perquè algú els té reservats a part, i qui. */
+  devicesOut: MissingDevice[];
 }) {
   const [open, setOpen] = useState(false);
   const [purpose, setPurpose] = useState("");
@@ -65,12 +69,12 @@ export function ReservationCell({
         </div>
         {reservation.recurringId && <p className="text-muted-foreground">Reserva fixa</p>}
         {reservation.purpose && <p className="truncate text-muted-foreground">{reservation.purpose}</p>}
-        {devicesOut > 0 && <p className="text-red-700">{missingDevicesLabel(devicesOut)}</p>}
+        <MissingDevices devices={devicesOut} />
       </div>
     );
   }
 
-  if (isPast) {
+  if (isPast || locked) {
     return (
       <div className="w-full rounded-md border border-dashed border-transparent p-1.5 text-center text-muted-foreground/40">
         —
@@ -93,7 +97,7 @@ export function ReservationCell({
         }
       >
         Lliure
-        {devicesOut > 0 && <span className="block text-red-700">{missingDevicesLabel(devicesOut)}</span>}
+        <MissingDevices devices={devicesOut} />
       </PopoverTrigger>
       <PopoverContent className="w-64">
         <form
@@ -109,10 +113,11 @@ export function ReservationCell({
           <p className="text-xs text-muted-foreground">
             {period.start}–{period.end}
           </p>
-          {devicesOut > 0 && (
-            <p className="text-xs text-red-700">
-              {missingDevicesLabel(devicesOut)} del carro: algú els té reservats a part.
-            </p>
+          {devicesOut.length > 0 && (
+            <div className="text-xs">
+              <p className="text-muted-foreground">No seran al carro, algú els té reservats a part:</p>
+              <MissingDevices devices={devicesOut} />
+            </div>
           )}
           <Input
             autoFocus

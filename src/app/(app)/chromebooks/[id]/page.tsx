@@ -140,8 +140,15 @@ export default async function CartDetailPage({
   const available = inService.filter((chromebook) => isFreeNow(chromebook, now)).length;
   const summary = deviceSummary(inService);
   const viewer = { id: user.id, admin };
-  // Per a la graella: quants equips hi faltaran a cada sessió perquè algú els té reservats a part.
-  const deviceBookings = inService.flatMap((chromebook) => chromebook.reservations);
+  // Per a la graella: quins equips hi faltaran a cada sessió perquè algú els té reservats a part, i qui.
+  const deviceBookings = inService.flatMap((chromebook) =>
+    chromebook.reservations.map((reservation) => ({
+      startDate: reservation.startDate,
+      endDate: reservation.endDate,
+      assetTag: chromebook.assetTag,
+      who: reservation.user.name ?? reservation.user.email,
+    })),
+  );
   const openIncidents = incidents.filter((incident) => OPEN_INCIDENT_STATUSES.includes(incident.status)).length;
   const incidentsByDevice = new Map<string | null, typeof deviceIncidents>();
   for (const incident of deviceIncidents) {

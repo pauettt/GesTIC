@@ -8,14 +8,17 @@ import { CancelReservationButton } from "@/components/chromebooks/cancel-reserva
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServerAction } from "@/hooks/use-server-action";
-import { missingDevicesLabel } from "@/lib/device-reservations";
+import { MissingDevices } from "@/components/chromebooks/missing-devices";
+import { missingDevicesLines, type MissingDevice } from "@/lib/device-reservations";
 import { breakBefore } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
-/** `devicesOut`: quants equips no hi seran perquè algú els té reservats a part. */
+/** `devicesOut`: els equips que no hi seran perquè algú els té reservats a part, i qui. */
 export type DaySlot =
-  | { kind: "free"; devicesOut: number }
+  | { kind: "free"; devicesOut: MissingDevice[] }
   | { kind: "past" }
+  /** Massa endavant perquè el professorat la reservi: es veu com una de passada. */
+  | { kind: "locked" }
   | { kind: "holiday" }
   | {
       kind: "reserved";
@@ -25,7 +28,7 @@ export type DaySlot =
       /** La d'una setmana d'una reserva fixa. */
       fixed: boolean;
       canCancel: boolean;
-      devicesOut: number;
+      devicesOut: MissingDevice[];
     };
 
 export type ScheduleDay = {
@@ -135,13 +138,11 @@ export function DaySchedule({
                       {slot.purpose && (
                         <span className="block truncate text-xs text-muted-foreground">{slot.purpose}</span>
                       )}
-                      {slot.devicesOut > 0 && (
-                        <span className="block text-xs text-red-700">{missingDevicesLabel(slot.devicesOut)}</span>
-                      )}
+                      <MissingDevices devices={slot.devicesOut} className="text-xs" />
                     </span>
                     {slot.canCancel && <CancelReservationButton reservationId={slot.id} fixed={slot.fixed} />}
                   </div>
-                ) : slot.kind === "past" ? (
+                ) : slot.kind === "past" || slot.kind === "locked" ? (
                   <div className="flex-1 px-3 py-2 text-sm text-muted-foreground/50">—</div>
                 ) : slot.kind === "holiday" ? (
                   <div className="flex-1 rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">Festiu</div>
@@ -149,7 +150,10 @@ export function DaySchedule({
                   <button
                     type="button"
                     aria-pressed={isSelected}
-                    aria-label={`${period.label}, ${period.start}–${period.end}: lliure`}
+                    aria-label={[
+                      `${period.label}, ${period.start}–${period.end}: lliure`,
+                      ...missingDevicesLines(slot.devicesOut).map((line) => `falta ${line}`),
+                    ].join("; ")}
                     onClick={() => toggle(period.id)}
                     className={cn(
                       "flex flex-1 items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors",
@@ -158,13 +162,9 @@ export function DaySchedule({
                         : "border-dashed text-muted-foreground hover:border-primary",
                     )}
                   >
-                    <span>
+                    <span className="min-w-0">
                       {isSelected ? "Triada" : "Lliure"}
-                      {slot.devicesOut > 0 && (
-                        <span className="ml-2 text-xs font-normal text-red-700">
-                          {missingDevicesLabel(slot.devicesOut)}
-                        </span>
-                      )}
+                      <MissingDevices devices={slot.devicesOut} className="text-xs font-normal" />
                     </span>
                     {isSelected && <CheckIcon className="size-4 text-primary" />}
                   </button>

@@ -96,11 +96,21 @@ export function bookingSpanLabel(booking: DeviceBooking) {
   return `${spanLabel(first, last)} (${first.start}–${last.end})`;
 }
 
-/** A la graella del carro: «Falta 1 equip», «Falten 3 equips». Buit si no en falta cap. */
-export function missingDevicesLabel(count: number) {
-  if (count <= 0) return "";
-  return count === 1 ? "Falta 1 equip" : `Falten ${count} equips`;
+/** Un equip que no serà al carro en una sessió: quin és (l'etiqueta) i qui el té. */
+export type MissingDevice = { assetTag: string; who: string };
+
+/**
+ * A la graella del carro, què hi faltarà: una línia per persona amb les
+ * etiquetes dels equips que té, «CB-07, CB-08 · Joan Pons». Qui reserva el
+ * carro ha de saber quins equips no hi trobarà i a qui demanar-los.
+ */
+export function missingDevicesLines(devices: readonly MissingDevice[]): string[] {
+  const byPerson = new Map<string, string[]>();
+  for (const { assetTag, who } of devices) byPerson.set(who, [...(byPerson.get(who) ?? []), assetTag]);
+  return [...byPerson].map(([who, tags]) => `${tags.sort(compareTags).join(", ")} · ${who}`);
 }
+
+const compareTags = new Intl.Collator("ca", { numeric: true }).compare;
 
 /** Qui té l'equip ara mateix per una reserva, i fins quan l'havia de tenir. */
 export type DeviceHolder = { who: string; endDate: Date };

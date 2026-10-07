@@ -8,6 +8,7 @@ import {
   isFreeDuring,
   isFreeNow,
   isHeld,
+  missingDevicesLines,
   occupies,
   sessionSpan,
   withHolder,
@@ -110,5 +111,21 @@ describe("disponibilitat d'un equip del carro", () => {
   it("mentre algú no el torna, no es pot reservar per a cap altra hora", () => {
     expect(canBeReserved("DISPONIBLE", [{ overdue: false }])).toBe(true);
     expect(canBeReserved("DISPONIBLE", [{ overdue: true }])).toBe(false);
+  });
+});
+
+describe("missingDevicesLines", () => {
+  it("diu quins equips falten i qui els té, una línia per persona", () => {
+    expect(
+      missingDevicesLines([
+        { assetTag: "CB-10", who: "Coord TIC" },
+        { assetTag: "CB-07", who: "Joan Pons" },
+        { assetTag: "CB-9", who: "Coord TIC" },
+      ]),
+    ).toEqual(["CB-9, CB-10 · Coord TIC", "CB-07 · Joan Pons"]);
+  });
+
+  it("si no en falta cap, no diu res", () => {
+    expect(missingDevicesLines([])).toEqual([]);
   });
 });

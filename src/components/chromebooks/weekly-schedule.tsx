@@ -2,12 +2,22 @@ import { Fragment } from "react";
 import type { Route } from "next";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
-import { addDays, formatShortDate, formatTime, madridDateKey, toDateParam, zonedDateTime } from "@/lib/date";
-import { occupies, type DeviceBooking } from "@/lib/device-reservations";
+import {
+  addDays,
+  formatDayDate,
+  formatShortDate,
+  formatTime,
+  madridDateKey,
+  toDateParam,
+  zonedDateTime,
+} from "@/lib/date";
+import { occupies, type DeviceBooking, type MissingDevice } from "@/lib/device-reservations";
 import { holidayOn, type Holiday } from "@/lib/holidays";
 import {
+  bookingOpensOn,
   breakBefore,
   isPastPeriod,
+  lastBookableDayKey,
   SCHOOL_PERIODS,
   SCHOOL_WEEKDAYS,
   SCHOOL_WEEKDAYS_SHORT,
@@ -40,7 +50,7 @@ export function WeeklySchedule({
   weekStart: Date;
   reservations: Reservation[];
   /** Les reserves obertes d'equips sols del carro: aquelles hores hi faltaran. */
-  deviceBookings: DeviceBooking[];
+  deviceBookings: (DeviceBooking & MissingDevice)[];
   /** Els dies festius no es poden reservar. Les reserves que ja hi ha es veuen igual, per poder-les anul·lar. */
   holidays: Holiday[];
   currentUserId: string;
@@ -54,6 +64,9 @@ export function WeeklySchedule({
   const prevWeek = toDateParam(addDays(weekStart, -7));
   const nextWeek = toDateParam(addDays(weekStart, 7));
   const rangeLabel = `${formatShortDate(weekStart)} – ${formatShortDate(days[4].date)}`;
+  // El professorat només reserva aquesta setmana i la que ve; més enllà, la
+  // graella s'ensenya igual però no s'hi pot clicar. El servidor també ho para.
+  const locked = !isAdmin && toDateParam(weekStart) > lastBookableDayKey(now);
 
   function findReservation(dayKey: string, periodStart: string) {
     return reservations.find(
@@ -65,11 +78,13 @@ export function WeeklySchedule({
   const canCancel = (reservation: Reservation | undefined) =>
     Boolean(reservation && (isAdmin || reservation.userId === currentUserId));
 
-  /** Quants equips no seran al carro en aquesta sessió perquè algú els té reservats a part. */
-  function devicesOut(dayKey: string, period: { start: string; end: string }) {
+  /** Quins equips no seran al carro en aquesta sessió perquè algú els té reservats a part, i qui. */
+  function devicesOut(dayKey: string, period: { start: string; end: string }): MissingDevice[] {
     const start = zonedDateTime(dayKey, period.start);
     const end = zonedDateTime(dayKey, period.end);
-    return deviceBookings.filter((booking) => occupies(booking, start, end, now)).length;
+    return deviceBookings
+      .filter((booking) => occupies(booking, start, end, now))
+      .map(({ assetTag, who }) => ({ assetTag, who }));
   }
 
   const scheduleDays: ScheduleDay[] = days.map((day, index) => {
@@ -84,7 +99,7 @@ export function WeeklySchedule({
         const reservation = findReservation(dayKey, period.start);
         const isPast = isPastPeriod(zonedDateTime(dayKey, period.end), now);
         // De les sessions passades ja no cal saber-ho: no es poden planificar.
-        const out = isPast ? 0 : devicesOut(dayKey, period);
+        const out = isPast ? [] : devicesOut(dayKey, period);
         if (reservation) {
           return {
             kind: "reserved" as const,
@@ -97,7 +112,8 @@ export function WeeklySchedule({
           };
         }
         if (isPast) return { kind: "past" as const };
-        return day.holiday ? { kind: "holiday" as const } : { kind: "free" as const, devicesOut: out };
+        if (day.holiday) return { kind: "holiday" as const };
+        return locked ? { kind: "locked" as const } : { kind: "free" as const, devicesOut: out };
       }),
     };
   });
@@ -105,7 +121,7 @@ export function WeeklySchedule({
   const todayKey = madridDateKey(new Date());
   const initialDay =
     scheduleDays.find((day) => day.dayKey === todayKey) ??
-    scheduleDays.find((day) => day.slots.some((slot) => slot.kind !== "past" && slot.kind !== "holiday")) ??
+    scheduleDays.find((day) => day.slots.some((slot) => slot.kind === "free" || slot.kind === "reserved")) ??
     scheduleDays[0];
 
   return (
@@ -129,6 +145,13 @@ export function WeeklySchedule({
           <ChevronRightIcon className="size-4" />
         </ButtonLink>
       </div>
+
+      {locked && (
+        <p className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          Encara no es pot reservar: només aquesta setmana i la que ve. S&apos;obre el{" "}
+          {formatDayDate(bookingOpensOn(weekStart))}.
+        </p>
+      )}
 
       <div className="md:hidden">
         <DaySchedule
@@ -193,8 +216,9 @@ export function WeeklySchedule({
                             reservation={reservation}
                             canCancel={canCancel(reservation)}
                             isPast={isPast}
+                            locked={locked}
                             holiday={Boolean(day.holiday)}
-                            devicesOut={isPast ? 0 : devicesOut(dayKey, period)}
+                            devicesOut={isPast ? [] : devicesOut(dayKey, period)}
                           />
                         </td>
                       );
