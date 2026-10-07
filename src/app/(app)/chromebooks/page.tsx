@@ -26,7 +26,7 @@ import {
   spaceLocationWhere,
   type PlacedSpace,
 } from "@/lib/locations";
-import { isAdmin, requireUser } from "@/lib/permissions";
+import { isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
 import { CartDialog } from "@/components/chromebooks/cart-dialog";
 import { CartFinder, QuickReserveButton } from "@/components/chromebooks/cart-finder";
 import { CartManager, CartName, type CartItem } from "@/components/chromebooks/cart-manager";
@@ -133,7 +133,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
   const holidays = await getHolidays();
-  const cartSearch = parseCartSearch(params, new Date(), holidays, !admin);
+  const cartSearch = parseCartSearch(params, new Date(), holidays, isSuperAdmin(user.role));
   const busyCartIds =
     cartSearch.status === "ok"
       ? new Set(

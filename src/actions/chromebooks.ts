@@ -11,7 +11,7 @@ import { zonedDateTime } from "@/lib/date";
 import { holidayOn, holidayRefusal } from "@/lib/holidays";
 import { getHolidays } from "@/lib/holidays-data";
 import { bookingHorizonRefusal, getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
-import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
+import { isAdmin, isSuperAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
   addChromebookNoteSchema,
   cancelReservationSchema,
@@ -527,7 +527,7 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
   if (!isSchoolDay(date)) {
     return { success: false, error: "Només es pot reservar de dilluns a divendres" };
   }
-  const tooFar = isAdmin(user.role) ? null : bookingHorizonRefusal(date);
+  const tooFar = isSuperAdmin(user.role) ? null : bookingHorizonRefusal(date);
   if (tooFar) return { success: false, error: tooFar };
   const holiday = holidayOn(date, await getHolidays());
   if (holiday) return { success: false, error: holidayRefusal(holiday) };

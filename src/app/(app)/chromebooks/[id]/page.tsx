@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { canAccessCart } from "@/lib/cart-access";
 import { orderChromebooks } from "@/lib/chromebook-order";
 import { orderCarts } from "@/lib/cart-order";
-import { canAccessKeys, isAdmin, requireUser } from "@/lib/permissions";
+import { canAccessKeys, isAdmin, isSuperAdmin, requireUser } from "@/lib/permissions";
 import { addDays, startOfWeek, toDateParam } from "@/lib/date";
 import { isFreeNow, openDeviceReservations, reservationViews } from "@/lib/device-reservations";
 import { getHolidays } from "@/lib/holidays-data";
@@ -274,6 +274,7 @@ export default async function CartDetailPage({
           holidays={holidays}
           currentUserId={user.id}
           isAdmin={admin}
+          unlimitedBooking={isSuperAdmin(user.role)}
         />
         {recurring.length > 0 && (
           <div className="mt-3 rounded-lg border p-3">

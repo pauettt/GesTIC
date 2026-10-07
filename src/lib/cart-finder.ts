@@ -30,15 +30,12 @@ export type CartSearchResult =
   | { status: "invalid"; message: string }
   | { status: "ok"; search: CartSearch };
 
-/**
- * `limited`: qui busca és professorat, que només reserva aquesta setmana i la
- * que ve. Més enllà no se li ensenyen carros que després no podria reservar.
- */
+/** `unlimited`: qui busca és el superadmin, que pot reservar tan endavant com vulgui. */
 export function parseCartSearch(
   params: { dia?: Param; sessio?: Param; equips?: Param },
   now: Date = new Date(),
   holidays: readonly Holiday[] = [],
-  limited = false,
+  unlimited = false,
 ): CartSearchResult {
   const { dia, sessio, equips } = params;
   if (dia === undefined && sessio === undefined) return { status: "none" };
@@ -48,7 +45,9 @@ export function parseCartSearch(
   if (!isSchoolDay(dia)) {
     return { status: "invalid", message: "Els carros només es reserven de dilluns a divendres." };
   }
-  const tooFar = limited ? bookingHorizonRefusal(dia, now) : null;
+  // Només es reserva aquesta setmana i la que ve: més enllà no s'ensenyen
+  // carros que després no es podrien reservar.
+  const tooFar = unlimited ? null : bookingHorizonRefusal(dia, now);
   if (tooFar) return { status: "invalid", message: `${tooFar}.` };
   const holiday = holidayOn(dia, holidays);
   if (holiday) return { status: "invalid", message: `Aquest dia és festiu (${holiday.name}).` };

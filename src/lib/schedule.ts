@@ -93,10 +93,10 @@ export function defaultWeekStart(now: Date = new Date(), periods: readonly Schoo
 }
 
 /**
- * L'últim dia que el professorat pot reservar un carro o un equip: el divendres
- * de la setmana que ve. Si no, hi ha qui es reserva el curs sencer el primer dia;
+ * L'últim dia que es pot reservar un carro o un equip: el divendres de la
+ * setmana que ve. Si no, hi ha qui es reserva el curs sencer el primer dia;
  * el que es repeteix cada setmana va per reserva fixa, que la coordinació aprova.
- * La coordinació no té aquest límit.
+ * Val per a tothom, la coordinació inclosa; només el superadmin no hi té límit.
  */
 export function lastBookableDayKey(now: Date = new Date()): string {
   return madridDateKey(addDays(startOfWeek(now), 11));

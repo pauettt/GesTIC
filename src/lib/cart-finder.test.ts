@@ -35,11 +35,11 @@ describe("parseCartSearch", () => {
     const loose = parseCartSearch({ dia: "2026-09-23", sessio: "1", equips: "molts" }, tuesdayTen);
     expect(loose.status === "ok" && loose.search.minDevices).toBe(0);
   });
-  it("al professorat no li busca més enllà de la setmana que ve; a la coordinació, sí", () => {
+  it("no busca més enllà de la setmana que ve, si no és el superadmin", () => {
     const later = { dia: "2026-10-05", sessio: "1" };
-    expect(parseCartSearch({ dia: "2026-10-02", sessio: "1" }, tuesdayTen, [], true).status).toBe("ok");
-    expect(parseCartSearch(later, tuesdayTen, [], true).status).toBe("invalid");
-    expect(parseCartSearch(later, tuesdayTen).status).toBe("ok");
+    expect(parseCartSearch({ dia: "2026-10-02", sessio: "1" }, tuesdayTen).status).toBe("ok");
+    expect(parseCartSearch(later, tuesdayTen).status).toBe("invalid");
+    expect(parseCartSearch(later, tuesdayTen, [], true).status).toBe("ok");
   });
 });
 
@@ -68,7 +68,9 @@ describe("amb festius", () => {
   const pilar = { id: "pilar", name: "Pilar", startDate: "2026-10-12", endDate: "2026-10-12" };
 
   it("un dia festiu no es busca, i es diu per què", () => {
-    expect(parseCartSearch({ dia: "2026-10-12", sessio: "1" }, tuesdayTen, [pilar])).toEqual({
+    // Dimecres 7 d'octubre: el dilluns 12 ja és dins del termini per reservar.
+    const now = zonedDateTime("2026-10-07", "10:00");
+    expect(parseCartSearch({ dia: "2026-10-12", sessio: "1" }, now, [pilar])).toEqual({
       status: "invalid",
       message: "Aquest dia és festiu (Pilar).",
     });

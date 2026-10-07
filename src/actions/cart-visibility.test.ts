@@ -16,7 +16,12 @@ const { db, requireUser, requireAdmin } = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ db }));
-vi.mock("@/lib/permissions", () => ({ requireUser, requireAdmin, isAdmin: (role: string) => role === "ADMIN" || role === "SUPER_ADMIN" }));
+vi.mock("@/lib/permissions", () => ({
+  requireUser,
+  requireAdmin,
+  isAdmin: (role: string) => role === "ADMIN" || role === "SUPER_ADMIN",
+  isSuperAdmin: (role: string) => role === "SUPER_ADMIN",
+}));
 vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: vi.fn() }));
 vi.mock("@/lib/notifications", () => ({ notifyRecurringRequested: vi.fn(), notifyRecurringCancelled: vi.fn(), notifyRecurringDecision: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -59,6 +64,27 @@ describe.each(actions)("visibilitat: $name", ({ action, input, create }) => {
       expect(create).toHaveBeenCalledOnce();
     } else {
       expect(result).toEqual({ success: false, error: CART_ACCESS_DENIED });
+      expect(create).not.toHaveBeenCalled();
+    }
+  });
+});
+
+// Dimecres 23 de setembre: es pot reservar fins al divendres 2 d'octubre.
+describe.each(actions.slice(0, 2))("termini per reservar: $name", ({ action, input, create }) => {
+  it.each<{ role: Role; allowed: boolean }>([
+    { role: "PROFESSOR", allowed: false },
+    { role: "ADMIN", allowed: false },
+    { role: "SUPER_ADMIN", allowed: true },
+  ])("$role, d'aquí a tres setmanes: permès=$allowed", async ({ role, allowed }) => {
+    requireUser.mockResolvedValue({ id: "user-1", role });
+    db.cart.findUnique.mockResolvedValue({ id: "cart-1", isVisibleToTeachers: true });
+    db.chromebook.findUnique.mockResolvedValue({ cartId: "cart-1", status: "DISPONIBLE", isStudentLoanable: false, cart: { isVisibleToTeachers: true } });
+    const result = await action({ ...input, date: "2026-10-14" });
+    if (allowed) {
+      expect(result).toEqual({ success: true });
+      expect(create).toHaveBeenCalledOnce();
+    } else {
+      expect(result).toEqual({ success: false, error: expect.stringMatching(/aquesta setmana i la que ve/) });
       expect(create).not.toHaveBeenCalled();
     }
   });

@@ -45,6 +45,7 @@ export function WeeklySchedule({
   holidays,
   currentUserId,
   isAdmin,
+  unlimitedBooking,
 }: {
   cartId: string;
   weekStart: Date;
@@ -55,6 +56,8 @@ export function WeeklySchedule({
   holidays: Holiday[];
   currentUserId: string;
   isAdmin: boolean;
+  /** El superadmin reserva tan endavant com vulgui; la resta, només aquesta setmana i la que ve. */
+  unlimitedBooking: boolean;
 }) {
   const now = new Date();
   const days = SCHOOL_WEEKDAYS.map((label, index) => {
@@ -64,9 +67,9 @@ export function WeeklySchedule({
   const prevWeek = toDateParam(addDays(weekStart, -7));
   const nextWeek = toDateParam(addDays(weekStart, 7));
   const rangeLabel = `${formatShortDate(weekStart)} – ${formatShortDate(days[4].date)}`;
-  // El professorat només reserva aquesta setmana i la que ve; més enllà, la
-  // graella s'ensenya igual però no s'hi pot clicar. El servidor també ho para.
-  const locked = !isAdmin && toDateParam(weekStart) > lastBookableDayKey(now);
+  // Només es reserva aquesta setmana i la que ve; més enllà, la graella
+  // s'ensenya igual però no s'hi pot clicar. El servidor també ho para.
+  const locked = !unlimitedBooking && toDateParam(weekStart) > lastBookableDayKey(now);
 
   function findReservation(dayKey: string, periodStart: string) {
     return reservations.find(
