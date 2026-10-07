@@ -10,7 +10,7 @@ import { ACTIVE_STUDENT_REQUEST_STATUSES, syncChromebookStatus } from "@/lib/chr
 import { zonedDateTime } from "@/lib/date";
 import { holidayOn, holidayRefusal } from "@/lib/holidays";
 import { getHolidays } from "@/lib/holidays-data";
-import { getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
+import { bookingHorizonRefusal, getPeriodById, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { isAdmin, requireAdmin, requireUser } from "@/lib/permissions";
 import {
   addChromebookNoteSchema,
@@ -527,6 +527,8 @@ export async function createReservation(input: unknown): Promise<ActionResult> {
   if (!isSchoolDay(date)) {
     return { success: false, error: "Només es pot reservar de dilluns a divendres" };
   }
+  const tooFar = isAdmin(user.role) ? null : bookingHorizonRefusal(date);
+  if (tooFar) return { success: false, error: tooFar };
   const holiday = holidayOn(date, await getHolidays());
   if (holiday) return { success: false, error: holidayRefusal(holiday) };
 

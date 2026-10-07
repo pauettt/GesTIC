@@ -133,7 +133,7 @@ export default async function ChromebooksPage({ searchParams }: PageProps<"/chro
   // El cercador treballa sobre els carros que deixa el filtre d'ubicació: qui
   // busca un carro lliure el vol a prop.
   const holidays = await getHolidays();
-  const cartSearch = parseCartSearch(params, new Date(), holidays);
+  const cartSearch = parseCartSearch(params, new Date(), holidays, !admin);
   const busyCartIds =
     cartSearch.status === "ok"
       ? new Set(

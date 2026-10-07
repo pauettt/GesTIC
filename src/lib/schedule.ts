@@ -1,4 +1,4 @@
-import { addDays, madridDateKey, startOfWeek, zonedDateTime } from "@/lib/date";
+import { addDays, formatShortDate, madridDateKey, startOfWeek, zonedDateTime } from "@/lib/date";
 
 export type SchoolPeriod = {
   id: number;
@@ -90,4 +90,26 @@ export function defaultWeekStart(now: Date = new Date(), periods: readonly Schoo
   const lastPeriod = periods[periods.length - 1];
   const weekEnd = zonedDateTime(madridDateKey(friday), lastPeriod.end);
   return isPastPeriod(weekEnd, now) ? addDays(weekStart, 7) : weekStart;
+}
+
+/**
+ * L'últim dia que el professorat pot reservar un carro o un equip: el divendres
+ * de la setmana que ve. Si no, hi ha qui es reserva el curs sencer el primer dia;
+ * el que es repeteix cada setmana va per reserva fixa, que la coordinació aprova.
+ * La coordinació no té aquest límit.
+ */
+export function lastBookableDayKey(now: Date = new Date()): string {
+  return madridDateKey(addDays(startOfWeek(now), 11));
+}
+
+/** El motiu per no deixar reservar aquell dia, o `null` si encara és dins del termini. */
+export function bookingHorizonRefusal(dateKey: string, now: Date = new Date()): string | null {
+  const last = lastBookableDayKey(now);
+  if (dateKey <= last) return null;
+  return `Només es pot reservar aquesta setmana i la que ve, fins al ${formatShortDate(zonedDateTime(last, "12:00"))}`;
+}
+
+/** El dilluns que s'obre una setmana per reservar: el de la setmana d'abans. */
+export function bookingOpensOn(weekStart: Date): Date {
+  return addDays(startOfWeek(weekStart), -7);
 }

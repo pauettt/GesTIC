@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   AFTERNOON_PERIODS,
+  bookingHorizonRefusal,
+  bookingOpensOn,
   breakBefore,
   defaultWeekStart,
   getPeriodById,
   isPastPeriod,
   isSchoolDay,
+  lastBookableDayKey,
   LUNCH,
   MORNING_PERIODS,
   RECESS,
@@ -99,3 +102,29 @@ describe("defaultWeekStart", () => {
     );
   });
 });
+
+describe("termini per reservar", () => {
+  it("arriba fins al divendres de la setmana que ve", () => {
+    // Dimecres 7 d'octubre
+    expect(lastBookableDayKey(new Date("2026-10-07T10:00:00Z"))).toBe("2026-10-16");
+    // Diumenge 11 encara és de la setmana del 5: el límit no es mou fins dilluns.
+    expect(lastBookableDayKey(new Date("2026-10-11T20:00:00Z"))).toBe("2026-10-16");
+    // Dilluns 12 a primera hora (hora del centre), ja és la setmana següent.
+    expect(lastBookableDayKey(new Date("2026-10-11T22:30:00Z"))).toBe("2026-10-23");
+  });
+
+  it("deixa reservar fins al límit i no més enllà", () => {
+    const now = new Date("2026-10-07T10:00:00Z");
+    expect(bookingHorizonRefusal("2026-10-07", now)).toBeNull();
+    expect(bookingHorizonRefusal("2026-10-16", now)).toBeNull();
+    expect(bookingHorizonRefusal("2026-10-19", now)).toMatch(/aquesta setmana i la que ve/);
+  });
+
+  it("obre cada setmana el dilluns d'abans", () => {
+    expect(madridKey(bookingOpensOn(new Date("2026-10-19T08:00:00Z")))).toBe("2026-10-12");
+  });
+});
+
+function madridKey(date: Date) {
+  return date.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+}

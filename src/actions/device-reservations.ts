@@ -10,7 +10,7 @@ import { bookingSpanLabel, isHeld, isOverdue, occupyingWhere, sessionSpan } from
 import { holidayOn, holidayRefusal } from "@/lib/holidays";
 import { getHolidays } from "@/lib/holidays-data";
 import { isAdmin, requireUser } from "@/lib/permissions";
-import { isPastPeriod, isSchoolDay } from "@/lib/schedule";
+import { bookingHorizonRefusal, isPastPeriod, isSchoolDay } from "@/lib/schedule";
 import { createDeviceReservationSchema, deviceReservationIdSchema } from "@/lib/validations/chromebooks";
 
 export type ActionResult = { success: true } | { success: false; error: string };
@@ -54,6 +54,8 @@ export async function createDeviceReservation(input: unknown): Promise<ActionRes
   if (!isSchoolDay(date)) {
     return { success: false, error: "Només es pot reservar de dilluns a divendres" };
   }
+  const tooFar = isAdmin(user.role) ? null : bookingHorizonRefusal(date);
+  if (tooFar) return { success: false, error: tooFar };
   const holiday = holidayOn(date, await getHolidays());
   if (holiday) return { success: false, error: holidayRefusal(holiday) };
   const span = sessionSpan(date, fromPeriodId, toPeriodId);

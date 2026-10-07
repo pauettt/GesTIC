@@ -35,6 +35,12 @@ describe("parseCartSearch", () => {
     const loose = parseCartSearch({ dia: "2026-09-23", sessio: "1", equips: "molts" }, tuesdayTen);
     expect(loose.status === "ok" && loose.search.minDevices).toBe(0);
   });
+  it("al professorat no li busca més enllà de la setmana que ve; a la coordinació, sí", () => {
+    const later = { dia: "2026-10-05", sessio: "1" };
+    expect(parseCartSearch({ dia: "2026-10-02", sessio: "1" }, tuesdayTen, [], true).status).toBe("ok");
+    expect(parseCartSearch(later, tuesdayTen, [], true).status).toBe("invalid");
+    expect(parseCartSearch(later, tuesdayTen).status).toBe("ok");
+  });
 });
 
 describe("defaultCartSearch", () => {
